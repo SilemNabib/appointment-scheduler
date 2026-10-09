@@ -63,7 +63,7 @@ Desplegar un esqueleto el primer día es la mitigación del riesgo principal de 
       * Un archivo temporal en `src/dominio/` que importa `@/servidor/db/cliente`, `../servidor/…`, `next/headers`, `react`, `drizzle-orm`, `@neondatabase/serverless` o `@clerk/nextjs` hace fallar `npm run lint`; se borra después.
       * Un archivo temporal en `src/app/` que importa `@/servidor/db/…` hace fallar `npm run lint`; se borra después.
 
-* [ ] T1.04: Adaptador de Cloudflare (OpenNext)
+* [x] T1.04: Adaptador de Cloudflare (OpenNext)
    * Objetivo: Integrar `@opennextjs/cloudflare` y `wrangler` (versiones exactas) con un `wrangler.jsonc` basado en ARCH §21.2, reducido a lo que usa esta fase (sin R2, límites de frecuencia ni cron), y con la entrada propia `worker.ts`, que por ahora solo reexporta `fetch`.
    * Archivos: `open-next.config.ts`, `wrangler.jsonc`, `worker.ts`, `next.config.ts` (`initOpenNextCloudflareForDev()`), `cloudflare-env.d.ts` (generado con `wrangler types`), `package.json` (scripts `preview` y `cf-typegen`)
    * Depende de: T1.01

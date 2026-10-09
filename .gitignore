@@ -20,6 +20,10 @@
 # production
 /build
 
+# opennext / wrangler
+/.open-next/
+/.wrangler/
+
 # misc
 .DS_Store
 *.pem

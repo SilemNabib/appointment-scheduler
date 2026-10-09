@@ -53,7 +53,7 @@ Desplegar un esqueleto el primer día es la mitigación del riesgo principal de 
       * `npm run verificar` ejecuta `tsc --noEmit`, `eslint .` y `vitest run`, y termina con código 0 (con `passWithNoTests` mientras no haya pruebas).
       * Una prueba temporal que importa un archivo con `import 'server-only'` pasa; se borra después.
 
-* [ ] T1.03: Reglas de dependencia entre capas
+* [x] T1.03: Reglas de dependencia entre capas
    * Objetivo: Hacer cumplir con `no-restricted-imports` las reglas de ARCH §4: `src/dominio/` no importa nada del proyecto fuera de sí mismo ni librerías de framework o de E/S, y `src/app/` y `src/componentes/` no importan `src/servidor/db/`. Las reglas cubren también las rutas relativas.
    * Archivos: `eslint.config.mjs`
    * Depende de: T1.02

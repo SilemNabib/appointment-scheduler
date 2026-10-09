@@ -34,7 +34,7 @@
 
 Desplegar un esqueleto el primer día es la mitigación del riesgo principal de ARCH §23 (incompatibilidades entre Next.js, OpenNext y Clerk).
 
-* [ ] T1.01: Crear el proyecto Next.js
+* [x] T1.01: Crear el proyecto Next.js
    * Objetivo: Crear la app con App Router, TypeScript estricto, Tailwind, carpeta `src/` y alias `@/*`, fijando la versión de Next que soporta `@opennextjs/cloudflare` (ARCH §3: "se fija el día 1").
    * Archivos: `package.json`, `tsconfig.json`, `next.config.ts`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `.nvmrc`, `.gitignore`
    * Depende de: —

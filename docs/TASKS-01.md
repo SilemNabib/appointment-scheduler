@@ -44,7 +44,7 @@ Desplegar un esqueleto el primer día es la mitigación del riesgo principal de 
       * `next`, `react` y `react-dom` tienen versión exacta (sin `^` ni `~`), y `.nvmrc` fija la versión de Node.
       * `src/app/layout.tsx` declara `<html lang="es">`.
 
-* [ ] T1.02: Vitest y scripts de verificación
+* [x] T1.02: Vitest y scripts de verificación
    * Objetivo: Configurar Vitest (proyecto `unit` sobre `tests/unit/`) con el alias `@` y con `server-only` reemplazado por un módulo vacío, y crear los scripts de la definición de terminado.
    * Archivos: `vitest.config.ts`, `tests/stubs/server-only.ts`, `package.json` (scripts `typecheck`, `lint`, `test` y `verificar`)
    * Depende de: T1.01

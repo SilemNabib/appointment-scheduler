@@ -73,7 +73,7 @@ Desplegar un esqueleto el primer día es la mitigación del riesgo principal de 
       * `wrangler.jsonc` tiene `"main": "worker.ts"`, `"compatibility_flags": ["nodejs_compat"]` y `"observability": { "enabled": true }`.
       * `npm run typecheck` pasa con `worker.ts` tipado como `ExportedHandler<CloudflareEnv>`.
 
-* [ ] T1.05: [manual] Cuenta de Cloudflare y acceso de wrangler
+* [x] T1.05: [manual] Cuenta de Cloudflare y acceso de wrangler
    * Objetivo: Tener la cuenta de Cloudflare con el subdominio `*.workers.dev` activo y `wrangler` autenticado en la máquina de desarrollo.
    * Archivos: —
    * Depende de: —
@@ -82,7 +82,7 @@ Desplegar un esqueleto el primer día es la mitigación del riesgo principal de 
       * `npx wrangler whoami` muestra la cuenta.
       * El Dashboard de Cloudflare muestra el subdominio `*.workers.dev` de la cuenta.
 
-* [ ] T1.06: Primer despliegue del esqueleto
+* [x] T1.06: Primer despliegue del esqueleto
    * Objetivo: Desplegar el esqueleto en `*.workers.dev` con un solo comando, para detectar el primer día las incompatibilidades entre Next, OpenNext y Workers.
    * Archivos: `package.json` (script `deploy`: `opennextjs-cloudflare build && opennextjs-cloudflare deploy`)
    * Depende de: T1.04, T1.05

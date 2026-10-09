@@ -1,0 +1,58 @@
+# Agenda de citas (SaaS)
+
+## Cómo leer TASKS-##
+
+### Formato de cada tarea
+
+```markdown
+* [ ] T1.01: Nombre corto
+   * Objetivo: qué deja hecho, en una o dos frases.
+   * Archivos: rutas según ARCH §4.
+   * Depende de: tareas que deben estar terminadas antes (o "—").
+   * Refs: reglas (RN), decisiones (D), funcionalidades del PRD y secciones de ARCH.
+   * Aceptación: 2 o 3 criterios verificables con un comando o una comprobación concreta.
+```
+
+| Marca | Significado |
+|---|---|
+| `[ ]` / `[x]` | Tarea pendiente / terminada |
+| `T<fase>.<nn>` | ID de la tarea: número de fase y orden dentro de ella. Las tareas se hacen en orden. |
+| `[manual]` | Paso que no es código (consolas de Neon, Clerk, Cloudflare o Resend). No genera commit: se cierra cuando se cumple su aceptación. |
+| `Q-xx` | Pregunta abierta de este documento ([Preguntas](#preguntas)). La tarea usa el supuesto indicado allí. |
+| `E1`, `E2` | Criterios comunes de las tareas de esquema ([§1.B](#1b-base-de-datos-esquema-y-migraciones)). |
+
+### Definición de terminado (global)
+
+Una tarea de código está terminada cuando:
+
+1. Cumple todos sus criterios de aceptación.
+2. Después de aplicarla, pasan sin errores:
+   - `npm run typecheck` (`tsc --noEmit`);
+   - `npm run lint`;
+   - `npm test`: todas las pruebas existentes, unitarias y, desde T1.11, de integración contra una rama efímera de Neon.
+
+   Los tres se ejecutan juntos con `npm run verificar` (T1.02). Antes de T1.02, basta con `npx tsc --noEmit` y `npm run build`.
+3. Queda en un solo commit revisable cuyo mensaje empieza con su ID (por ejemplo, `T1.07: …`).
+
+Las pruebas siguen la estructura de `src/`: `tests/unit/…` para las unitarias y `tests/integracion/…` para las de integración (Q-01). Toda función pura de `src/dominio/` lleva su prueba unitaria en la misma tarea. Las tareas de prueba que cierran cada módulo solo contienen casos de ARCH §20 y de los criterios de aceptación de las RN; cada caso cita su origen.
+
+## Índice de fases
+
+Cada bloque del plan de entrega (PRD §12) es una fase.
+
+| Fase | Días | Entrega (PRD §12) | Estado |
+|---|---|---|---|
+| [1](TASKS-01.md#fase-1-proyecto-esquema-clerk-estructura-multi-negocio-y-despliegue-base) | 1–2 | Proyecto, esquema, Clerk, estructura multi-negocio y despliegue base | **Desarrollada en este documento** (T1.01–T1.57) |
+| 2 | 3–4 | Sede principal, servicios por sede, recursos, horario semanal, bloqueos y configuración | Pendiente |
+| 3 | 5–7 | Motor de disponibilidad y reserva transaccional (con pruebas) | Pendiente |
+| 4 | 8–9 | Página pública de reservas | Pendiente |
+| 5 | 10–11 | Panel: calendario y citas manuales | Pendiente |
+| 6 | 12–13 | Correos, recordatorios, links de gestión, invitaciones de calendario y enlace de suscripción del dueño | Pendiente. Incluye crear la cuenta de Resend `[manual]`. |
+| 7 | 14 | Clientes (RN-18) | Pendiente |
+| 8 | 15–16 | Pruebas de casos límite y límite de frecuencia | Pendiente |
+| 9 | 17–18 | Dominio, carga de datos y prueba con el cliente | Pendiente. Incluye la instancia de producción de Clerk (Q-06). |
+| 10 | 19–20 | Colchón | Pendiente. Sin tareas planificadas: el PRD lo da por consumido y, ante un imprevisto, se aplica el recorte de PRD §4.3. |
+
+Hay trabajo del MVP que PRD §12 no asigna a ninguna fase (Q-04).
+
+---

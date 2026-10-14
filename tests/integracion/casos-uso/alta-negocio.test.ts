@@ -1,14 +1,26 @@
 import { randomUUID } from "node:crypto";
 import { count, eq } from "drizzle-orm";
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { altaNegocio, type EntradaAltaNegocio } from "@/servidor/casos-uso/alta-negocio";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
 import { politicaInicial } from "@/servidor/politica-datos/plantilla";
 import { correoAleatorio, idPlanIlimitado } from "../fixtures";
 
-// Caso de uso altaNegocio (ADM-02, F-11; ARCH §7.6 y §18.4). Las reglas del slug y
-// los efectos según sedes, planes y auditoría se prueban en T1.52 y T1.53.
+// Caso de uso altaNegocio (ADM-02, F-11; ARCH §7.4, §7.6 y §18.4), con clerkClient
+// simulado. Las reglas del slug y los efectos según sedes, planes y auditoría se
+// prueban en T1.52 y T1.53.
+
+const createInvitation = vi.fn();
+vi.mock("@clerk/nextjs/server", () => ({
+  clerkClient: vi.fn(async () => ({ invitations: { createInvitation } })),
+}));
+
+beforeEach(() => {
+  createInvitation.mockReset().mockResolvedValue({ id: "inv_prueba" });
+  vi.stubEnv("APP_URL", "http://localhost:3000");
+  return () => vi.unstubAllEnvs();
+});
 
 const ADMIN = { clerkUserId: "user_admin_prueba" };
 
@@ -155,5 +167,52 @@ describe("altaNegocio", () => {
 
     expect(await altaNegocio(entrada, ADMIN)).toEqual({ ok: false, error: "DATOS_INVALIDOS" });
     expect(await negociosConSlug(entrada.slug)).toBe(0);
+  });
+});
+
+describe("altaNegocio: invitación de Clerk (ARCH §7.4; Q-08)", () => {
+  test("después de un alta correcta, createInvitation se llama una sola vez, con el correo del dueño y una redirectUrl que termina en /registro", async () => {
+    const entrada = entradaValida();
+
+    const resultado = await altaNegocio(entrada, ADMIN);
+
+    expect(resultado).toMatchObject({ ok: true, valor: { invitacionEnviada: true } });
+    expect(createInvitation).toHaveBeenCalledTimes(1);
+    const [parametros] = createInvitation.mock.calls[0];
+    expect(parametros.emailAddress).toBe(entrada.correoDueno);
+    expect(parametros.redirectUrl).toMatch(/\/registro$/);
+    expect(parametros.redirectUrl).toBe("http://localhost:3000/registro");
+  });
+
+  test("si el alta falla (slug repetido), no se llama", async () => {
+    const primera = entradaValida();
+    await altaNegocio(primera, ADMIN);
+    createInvitation.mockClear();
+
+    const repetida = await altaNegocio(entradaValida({ slug: primera.slug }), ADMIN);
+
+    expect(repetida).toEqual({ ok: false, error: "SLUG_NO_DISPONIBLE" });
+    expect(createInvitation).not.toHaveBeenCalled();
+  });
+
+  test("si el alta falla antes de la transacción (datos inválidos), no se llama", async () => {
+    await altaNegocio(entradaValida({ correoDueno: "no-es-correo" }), ADMIN);
+
+    expect(createInvitation).not.toHaveBeenCalled();
+  });
+
+  test("si Clerk rechaza la invitación, el alta queda hecha e informa invitacionEnviada: false (Q-08)", async () => {
+    createInvitation.mockRejectedValue(new Error("Clerk no disponible"));
+    const errores = vi.spyOn(console, "error").mockImplementation(() => {});
+    const entrada = entradaValida();
+
+    const resultado = await altaNegocio(entrada, ADMIN);
+
+    expect(resultado).toMatchObject({ ok: true, valor: { invitacionEnviada: false } });
+    expect(await negociosConSlug(entrada.slug)).toBe(1);
+    // El registro no lleva el correo del dueño (ARCH §19.2).
+    expect(errores).toHaveBeenCalledTimes(1);
+    expect(String(errores.mock.calls[0][0])).not.toContain(entrada.correoDueno);
+    errores.mockRestore();
   });
 });

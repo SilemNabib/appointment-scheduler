@@ -482,7 +482,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * Un alta válida crea, en una transacción, las seis filas de ARCH §18.4: el negocio con su plan, la configuración con los valores de D-09, la "Sede principal", el "Consultorio" con capacidad 1 en esa sede, la política v1 y el miembro con `clerk_user_id` en `NULL`.
       * "Pagado hasta 2026-10-09" con estado `activa` se guarda como `pagado_hasta = 2026-10-10T05:00:00Z` (ARCH §7.6).
 
-* [ ] T1.46: Invitación de Clerk tras el alta
+* [x] T1.46: Invitación de Clerk tras el alta
    * Objetivo: Enviar la invitación de Clerk al correo del dueño **después** del `COMMIT` del alta, con `redirectUrl` hacia `/registro`.
    * Archivos: `src/servidor/auth/invitaciones.ts`, `src/servidor/casos-uso/alta-negocio.ts`, `tests/integracion/casos-uso/alta-negocio.test.ts`
    * Depende de: T1.37, T1.45

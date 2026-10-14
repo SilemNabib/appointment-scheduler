@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exito, fallo, type Resultado } from "@/dominio/resultado";
 import { validarSlug } from "@/dominio/slug";
 import { vencimientoAInstante, ZONA_HORARIA_POR_DEFECTO } from "@/dominio/tiempo";
+import { invitarDueno } from "@/servidor/auth/invitaciones";
 import { enTransaccion, fijarActor } from "@/servidor/db/cliente";
 import * as negocios from "@/servidor/db/repositorios/negocios";
 import { listarPlanes } from "@/servidor/planes/acceso";
@@ -38,10 +39,17 @@ export type EntradaAltaNegocio = z.input<typeof esquemaAltaNegocio>;
 
 export type ErrorAltaNegocio = "SLUG_NO_DISPONIBLE" | "DATOS_INVALIDOS";
 
+export type AltaRealizada = {
+  negocioId: string;
+  /** `false` si Clerk rechazó la invitación: el alta queda hecha igual (Q-08). */
+  invitacionEnviada: boolean;
+};
+
 /**
  * Valida la entrada, resuelve el plan y convierte el vencimiento; luego crea, en una
  * sola transacción con `app.actor` = el admin (RN-30), el negocio, su configuración,
- * la sede principal, el consultorio, la política v1 y el miembro pendiente.
+ * la sede principal, el consultorio, la política v1 y el miembro pendiente. Después
+ * del `COMMIT` envía la invitación de Clerk al dueño (ARCH §7.4 y §18.4).
  *
  * Errores (Q-09): slug reservado o repetido → `SLUG_NO_DISPONIBLE`; formato de slug
  * inválido, plan inexistente, correo del dueño ya usado o cualquier otro dato
@@ -50,7 +58,7 @@ export type ErrorAltaNegocio = "SLUG_NO_DISPONIBLE" | "DATOS_INVALIDOS";
 export async function altaNegocio(
   entrada: unknown,
   admin: { clerkUserId: string },
-): Promise<Resultado<{ negocioId: string }, ErrorAltaNegocio>> {
+): Promise<Resultado<AltaRealizada, ErrorAltaNegocio>> {
   const leida = esquemaAltaNegocio.safeParse(entrada);
   if (!leida.success) return fallo("DATOS_INVALIDOS");
   const datos = leida.data;
@@ -96,7 +104,24 @@ export async function altaNegocio(
     if (restriccion === "miembro_negocio_correo_key") return fallo("DATOS_INVALIDOS");
     throw error;
   }
-  return exito({ negocioId });
+
+  // Después del COMMIT: si la transacción falló, no se invita a nadie. Si falla la
+  // invitación, el negocio ya existe; el formulario lo avisa (Q-08). El registro no
+  // lleva el correo (ARCH §19.2).
+  const invitacionEnviada = await invitarDueno(datos.correoDueno).then(
+    () => true,
+    (error: unknown) => {
+      console.error(
+        JSON.stringify({
+          evento: "invitacion_fallida",
+          negocioId,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
+      return false;
+    },
+  );
+  return exito({ negocioId, invitacionEnviada });
 }
 
 /** Nombre de la restricción `UNIQUE` que rechazó la consulta, si fue eso. Drizzle envuelve el error en `cause`. */

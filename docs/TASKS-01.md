@@ -385,7 +385,7 @@ El catálogo en código es la fuente de verdad (ARCH §16.2), y `src/servidor/pl
 
 Clerk solo autentica; la pertenencia al negocio vive en `miembro_negocio` (ADR-05). El middleware solo protege rutas, y la autorización se repite en cada página, Server Action y ruta (ARCH §7.3). En las pruebas, `@clerk/nextjs/server` se simula con `vi.mock`.
 
-* [ ] T1.36: [manual] Instancia de desarrollo de Clerk
+* [x] T1.36: [manual] Instancia de desarrollo de Clerk
    * Objetivo: Configurar la instancia de desarrollo de Clerk según ARCH §7.2 y crear desde el Dashboard la cuenta del administrador del SaaS, porque el registro queda restringido a invitaciones.
    * Archivos: `.env.local` (no versionado)
    * Depende de: —
@@ -394,7 +394,7 @@ Clerk solo autentica; la pertenencia al negocio vive en `miembro_negocio` (ADR-0
       * El Dashboard muestra: identificador por correo, contraseña, verificación de correo obligatoria, modo de registro **Restringido**, sin proveedores sociales, y rutas `/login` y `/registro`.
       * `.env.local` tiene las variables de ARCH §7.7, y `SUPERADMIN_CLERK_USER_IDS` contiene el `user_…` del administrador, cuyo correo está verificado.
 
-* [ ] T1.37: Clerk y middleware
+* [x] T1.37: Clerk y middleware
    * Objetivo: Instalar `@clerk/nextjs` y `@clerk/localizations` (versiones exactas) y proteger `/panel` y `/admin` con el middleware de ARCH §7.3. Si la versión de Next fijada en T1.01 es la 16, el archivo es `src/proxy.ts`.
    * Archivos: `src/middleware.ts` (o `src/proxy.ts`), `package.json`
    * Depende de: T1.04, T1.36

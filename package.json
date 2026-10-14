@@ -1,6 +1,6 @@
 {
   "name": "agenda-citas",
-  "version": "0.22.3",
+  "version": "0.23.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -20,6 +20,8 @@
     "db:semilla": "tsx --conditions=react-server scripts/semilla.ts"
   },
   "dependencies": {
+    "@clerk/localizations": "4.23.0",
+    "@clerk/nextjs": "7.9.15",
     "@date-fns/tz": "1.5.0",
     "@neondatabase/serverless": "1.2.0",
     "@opennextjs/cloudflare": "1.20.9",

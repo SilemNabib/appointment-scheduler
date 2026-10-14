@@ -24,7 +24,11 @@ export async function idPlanIlimitado() {
   return planes.find((p) => p.codigo === PLAN_ILIMITADO.codigo)!.id;
 }
 
-export async function crearNegocio(planId?: string) {
+/** Negocio en prueba que vence en 30 días, salvo que `campos` diga otra cosa. */
+export async function crearNegocio(
+  planId?: string,
+  campos: Partial<typeof esquema.negocio.$inferInsert> = {},
+) {
   const [fila] = await db()
     .insert(esquema.negocio)
     .values({
@@ -32,6 +36,7 @@ export async function crearNegocio(planId?: string) {
       nombre: "Negocio de prueba",
       planId: planId ?? (await crearPlan()),
       finPrueba: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      ...campos,
     })
     .returning({ id: esquema.negocio.id });
   return fila.id;

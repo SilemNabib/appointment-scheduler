@@ -450,7 +450,7 @@ Clerk solo autentica; la pertenencia al negocio vive en `miembro_negocio` (ADR-0
       * Un `userId` de la lista pasa, aunque la variable tenga espacios junto a las comas.
       * Un `userId` fuera de la lista, la variable vacía o la falta de sesión llaman a `notFound()`.
 
-* [ ] T1.43: Pruebas de acceso según la suscripción
+* [x] T1.43: Pruebas de acceso según la suscripción
    * Objetivo: Probar cómo afecta el estado efectivo de la suscripción al acceso al panel, con negocios creados por el ayudante de pruebas.
    * Archivos: `tests/integracion/auth/suscripcion.test.ts`
    * Depende de: T1.30, T1.41

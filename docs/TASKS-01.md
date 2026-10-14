@@ -352,7 +352,7 @@ El catálogo en código es la fuente de verdad (ARCH §16.2), y `src/servidor/pl
       * `npm run lint` pasa.
       * Un archivo temporal en `src/servidor/casos-uso/` que importa `planLimite` de `@/servidor/db/esquema` hace fallar el lint, igual que uno con ``sql`select * from negocio_limite` ``. Se borran después.
 
-* [ ] T1.33: Pruebas de planes: catálogo y semilla
+* [x] T1.33: Pruebas de planes: catálogo y semilla
    * Objetivo: Probar que la base de datos y la semilla coinciden con el catálogo.
    * Archivos: `tests/integracion/planes/catalogo-semilla.test.ts`
    * Depende de: T1.30

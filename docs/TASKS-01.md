@@ -559,7 +559,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
 
 ### 1.G Despliegue base
 
-* [ ] T1.54: Ruta del cron y entrada `scheduled`
+* [x] T1.54: Ruta del cron y entrada `scheduled`
    * Objetivo: Crear la ruta interna del cron, que exige `Authorization: Bearer CRON_SECRET` y por ahora responde 204 sin hacer nada (sus tareas llegan en otras fases; Q-04), y conectar el Cron Trigger de cada 5 minutos con el manejador `scheduled` de `worker.ts` (ARCH §14.5).
    * Archivos: `src/app/api/interno/cron/route.ts`, `worker.ts`, `wrangler.jsonc` (`triggers.crons`), `.dev.vars` (no versionado)
    * Depende de: T1.04

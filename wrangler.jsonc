@@ -1,6 +1,6 @@
 // Basado en ARCH §21.2, reducido a lo que usa la Fase 1.
-// R2 (`r2_buckets`), los límites de frecuencia (`ratelimits`) y el cron
-// (`triggers`) se añaden en la fase que los usa.
+// R2 (`r2_buckets`) y los límites de frecuencia (`ratelimits`) se añaden en la
+// fase que los usa.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "agenda-citas",
@@ -8,5 +8,6 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "triggers": { "crons": ["*/5 * * * *"] }, // RN-21; manejador `scheduled` de worker.ts (§14.5)
   "observability": { "enabled": true }
 }

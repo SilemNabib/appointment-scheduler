@@ -464,7 +464,7 @@ Clerk solo autentica; la pertenencia al negocio vive en `miembro_negocio` (ADR-0
 
 Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía Clerk; esta fase no usa Resend.
 
-* [ ] T1.44: Plantilla de la política de datos
+* [x] T1.44: Plantilla de la política de datos
    * Objetivo: Crear la plantilla de la política de tratamiento de datos (D-05) de la que sale la versión 1 de cada negocio, con las secciones que exige ARCH §19.3 y una marca visible de revisión legal pendiente.
    * Archivos: `src/servidor/politica-datos/plantilla.ts`
    * Depende de: T1.02

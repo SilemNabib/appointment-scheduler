@@ -43,6 +43,13 @@
       "when": 1792006106073,
       "tag": "0005_servicios",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792006228712,
+      "tag": "0006_horario_y_bloqueos",
+      "breakpoints": true
     }
   ]
 }

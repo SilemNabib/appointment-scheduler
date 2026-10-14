@@ -193,7 +193,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * E1 y E2.
       * En `development`, un script SQL dentro de `BEGIN … ROLLBACK` que inserta plan, negocio, sede, recurso, servicio, `servicio_sede` y `servicio_sede_recurso`, y después borra el negocio, termina sin error (ARCH §18.1).
 
-* [ ] T1.17: Esquema: horario semanal y bloqueos
+* [x] T1.17: Esquema: horario semanal y bloqueos
    * Objetivo: Declarar `horario_semanal`, con `recurso_id` opcional para el horario propio de un empleado (D-19), y `bloqueo`, cuyo alcance es el negocio, una sede o un recurso.
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T1.16

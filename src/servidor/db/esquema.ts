@@ -23,6 +23,7 @@ import {
   primaryKey,
   smallint,
   text,
+  time,
   timestamp,
   unique,
   uuid,
@@ -439,5 +440,74 @@ export const servicioSedeRecurso = pgTable(
       foreignColumns: [recurso.id, recurso.sedeId],
     }),
     index("servicio_sede_recurso_recurso_idx").on(t.recursoId),
+  ],
+);
+
+// ─── Horario y bloqueos (ARCH §9, §18.2; RN-07, D-19) ─────────────────────────
+
+export const horarioSemanal = pgTable(
+  "horario_semanal",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    sedeId: uuid("sede_id").notNull(),
+    recursoId: uuid("recurso_id"), // NULL = horario de la sede; si no, horario propio del empleado (D-19)
+    diaSemana: smallint("dia_semana").notNull(), // ISO: 1 = lunes
+    horaInicio: time("hora_inicio").notNull(), // hora LOCAL de la sede (ADR-12)
+    horaFin: time("hora_fin").notNull(),
+  },
+  (t) => [
+    foreignKey({
+      name: "horario_semanal_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("horario_semanal_dia_semana_check", sql`${t.diaSemana} BETWEEN 1 AND 7`),
+    check("horario_semanal_check", sql`${t.horaFin} > ${t.horaInicio}`),
+    foreignKey({
+      name: "horario_semanal_sede_id_negocio_id_fkey",
+      columns: [t.sedeId, t.negocioId],
+      foreignColumns: [sede.id, sede.negocioId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "horario_semanal_recurso_id_sede_id_fkey",
+      columns: [t.recursoId, t.sedeId],
+      foreignColumns: [recurso.id, recurso.sedeId],
+    }).onDelete("cascade"),
+    index("horario_sede_idx").on(t.sedeId, t.diaSemana),
+  ],
+);
+
+export const bloqueo = pgTable(
+  "bloqueo",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    sedeId: uuid("sede_id"), // NULL = todo el negocio (en el MVP: la sede principal)
+    recursoId: uuid("recurso_id"), // NULL = toda la sede
+    inicio: instante("inicio").notNull(),
+    fin: instante("fin").notNull(),
+    motivo: text("motivo"),
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "bloqueo_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("bloqueo_check", sql`${t.fin} > ${t.inicio}`),
+    // Un bloqueo de recurso indica su sede.
+    check("bloqueo_check1", sql`${t.recursoId} IS NULL OR ${t.sedeId} IS NOT NULL`),
+    foreignKey({
+      name: "bloqueo_sede_id_negocio_id_fkey",
+      columns: [t.sedeId, t.negocioId],
+      foreignColumns: [sede.id, sede.negocioId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "bloqueo_recurso_id_sede_id_fkey",
+      columns: [t.recursoId, t.sedeId],
+      foreignColumns: [recurso.id, recurso.sedeId],
+    }).onDelete("cascade"),
   ],
 );

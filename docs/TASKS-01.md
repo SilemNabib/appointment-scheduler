@@ -165,7 +165,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * E1 y E2.
       * El SQL incluye el `CHECK` de formato y longitud del slug, los dos `CHECK` de vencimiento (`prueba` exige `fin_prueba`; `activa`, `pagado_hasta`) y `plan_id NOT NULL` sin valor por defecto. `actualizado_en` usa `$onUpdate`.
 
-* [ ] T1.14: Esquema: configuración, política de datos y miembros
+* [x] T1.14: Esquema: configuración, política de datos y miembros
    * Objetivo: Declarar `configuracion_negocio`, `politica_datos` y `miembro_negocio`.
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T1.13

@@ -20,8 +20,10 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -186,5 +188,90 @@ export const negocioLimite = pgTable(
       foreignColumns: [negocio.id],
     }).onDelete("cascade"),
     check("negocio_limite_valor_check", sql`${t.valor} IS NULL OR ${t.valor} >= 0`),
+  ],
+);
+
+export const configuracionNegocio = pgTable(
+  "configuracion_negocio",
+  {
+    negocioId: uuid("negocio_id").primaryKey(),
+    granularidadMinutos: smallint("granularidad_minutos").notNull().default(30), // RN-08
+    anticipacionMinimaMinutos: integer("anticipacion_minima_minutos").notNull().default(120),
+    anticipacionMaximaDias: integer("anticipacion_maxima_dias").notNull().default(60),
+    plazoCancelacionHoras: integer("plazo_cancelacion_horas").notNull().default(24), // RN-13
+    recordatorioHorasAntes: integer("recordatorio_horas_antes").default(24), // RN-21; NULL = sin recordatorio
+    maxReprogramacionesCliente: smallint("max_reprogramaciones_cliente").default(3), // RN-34; NULL = sin límite; 0 = no se permite
+    asistenciaPorDefecto: text("asistencia_por_defecto").notNull().default("completada"), // D-21; 'manual' = siempre decide el dueño
+  },
+  (t) => [
+    foreignKey({
+      name: "configuracion_negocio_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check(
+      "configuracion_negocio_granularidad_minutos_check",
+      sql`${t.granularidadMinutos} IN (15, 30, 60)`,
+    ),
+    check(
+      "configuracion_negocio_anticipacion_minima_minutos_check",
+      sql`${t.anticipacionMinimaMinutos} >= 0`,
+    ),
+    check(
+      "configuracion_negocio_anticipacion_maxima_dias_check",
+      sql`${t.anticipacionMaximaDias} BETWEEN 1 AND 365`,
+    ),
+    check("configuracion_negocio_plazo_cancelacion_horas_check", sql`${t.plazoCancelacionHoras} >= 0`),
+    check("configuracion_negocio_recordatorio_horas_antes_check", sql`${t.recordatorioHorasAntes} > 0`),
+    check(
+      "configuracion_negocio_max_reprogramaciones_cliente_check",
+      sql`${t.maxReprogramacionesCliente} >= 0`,
+    ),
+    check(
+      "configuracion_negocio_asistencia_por_defecto_check",
+      sql`${t.asistenciaPorDefecto} IN ('completada', 'no_asistio', 'manual')`,
+    ),
+  ],
+);
+
+export const politicaDatos = pgTable(
+  "politica_datos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    version: integer("version").notNull(),
+    contenido: text("contenido").notNull(), // Markdown basado en la plantilla del SaaS
+    publicadaEn: instante("publicada_en").notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "politica_datos_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("politica_datos_version_check", sql`${t.version} > 0`),
+    unique("politica_datos_negocio_id_version_key").on(t.negocioId, t.version),
+    unique("politica_datos_id_negocio_id_key").on(t.id, t.negocioId),
+  ],
+);
+
+export const miembroNegocio = pgTable(
+  "miembro_negocio",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    correo: text("correo").notNull().unique("miembro_negocio_correo_key"), // MVP: una persona, un negocio (ARCH §7.8)
+    clerkUserId: text("clerk_user_id").unique("miembro_negocio_clerk_user_id_key"), // NULL hasta el primer ingreso (ARCH §7.4)
+    rol: rolMiembro("rol").notNull().default("dueno"),
+    vinculadoEn: instante("vinculado_en"),
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "miembro_negocio_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("miembro_negocio_correo_check", sql`${t.correo} = lower(${t.correo})`),
   ],
 );

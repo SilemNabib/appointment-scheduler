@@ -22,6 +22,13 @@
       "when": 1792005817507,
       "tag": "0002_negocio",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792005922737,
+      "tag": "0003_configuracion_politica_miembros",
+      "breakpoints": true
     }
   ]
 }

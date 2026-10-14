@@ -147,7 +147,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * Al terminar, también cuando una prueba falla, la rama efímera ya no aparece en la consola de Neon.
       * `npm test` ejecuta los proyectos `unit` e `integracion`.
 
-* [ ] T1.12: Esquema: enums y tablas de planes
+* [x] T1.12: Esquema: enums y tablas de planes
    * Objetivo: Declarar los 9 enums de ARCH §18.2, los dominios como `customType` de Drizzle y las tablas `plan`, `plan_funcionalidad` y `plan_limite`.
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T1.11

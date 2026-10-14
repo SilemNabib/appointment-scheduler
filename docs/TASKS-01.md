@@ -547,7 +547,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * con un slug de `RESERVADOS`;
       * con un formato inválido (caracteres fuera de `a-z`, `0-9` y guiones, o fuera de 3 a 40 caracteres).
 
-* [ ] T1.53: Pruebas del alta: efectos
+* [x] T1.53: Pruebas del alta: efectos
    * Objetivo: Probar lo que el alta deja creado según las reglas de sedes, planes y auditoría.
    * Archivos: `tests/integracion/casos-uso/alta-negocio-efectos.test.ts`
    * Depende de: T1.52

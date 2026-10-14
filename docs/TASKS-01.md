@@ -156,7 +156,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * E1 y E2.
       * Los valores de cada enum siguen el orden de ARCH §18.2, y `plan_funcionalidad.funcionalidad` y `plan_limite.limite` usan los dominios, no `text`.
 
-* [ ] T1.13: Esquema: negocio y excepciones de plan
+* [x] T1.13: Esquema: negocio y excepciones de plan
    * Objetivo: Declarar `negocio` (slug, marca, zona horaria, plan, suscripción y vencimiento), `negocio_funcionalidad` y `negocio_limite`.
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T1.12

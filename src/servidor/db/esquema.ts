@@ -2,7 +2,9 @@
 //
 // Las restricciones se nombran como lo haría Postgres al ejecutar ese DDL, que no
 // las nombra (`<tabla>_pkey`, `<tabla>_<columna>_key`, `<tabla>_<columna>_fkey`,
-// `<tabla>_<columna>_check`). Drizzle pondría otros nombres por defecto.
+// `<tabla>_<columna>_check`). Drizzle pondría otros nombres por defecto. Un CHECK
+// que toca varias columnas se llama `<tabla>_check`, `<tabla>_check1`…, en el orden
+// del DDL.
 //
 // Excepción a "todo servidor/ con `import 'server-only'`" (ARCH §4): drizzle-kit
 // carga este archivo fuera de Next, donde `server-only` no se puede importar.
@@ -19,8 +21,12 @@ import {
   pgTable,
   primaryKey,
   text,
+  timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+
+/** `timestamptz`: todos los instantes se guardan en UTC (ARCH §9, §18.1). */
+const instante = (columna: string) => timestamp(columna, { withTimezone: true });
 
 // ─── Tipos y dominios ─────────────────────────────────────────────────────────
 
@@ -107,5 +113,78 @@ export const planLimite = pgTable(
       foreignColumns: [plan.id],
     }).onDelete("cascade"),
     check("plan_limite_valor_check", sql`${t.valor} IS NULL OR ${t.valor} >= 0`),
+  ],
+);
+
+// ─── Negocio (ARCH §17.1, §18.2) ──────────────────────────────────────────────
+
+export const negocio = pgTable(
+  "negocio",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique("negocio_slug_key"), // RN-02
+    nombre: text("nombre").notNull(),
+    logoUrl: text("logo_url"),
+    colorPrimario: text("color_primario").notNull().default("#0f766e"),
+    colorSecundario: text("color_secundario"),
+    correoContacto: text("correo_contacto"), // dirección y teléfono van en sede (RN-32)
+    zonaHoraria: text("zona_horaria").notNull().default("America/Bogota"), // validada en código contra la base IANA
+    planId: uuid("plan_id").notNull(), // RN-26: sin valor por defecto
+    estadoSuscripcion: estadoSuscripcion("estado_suscripcion").notNull().default("prueba"),
+    finPrueba: instante("fin_prueba"), // vencimiento en 'prueba' (RN-31)
+    pagadoHasta: instante("pagado_hasta"), // vencimiento en 'activa' (RN-31)
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+    actualizadoEn: instante("actualizado_en")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    check(
+      "negocio_slug_check",
+      sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND char_length(${t.slug}) BETWEEN 3 AND 40`,
+    ),
+    check("negocio_color_primario_check", sql`${t.colorPrimario} ~ '^#[0-9a-f]{6}$'`),
+    check("negocio_color_secundario_check", sql`${t.colorSecundario} ~ '^#[0-9a-f]{6}$'`),
+    foreignKey({ name: "negocio_plan_id_fkey", columns: [t.planId], foreignColumns: [plan.id] }),
+    // 'prueba' exige fin_prueba (RN-31).
+    check("negocio_check", sql`${t.estadoSuscripcion} <> 'prueba' OR ${t.finPrueba} IS NOT NULL`),
+    // 'activa' exige pagado_hasta (RN-31).
+    check("negocio_check1", sql`${t.estadoSuscripcion} <> 'activa' OR ${t.pagadoHasta} IS NOT NULL`),
+  ],
+);
+
+export const negocioFuncionalidad = pgTable(
+  "negocio_funcionalidad",
+  {
+    negocioId: uuid("negocio_id").notNull(),
+    funcionalidad: claveFuncionalidad("funcionalidad").notNull(),
+    habilitada: boolean("habilitada").notNull(),
+  },
+  (t) => [
+    primaryKey({ name: "negocio_funcionalidad_pkey", columns: [t.negocioId, t.funcionalidad] }),
+    foreignKey({
+      name: "negocio_funcionalidad_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+  ],
+);
+
+export const negocioLimite = pgTable(
+  "negocio_limite",
+  {
+    negocioId: uuid("negocio_id").notNull(),
+    limite: claveLimite("limite").notNull(),
+    valor: integer("valor"), // NULL = ilimitado
+  },
+  (t) => [
+    primaryKey({ name: "negocio_limite_pkey", columns: [t.negocioId, t.limite] }),
+    foreignKey({
+      name: "negocio_limite_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("negocio_limite_valor_check", sql`${t.valor} IS NULL OR ${t.valor} >= 0`),
   ],
 );

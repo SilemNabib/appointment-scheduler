@@ -128,7 +128,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * `cliente.ts` empieza con `import 'server-only'`, usa `isolationLevel: 'read committed'` y crea y cierra el `Pool` dentro de cada transacción: ninguna variable de módulo lo guarda.
       * `drizzle.config.ts` usa `DATABASE_URL_DIRECTA` (sin *pooler*), y `npm run db:check` termina sin errores.
 
-* [ ] T1.10: Migración manual: dominios de claves de planes
+* [x] T1.10: Migración manual: dominios de claves de planes
    * Objetivo: Crear la primera migración, manual, con los dominios `clave_funcionalidad` y `clave_limite` idénticos a ARCH §18.2, para que existan antes que las tablas que los usan.
    * Archivos: `drizzle/0000_dominios.sql`, `drizzle/meta/`
    * Depende de: T1.09

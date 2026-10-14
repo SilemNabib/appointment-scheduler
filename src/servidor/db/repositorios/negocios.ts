@@ -1,5 +1,5 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { DatosSuscripcion } from "@/dominio/suscripcion";
 import { db, type Transaccion } from "../cliente";
 import {
@@ -34,6 +34,35 @@ export async function resumen(negocioId: string): Promise<{ nombre: string; slug
     .from(negocio)
     .where(eq(negocio.id, negocioId));
   return fila ?? null;
+}
+
+export type FilaNegocioAdmin = DatosSuscripcion & {
+  id: string;
+  slug: string;
+  nombre: string;
+  planId: string;
+  zonaHoraria: string;
+};
+
+/**
+ * Todos los negocios, para la lista del admin (ADM-01). Es la única lectura que cruza
+ * negocios y por eso no recibe `negocioId`: el admin no pertenece a ninguno (ARCH §6,
+ * "Admin: explícito"). Solo se llama detrás de `requireSuperadmin`.
+ */
+export async function listarParaAdmin(): Promise<FilaNegocioAdmin[]> {
+  return db()
+    .select({
+      id: negocio.id,
+      slug: negocio.slug,
+      nombre: negocio.nombre,
+      planId: negocio.planId,
+      zonaHoraria: negocio.zonaHoraria,
+      estadoSuscripcion: negocio.estadoSuscripcion,
+      finPrueba: negocio.finPrueba,
+      pagadoHasta: negocio.pagadoHasta,
+    })
+    .from(negocio)
+    .orderBy(asc(negocio.nombre), asc(negocio.slug));
 }
 
 export type DatosNuevoNegocio = {

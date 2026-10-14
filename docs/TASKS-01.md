@@ -491,7 +491,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * Después de un alta correcta, `invitations.createInvitation` se llama una sola vez, con el correo del dueño y una `redirectUrl` que termina en `/registro`.
       * Si el alta falla (por ejemplo, con un slug repetido), no se llama.
 
-* [ ] T1.47: Caso de uso `listarNegocios`
+* [x] T1.47: Caso de uso `listarNegocios`
    * Objetivo: Implementar el caso de uso de ADM-01: slug, nombre, código del plan (con `listarPlanes`), estado de suscripción, vencimiento como fecha local inclusiva y si está en gracia (con `estadoEfectivo`).
    * Archivos: `src/servidor/casos-uso/listar-negocios.ts`, `src/servidor/db/repositorios/negocios.ts`, `tests/integracion/casos-uso/listar-negocios.test.ts`
    * Depende de: T1.27, T1.45

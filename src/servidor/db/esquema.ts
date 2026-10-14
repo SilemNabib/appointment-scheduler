@@ -25,6 +25,7 @@ import {
   text,
   time,
   timestamp,
+  uniqueIndex,
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -509,5 +510,44 @@ export const bloqueo = pgTable(
       columns: [t.recursoId, t.sedeId],
       foreignColumns: [recurso.id, recurso.sedeId],
     }).onDelete("cascade"),
+  ],
+);
+
+// ─── Clientes (ARCH §12, §18.2; RN-18, RN-19, S-14) ───────────────────────────
+
+export const cliente = pgTable(
+  "cliente",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    nombre: text("nombre").notNull(),
+    apellido: text("apellido").notNull(),
+    telefonoE164: text("telefono_e164"), // RN-18.1
+    correo: text("correo"), // RN-18.2
+    notaInterna: text("nota_interna"), // sin información clínica (RN-24)
+    anonimizadoEn: instante("anonimizado_en"), // S-14
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+    actualizadoEn: instante("actualizado_en")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    foreignKey({
+      name: "cliente_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    // `\\+` en el código para que el SQL reciba `\+`: en una plantilla de JS, `\+` pierde la barra.
+    check("cliente_telefono_e164_check", sql`${t.telefonoE164} ~ '^\\+[1-9][0-9]{6,14}$'`),
+    check("cliente_correo_check", sql`${t.correo} = lower(${t.correo})`),
+    unique("cliente_id_negocio_id_key").on(t.id, t.negocioId),
+    unique("cliente_negocio_id_telefono_e164_key").on(t.negocioId, t.telefonoE164), // RN-19
+    // Un cliente se identifica por teléfono o correo, salvo si está anonimizado (S-14).
+    check(
+      "cliente_check",
+      sql`${t.anonimizadoEn} IS NOT NULL OR ${t.telefonoE164} IS NOT NULL OR ${t.correo} IS NOT NULL`,
+    ),
+    uniqueIndex("cliente_correo_uq").on(t.negocioId, t.correo).where(sql`${t.correo} IS NOT NULL`),
   ],
 );

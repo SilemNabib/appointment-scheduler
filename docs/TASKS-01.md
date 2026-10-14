@@ -202,7 +202,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * E1 y E2.
       * El SQL incluye `CHECK (dia_semana BETWEEN 1 AND 7)`, `CHECK (hora_fin > hora_inicio)`, `CHECK (fin > inicio)`, `CHECK (recurso_id IS NULL OR sede_id IS NOT NULL)` y el índice `horario_sede_idx`.
 
-* [ ] T1.18: Esquema: clientes
+* [x] T1.18: Esquema: clientes
    * Objetivo: Declarar `cliente`, con sus restricciones de identidad y de anonimización.
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T1.17

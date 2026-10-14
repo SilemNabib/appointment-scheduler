@@ -37,6 +37,18 @@ export async function crearNegocio(planId?: string) {
   return fila.id;
 }
 
+/** Correo en minúsculas que no choca con otros miembros (`miembro_negocio.correo` es único). */
+export const correoAleatorio = () => `dueno-${sufijo()}@prueba.test`;
+
+/** Miembro pendiente (sin usuario de Clerk), como lo deja el alta (ARCH §7.4). */
+export async function crearMiembro(negocioId: string, correo = correoAleatorio()) {
+  const [fila] = await db()
+    .insert(esquema.miembroNegocio)
+    .values({ negocioId, correo })
+    .returning({ id: esquema.miembroNegocio.id });
+  return { id: fila.id, correo };
+}
+
 export async function crearSede(negocioId: string) {
   const [fila] = await db()
     .insert(esquema.sede)

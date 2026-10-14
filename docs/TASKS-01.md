@@ -413,7 +413,7 @@ Clerk solo autentica; la pertenencia al negocio vive en `miembro_negocio` (ADR-0
       * `/registro` sin invitación no permite crear una cuenta.
       * La página `/` no carga scripts de Clerk (pestaña Red del navegador), porque `<ClerkProvider>` no está en el layout raíz (ARCH §7.2).
 
-* [ ] T1.39: Repositorios de miembros y negocios
+* [x] T1.39: Repositorios de miembros y negocios
    * Objetivo: Crear los repositorios que usa la sesión: `miembros.porClerkId`, `miembros.vincular(correo, clerkUserId)` (`UPDATE … WHERE correo = … AND clerk_user_id IS NULL RETURNING`, que también fija `vinculado_en`), `negocios.suscripcion(negocioId)` y `negocios.resumen(negocioId)` (nombre y slug).
    * Archivos: `src/servidor/db/repositorios/miembros.ts`, `src/servidor/db/repositorios/negocios.ts`, `tests/integracion/repositorios/miembros.test.ts`
    * Depende de: T1.14

@@ -184,7 +184,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * E1 y E2.
       * `recurso` tiene `CHECK (capacidad >= 1)`, `CHECK (tipo <> 'profesional' OR capacidad = 1)`, `UNIQUE (id, negocio_id)`, `UNIQUE (id, sede_id)` y la FK compuesta `(sede_id, negocio_id)`.
 
-* [ ] T1.16: Esquema: catálogo de servicios y oferta por sede
+* [x] T1.16: Esquema: catálogo de servicios y oferta por sede
    * Objetivo: Declarar `servicio`, `servicio_sede` y `servicio_sede_recurso`, cada una con su FK directa a `negocio` (ARCH §18.1).
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T1.15

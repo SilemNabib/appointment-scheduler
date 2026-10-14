@@ -16,6 +16,7 @@ import {
   check,
   customType,
   foreignKey,
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -335,5 +336,108 @@ export const recurso = pgTable(
       columns: [t.sedeId, t.negocioId],
       foreignColumns: [sede.id, sede.negocioId],
     }),
+  ],
+);
+
+// ─── Catálogo de servicios y oferta por sede (ARCH §18.2; RN-05, RN-32, RN-33) ─
+
+export const servicio = pgTable(
+  "servicio",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    nombre: text("nombre").notNull(),
+    descripcion: text("descripcion"),
+    duracionMinutos: smallint("duracion_minutos").notNull(), // RN-05
+    bufferMinutos: smallint("buffer_minutos").notNull().default(0), // D-02
+    activo: boolean("activo").notNull().default(true),
+    orden: smallint("orden").notNull().default(0),
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+    actualizadoEn: instante("actualizado_en")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    foreignKey({
+      name: "servicio_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("servicio_duracion_minutos_check", sql`${t.duracionMinutos} BETWEEN 5 AND 720`),
+    check("servicio_buffer_minutos_check", sql`${t.bufferMinutos} BETWEEN 0 AND 240`),
+    unique("servicio_id_negocio_id_key").on(t.id, t.negocioId),
+  ],
+);
+
+/** Qué servicios del catálogo ofrece cada sede, con qué sobrescrituras (RN-32) y cómo se atienden (RN-33). */
+export const servicioSede = pgTable(
+  "servicio_sede",
+  {
+    negocioId: uuid("negocio_id").notNull(),
+    servicioId: uuid("servicio_id").notNull(),
+    sedeId: uuid("sede_id").notNull(),
+    duracionMinutos: smallint("duracion_minutos"), // NULL = la del servicio
+    bufferMinutos: smallint("buffer_minutos"), // NULL = el del servicio
+    clienteElige: boolean("cliente_elige").notNull().default(false), // "el cliente elige quién lo atiende" (RN-33)
+    activo: boolean("activo").notNull().default(true),
+  },
+  (t) => [
+    foreignKey({
+      name: "servicio_sede_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("servicio_sede_duracion_minutos_check", sql`${t.duracionMinutos} BETWEEN 5 AND 720`),
+    check("servicio_sede_buffer_minutos_check", sql`${t.bufferMinutos} BETWEEN 0 AND 240`),
+    primaryKey({ name: "servicio_sede_pkey", columns: [t.servicioId, t.sedeId] }),
+    // Para la FK desde servicio_sede_recurso.
+    unique("servicio_sede_servicio_id_sede_id_negocio_id_key").on(t.servicioId, t.sedeId, t.negocioId),
+    foreignKey({
+      name: "servicio_sede_servicio_id_negocio_id_fkey",
+      columns: [t.servicioId, t.negocioId],
+      foreignColumns: [servicio.id, servicio.negocioId],
+    }),
+    foreignKey({
+      name: "servicio_sede_sede_id_negocio_id_fkey",
+      columns: [t.sedeId, t.negocioId],
+      foreignColumns: [sede.id, sede.negocioId],
+    }),
+  ],
+);
+
+/** Quién puede atender cada servicio en cada sede (RN-33). En el MVP: una fila con el consultorio. */
+export const servicioSedeRecurso = pgTable(
+  "servicio_sede_recurso",
+  {
+    negocioId: uuid("negocio_id").notNull(),
+    servicioId: uuid("servicio_id").notNull(),
+    sedeId: uuid("sede_id").notNull(),
+    recursoId: uuid("recurso_id").notNull(),
+    activo: boolean("activo").notNull().default(true),
+  },
+  (t) => [
+    // Directa: borrar el negocio la elimina en el primer nivel de la cascada (ARCH §18.1).
+    foreignKey({
+      name: "servicio_sede_recurso_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    primaryKey({
+      name: "servicio_sede_recurso_pkey",
+      columns: [t.servicioId, t.sedeId, t.recursoId],
+    }),
+    foreignKey({
+      name: "servicio_sede_recurso_servicio_id_sede_id_negocio_id_fkey",
+      columns: [t.servicioId, t.sedeId, t.negocioId],
+      foreignColumns: [servicioSede.servicioId, servicioSede.sedeId, servicioSede.negocioId],
+    }).onDelete("cascade"),
+    // El recurso pertenece a la sede.
+    foreignKey({
+      name: "servicio_sede_recurso_recurso_id_sede_id_fkey",
+      columns: [t.recursoId, t.sedeId],
+      foreignColumns: [recurso.id, recurso.sedeId],
+    }),
+    index("servicio_sede_recurso_recurso_idx").on(t.recursoId),
   ],
 );

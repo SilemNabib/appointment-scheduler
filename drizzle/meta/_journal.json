@@ -36,6 +36,13 @@
       "when": 1792006010910,
       "tag": "0004_sedes_y_recursos",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792006106073,
+      "tag": "0005_servicios",
+      "breakpoints": true
     }
   ]
 }

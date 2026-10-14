@@ -175,7 +175,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * Los valores por defecto de `configuracion_negocio` son 30, 120, 60, 24, 24, 3 y `'completada'` (D-09, D-20 y D-21), con `CHECK (granularidad_minutos IN (15, 30, 60))`.
       * `miembro_negocio.correo` es `UNIQUE` con `CHECK (correo = lower(correo))`, y `clerk_user_id` es `UNIQUE` y admite `NULL`.
 
-* [ ] T1.15: Esquema: sedes y recursos
+* [x] T1.15: Esquema: sedes y recursos
    * Objetivo: Declarar `sede` y `recurso`, incluidos los campos de empleados (`foto_url`, `descripcion`, `correo` y `orden`), que no tienen interfaz en el MVP (D-17).
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T1.14

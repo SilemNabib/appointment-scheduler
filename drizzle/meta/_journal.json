@@ -29,6 +29,13 @@
       "when": 1792005922737,
       "tag": "0003_configuracion_politica_miembros",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792006010910,
+      "tag": "0004_sedes_y_recursos",
+      "breakpoints": true
     }
   ]
 }

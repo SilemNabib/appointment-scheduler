@@ -275,3 +275,65 @@ export const miembroNegocio = pgTable(
     check("miembro_negocio_correo_check", sql`${t.correo} = lower(${t.correo})`),
   ],
 );
+
+// ─── Agenda: sedes y recursos (ARCH §17.1, §18.2; D-16, D-17) ─────────────────
+
+export const sede = pgTable(
+  "sede",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    nombre: text("nombre").notNull(), // 'Sede principal' en el alta
+    direccion: text("direccion"),
+    telefono: text("telefono"),
+    activa: boolean("activa").notNull().default(true), // siempre al menos una activa (código, RN-32)
+    orden: smallint("orden").notNull().default(0),
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "sede_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    unique("sede_id_negocio_id_key").on(t.id, t.negocioId),
+    unique("sede_negocio_id_nombre_key").on(t.negocioId, t.nombre),
+  ],
+);
+
+export const recurso = pgTable(
+  "recurso",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    sedeId: uuid("sede_id").notNull(),
+    nombre: text("nombre").notNull(),
+    tipo: tipoRecurso("tipo").notNull().default("consultorio"),
+    capacidad: smallint("capacidad").notNull().default(1), // RN-06
+    // Campos de empleados (RN-33): sin interfaz en el MVP (D-17).
+    fotoUrl: text("foto_url"), // archivo en R2
+    descripcion: text("descripcion"), // p. ej. "Colorista"
+    correo: text("correo"), // C-09 y C-10 con invitación (RN-35)
+    orden: smallint("orden").notNull().default(0), // orden en la página y desempate al asignar
+    activo: boolean("activo").notNull().default(true),
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "recurso_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("recurso_capacidad_check", sql`${t.capacidad} >= 1`),
+    check("recurso_correo_check", sql`${t.correo} = lower(${t.correo})`),
+    // Un empleado atiende una cita a la vez (RN-33).
+    check("recurso_check", sql`${t.tipo} <> 'profesional' OR ${t.capacidad} = 1`),
+    unique("recurso_id_negocio_id_key").on(t.id, t.negocioId),
+    unique("recurso_id_sede_id_key").on(t.id, t.sedeId), // para FK (recurso, sede)
+    foreignKey({
+      name: "recurso_sede_id_negocio_id_fkey",
+      columns: [t.sedeId, t.negocioId],
+      foreignColumns: [sede.id, sede.negocioId],
+    }),
+  ],
+);

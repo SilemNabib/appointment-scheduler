@@ -274,7 +274,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
 
 Funciones puras que usa esta fase: sin E/S, sin Next y sin base de datos. Lo que depende del reloj recibe `ahora: Date` (ARCH §4). Cada función lleva su prueba unitaria en `tests/unit/dominio/`, en la misma tarea.
 
-* [ ] T1.25: Resultado y errores de negocio
+* [x] T1.25: Resultado y errores de negocio
    * Objetivo: Definir `Resultado<T, E>` (`{ ok: true, valor } | { ok: false, error }`) con sus constructores, el tipo `CodigoError` y la clase `ErrorNegocio`.
    * Archivos: `src/dominio/resultado.ts`, `tests/unit/dominio/resultado.test.ts`
    * Depende de: T1.03

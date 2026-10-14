@@ -473,7 +473,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * La plantilla (Markdown) tiene secciones para la finalidad, los derechos del titular, el carácter sensible de los datos de salud, el canal de atención y el tratamiento por proveedores fuera de Colombia (ARCH §19.3).
       * Nombra al negocio como responsable del tratamiento e incluye un aviso visible de que falta la revisión de un abogado (Q-10).
 
-* [ ] T1.45: Caso de uso `altaNegocio`
+* [x] T1.45: Caso de uso `altaNegocio`
    * Objetivo: Implementar `altaNegocio`. Valida la entrada con Zod y `validarSlug`, resuelve el plan con `listarPlanes` y convierte el vencimiento con `dominio/tiempo`. Luego, en una sola transacción con `app.actor` igual al `clerk_user_id` del admin, crea el negocio, su configuración, la "Sede principal" con su dirección y teléfono, el recurso "Consultorio" (capacidad 1), la política v1 y el miembro pendiente. Devuelve un `Resultado` con los códigos de Q-09.
    * Archivos: `src/servidor/casos-uso/alta-negocio.ts`, `src/servidor/db/repositorios/negocios.ts`, `tests/integracion/casos-uso/alta-negocio.test.ts`
    * Depende de: T1.26, T1.28, T1.31, T1.39, T1.44

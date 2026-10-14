@@ -1,5 +1,6 @@
 import "server-only";
 import { neon, Pool } from "@neondatabase/serverless";
+import { sql } from "drizzle-orm";
 import { drizzle as drizzleHttp } from "drizzle-orm/neon-http";
 import {
   drizzle as drizzleWs,
@@ -42,4 +43,13 @@ export async function enTransaccion<T>(
   } finally {
     await pool.end();
   }
+}
+
+/**
+ * Autor de los cambios que auditan los triggers en esta transacción (RN-30, ARCH §16.4):
+ * el `clerk_user_id` del admin, 'sistema' para el cron o 'semilla'. Sin él, el autor
+ * es el rol de la base de datos. Solo vive hasta el fin de la transacción.
+ */
+export async function fijarActor(tx: Transaccion, actor: string): Promise<void> {
+  await tx.execute(sql`select set_config('app.actor', ${actor}, true)`);
 }

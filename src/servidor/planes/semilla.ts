@@ -1,6 +1,6 @@
 import "server-only";
-import { eq, sql } from "drizzle-orm";
-import type { Transaccion } from "@/servidor/db/cliente";
+import { eq } from "drizzle-orm";
+import { fijarActor, type Transaccion } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
 import { CLAVES_FUNCIONALIDADES, CLAVES_LIMITES } from "./catalogo";
 
@@ -20,7 +20,7 @@ export const PLAN_ILIMITADO = { codigo: "ilimitado", nombre: "Ilimitado (interno
  * para que la auditoría muestre de dónde salieron las filas.
  */
 export async function sembrarPlanes(tx: Transaccion) {
-  await tx.execute(sql`select set_config('app.actor', 'semilla', true)`);
+  await fijarActor(tx, "semilla");
 
   const planes = await tx
     .insert(esquema.plan)

@@ -537,7 +537,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * El administrador, que no tiene fila en `miembro_negocio`, termina en `/sin-acceso` al abrir `/panel`.
       * "Cerrar sesión" termina la sesión, y `/panel` vuelve a redirigir a `/login`.
 
-* [ ] T1.52: Pruebas del alta: slug
+* [x] T1.52: Pruebas del alta: slug
    * Objetivo: Probar las reglas del slug a través del caso de uso del alta.
    * Archivos: `tests/integracion/casos-uso/alta-negocio-slug.test.ts`
    * Depende de: T1.46

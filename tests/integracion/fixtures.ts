@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { count, eq } from "drizzle-orm";
+import type { EntradaAltaNegocio } from "@/servidor/casos-uso/alta-negocio";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
 import { listarPlanes } from "@/servidor/planes/acceso";
@@ -131,4 +133,32 @@ export async function errorDePostgres(consulta: PromiseLike<unknown>) {
     return { code, constraint };
   }
   throw new Error("Se esperaba que la consulta fallara.");
+}
+
+/** Admin que hace las altas en las pruebas (su clerk_user_id es el autor auditado). */
+export const ADMIN_PRUEBA = { clerkUserId: "user_admin_prueba" };
+
+/** Entrada válida para altaNegocio, con slug y correo aleatorios. */
+export function entradaDeAlta(cambios: Partial<EntradaAltaNegocio> = {}): EntradaAltaNegocio {
+  return {
+    slug: `alta-${sufijo()}`,
+    nombre: "Óptica Visión",
+    plan: "ilimitado",
+    estadoSuscripcion: "prueba",
+    vencimiento: "2026-11-30",
+    correoDueno: correoAleatorio(),
+    direccionSede: "Calle 10 # 20-30",
+    telefonoSede: "+57 300 123 4567",
+    ...cambios,
+  };
+}
+
+/** Filas que dejó (o no) un alta: negocios con ese slug y miembros con ese correo. */
+export async function filasDelAlta(slug: string, correo: string) {
+  const [negocios] = await db().select({ total: count() }).from(esquema.negocio).where(eq(esquema.negocio.slug, slug));
+  const [miembros] = await db()
+    .select({ total: count() })
+    .from(esquema.miembroNegocio)
+    .where(eq(esquema.miembroNegocio.correo, correo.trim().toLowerCase()));
+  return { negocios: negocios.total, miembros: miembros.total };
 }

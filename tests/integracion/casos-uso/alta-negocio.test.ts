@@ -1,11 +1,10 @@
-import { randomUUID } from "node:crypto";
 import { count, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { altaNegocio, type EntradaAltaNegocio } from "@/servidor/casos-uso/alta-negocio";
+import { altaNegocio } from "@/servidor/casos-uso/alta-negocio";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
 import { politicaInicial } from "@/servidor/politica-datos/plantilla";
-import { correoAleatorio, idPlanIlimitado } from "../fixtures";
+import { ADMIN_PRUEBA, correoAleatorio, entradaDeAlta, idPlanIlimitado } from "../fixtures";
 
 // Caso de uso altaNegocio (ADM-02, F-11; ARCH §7.4, §7.6 y §18.4), con clerkClient
 // simulado. Las reglas del slug y los efectos según sedes, planes y auditoría se
@@ -22,19 +21,8 @@ beforeEach(() => {
   return () => vi.unstubAllEnvs();
 });
 
-const ADMIN = { clerkUserId: "user_admin_prueba" };
-
-const entradaValida = (cambios: Partial<EntradaAltaNegocio> = {}): EntradaAltaNegocio => ({
-  slug: `alta-${randomUUID().slice(0, 8)}`,
-  nombre: "Óptica Visión",
-  plan: "ilimitado",
-  estadoSuscripcion: "prueba",
-  vencimiento: "2026-11-30",
-  correoDueno: correoAleatorio(),
-  direccionSede: "Calle 10 # 20-30",
-  telefonoSede: "+57 300 123 4567",
-  ...cambios,
-});
+const ADMIN = ADMIN_PRUEBA;
+const entradaValida = entradaDeAlta;
 
 /** Las seis filas del alta; cada tabla debe tener exactamente una del negocio. */
 async function negocioCreado(negocioId: string) {

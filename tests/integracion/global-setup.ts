@@ -4,10 +4,13 @@ import { Pool } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { migrate } from "drizzle-orm/neon-serverless/migrator";
 import type { TestProject } from "vitest/node";
+import * as esquema from "@/servidor/db/esquema";
+import { sembrarPlanes } from "@/servidor/planes/semilla";
 
 // Rama efímera de Neon para las pruebas de integración (ARCH §8 y §20; Q-07).
 // Se crea a partir de `development`, se vacía, recibe la cadena completa de migraciones
-// y se elimina al terminar, también cuando una prueba falla.
+// y la semilla de los planes (T1.30), y se elimina al terminar, también cuando una
+// prueba falla.
 
 declare module "vitest" {
   export interface ProvidedContext {
@@ -119,7 +122,7 @@ export default async function prepararRamaEfimera(project: TestProject) {
     };
     const [databaseUrl, databaseUrlDirecta] = await Promise.all([uri(true), uri(false)]);
 
-    await migrarDesdeCero(databaseUrlDirecta);
+    await migrarDesdeCeroYSembrar(databaseUrlDirecta);
 
     project.provide("databaseUrl", databaseUrl);
     project.provide("databaseUrlDirecta", databaseUrlDirecta);
@@ -152,15 +155,17 @@ async function esperarOperacion(
 /**
  * La rama copia el esquema y los datos de `development`. Se vacía y se aplica la cadena
  * completa de migraciones, para probar que funciona desde cero y para que las
- * pruebas no vean los datos de `development`.
+ * pruebas no vean los datos de `development`. Después se siembran los planes, como
+ * con `npm run db:semilla`.
  */
-async function migrarDesdeCero(urlDirecta: string) {
+async function migrarDesdeCeroYSembrar(urlDirecta: string) {
   const pool = new Pool({ connectionString: urlDirecta });
   try {
     await pool.query(
       "DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public;",
     );
     await migrate(drizzle({ client: pool }), { migrationsFolder: "drizzle" });
+    await drizzle({ client: pool, schema: esquema }).transaction(sembrarPlanes);
   } finally {
     await pool.end();
   }

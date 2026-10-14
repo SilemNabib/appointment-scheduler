@@ -325,7 +325,7 @@ El catálogo en código es la fuente de verdad (ARCH §16.2), y `src/servidor/pl
       * La prueba unitaria verifica las 6 funcionalidades con `porDefecto: false` y los 6 límites con `porDefecto: 0`, salvo `max_locations`, con 1 (PRD §8.8).
       * El archivo empieza con `import 'server-only'`.
 
-* [ ] T1.30: Semilla del plan `ilimitado`
+* [x] T1.30: Semilla del plan `ilimitado`
    * Objetivo: Crear `sembrarPlanes()`, que genera desde el catálogo el plan `ilimitado` con todas las funcionalidades habilitadas y todos los límites en `NULL`, de forma idempotente y sin sobrescribir valores existentes. Se ejecuta con `npm run db:semilla` y en el `globalSetup` de las pruebas de integración.
    * Archivos: `src/servidor/planes/semilla.ts`, `scripts/semilla.ts`, `tests/integracion/global-setup.ts`, `package.json` (script `db:semilla`)
    * Depende de: T1.12, T1.29

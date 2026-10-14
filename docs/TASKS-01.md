@@ -343,7 +343,7 @@ El catálogo en código es la fuente de verdad (ARCH §16.2), y `src/servidor/pl
       * `exigirCupo` lanza `ErrorNegocio('LIMITE_PLAN')` cuando `usoActual >= límite` y no lanza cuando el límite es `null` (prueba de integración).
       * `listarPlanes()` devuelve `id`, `codigo` y `nombre`. El alta y la lista del admin la usan para no leer `plan` fuera del módulo.
 
-* [ ] T1.32: Lint: tablas de planes solo en su módulo
+* [x] T1.32: Lint: tablas de planes solo en su módulo
    * Objetivo: Impedir que el código fuera de `src/servidor/planes/` lea las tablas de planes y de excepciones, ya sea importando sus tablas del esquema o nombrándolas en SQL.
    * Archivos: `eslint.config.mjs`
    * Depende de: T1.03, T1.31

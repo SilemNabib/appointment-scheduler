@@ -62,6 +62,38 @@ const SIN_ACCESO_A_DB = [
   { regex: "^\\.{1,2}/(.*/)?servidor/db(/|$)", caseSensitive: true, message: MENSAJE_SIN_DB },
 ];
 
+// ─── Tablas de planes solo en su módulo (RN-25, ARCH §16.1) ──────────────────
+// Fuera de `src/servidor/planes/` nada lee las tablas de planes ni de excepciones:
+// ni importándolas del esquema, ni con la API relacional (`db().query.planLimite`),
+// ni nombrándolas en SQL. Todo pasa por la función de acceso (§16.3).
+
+const MENSAJE_PLANES =
+  "Solo src/servidor/planes/ lee las tablas de planes y de excepciones: usa tieneFuncionalidad, limite, exigirCupo o listarPlanes (RN-25, ARCH §16.3).";
+
+const TABLAS_DE_PLANES = ["plan", "planFuncionalidad", "planLimite", "negocioFuncionalidad", "negocioLimite"];
+
+// Con `importNames`, `import * as esquema` también se rechaza: podría leerlas igual.
+const SIN_TABLAS_DE_PLANES = {
+  regex: "^(@/servidor/db/|\\.{1,2}/(.*/)?)esquema$",
+  importNames: TABLAS_DE_PLANES,
+  caseSensitive: true,
+  message: MENSAJE_PLANES,
+};
+
+// En SQL: las tablas de excepciones y de planes por su nombre, y `plan` cuando sigue a
+// FROM, JOIN, INTO, UPDATE o TABLE (sola, la palabra "plan" es demasiado común).
+const SQL_CON_TABLAS_DE_PLANES =
+  "/\\b(plan_funcionalidad|plan_limite|negocio_funcionalidad|negocio_limite)\\b|\\b(from|join|into|update|table)\\s+\\W?plan\\b/i";
+
+const SIN_SQL_DE_PLANES = [
+  { selector: `TemplateElement[value.raw=${SQL_CON_TABLAS_DE_PLANES}]`, message: MENSAJE_PLANES },
+  { selector: `Literal[value=${SQL_CON_TABLAS_DE_PLANES}]`, message: MENSAJE_PLANES },
+  {
+    selector: `MemberExpression[object.property.name="query"][property.name=/^(${TABLAS_DE_PLANES.join("|")})$/]`,
+    message: MENSAJE_PLANES,
+  },
+];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -78,6 +110,34 @@ const eslintConfig = defineConfig([
     files: ["src/app/**", "src/componentes/**"],
     rules: {
       "no-restricted-imports": ["error", { patterns: SIN_ACCESO_A_DB }],
+    },
+  },
+  {
+    files: ["src/**"],
+    ignores: [
+      "src/servidor/planes/**",
+      // Declara las tablas y cliente.ts registra el esquema completo en Drizzle; ninguno las lee.
+      "src/servidor/db/esquema.ts",
+      "src/servidor/db/cliente.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": ["error", ...SIN_SQL_DE_PLANES],
+    },
+  },
+  {
+    // dominio/, app/ y componentes/ ya tienen su propio `no-restricted-imports`, que
+    // prohíbe importar servidor/db/ entero (y una regla repetida reemplaza a la anterior).
+    files: ["src/**"],
+    ignores: [
+      "src/servidor/planes/**",
+      "src/servidor/db/esquema.ts",
+      "src/servidor/db/cliente.ts",
+      "src/dominio/**",
+      "src/app/**",
+      "src/componentes/**",
+    ],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [SIN_TABLAS_DE_PLANES] }],
     },
   },
   // Override default ignores of eslint-config-next.

@@ -371,7 +371,7 @@ El catálogo en código es la fuente de verdad (ARCH §16.2), y `src/servidor/pl
       * Un negocio con el plan `ilimitado` y sin excepciones responde "habilitada" para cada funcionalidad e "ilimitado" (`null`) para cada límite (RN-27).
       * La excepción del negocio gana al plan; una excepción con `NULL` es ilimitada aunque el plan tenga un valor; y, sin excepción ni fila del plan, se usa el catálogo: deshabilitada, 0, y 1 para `max_locations` (ARCH §20 y §16.3; PRD §8.8).
 
-* [ ] T1.35: Pruebas de planes: auditoría
+* [x] T1.35: Pruebas de planes: auditoría
    * Objetivo: Probar que los triggers registran los cambios de plan, de suscripción y de excepciones.
    * Archivos: `tests/integracion/planes/auditoria.test.ts`
    * Depende de: T1.22, T1.30

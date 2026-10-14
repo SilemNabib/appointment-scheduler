@@ -763,3 +763,17 @@ export const enlaceCalendario = pgTable(
     // enlace_calendario_vigente_uq (NULLS NOT DISTINCT y WHERE) está en la migración manual drizzle/0010_indices_manuales.sql.
   ],
 );
+
+// ─── Auditoría de planes y suscripción (ARCH §16.4; RN-30, ADR-11) ────────────
+// La llenan los triggers de la migración manual drizzle/0012_auditoria_triggers.sql.
+
+export const auditoriaAdmin = pgTable("auditoria_admin", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  negocioId: uuid("negocio_id"), // sin FK: el registro sobrevive al negocio
+  tabla: text("tabla").notNull(),
+  operacion: text("operacion").notNull(), // INSERT | UPDATE | DELETE
+  actor: text("actor").notNull(), // app.actor (clerk_user_id) o el rol de BD si fue SQL directo
+  antes: jsonb("antes"),
+  despues: jsonb("despues"),
+  creadoEn: instante("creado_en").notNull().defaultNow(),
+});

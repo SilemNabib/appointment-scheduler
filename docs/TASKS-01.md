@@ -240,7 +240,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * `pg_indexes` muestra en `development` las dos definiciones iguales a ARCH §18.2.
       * `npm run db:generate` informa que no hay cambios: Drizzle no intenta borrar los índices.
 
-* [ ] T1.22: Auditoría: tabla, función y triggers
+* [x] T1.22: Auditoría: tabla, función y triggers
    * Objetivo: Declarar `auditoria_admin` en Drizzle y crear, en una migración manual, la función `auditar_cambio()` y los seis triggers de ARCH §18.2.
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración generada y nueva migración manual en `drizzle/`
    * Depende de: T1.21

@@ -4,7 +4,7 @@
 |---|---|
 | **Versión** | 0.1 (borrador) |
 | **Fecha** | 2026-10-08 |
-| **Fuentes** | [PRD.md](PRD.md) v0.7 · [ARCHITECTURE.md](ARCHITECTURE.md) v0.7 |
+| **Fuentes** | [PRD.md](PRD.md) v0.7 · [ARCHITECTURE.md](ARCHITECTURE.md) v0.8 |
 
 > El PRD manda en el **qué** y ARCHITECTURE en el **cómo**. Si una tarea contradice a alguno de los dos, se corrige la tarea. Lo que los documentos no definen está en [Preguntas](#preguntas) y cada tarea afectada lo cita con su ID (`Q-xx`).
 
@@ -98,17 +98,17 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
 **Criterios comunes de las tareas de esquema:**
 
 - **E1.** `npm run db:generate` crea una sola migración nueva cuyo SQL coincide con ARCH §18.2 para las tablas de la tarea (tipos, `DEFAULT`, `CHECK`, FK, `UNIQUE` e índices). Un segundo `npm run db:generate` informa que no hay cambios.
-- **E2.** `npm run db:migrate` aplica la migración en la rama `dev`, y `npm run test:integracion` pasa (aplica la cadena completa en una rama efímera).
+- **E2.** `npm run db:migrate` aplica la migración en la rama `development`, y `npm run test:integracion` pasa (aplica la cadena completa en una rama efímera).
 
 * [x] T1.07: [manual] Proyecto de Neon
-   * Objetivo: Crear el proyecto de Neon en la región `aws-us-east-1`, con las ramas `main` (producción) y `dev`, y una API key para crear las ramas efímeras de las pruebas.
+   * Objetivo: Crear el proyecto de Neon en la región `aws-us-east-1`, con las ramas `production` (la predeterminada) y `development`, y una API key para crear las ramas efímeras de las pruebas.
    * Archivos: `.env.local` (no versionado)
    * Depende de: —
    * Refs: ARCH §8, §20, §21.1, §21.3; Q-07
    * Aceptación:
-      * La consola de Neon muestra el proyecto en `aws-us-east-1` con las ramas `main` y `dev`.
-      * `.env.local` tiene `DATABASE_URL` (con *pooler*) y `DATABASE_URL_DIRECTA` de la rama `dev`, más la API key y el ID del proyecto (Q-07).
-      * `select version()` responde con la cadena directa de `dev` (con `psql` o con el SQL Editor de Neon).
+      * La consola de Neon muestra el proyecto en `aws-us-east-1` con las ramas `production` y `development`.
+      * `.env.local` tiene `DATABASE_URL` (con *pooler*) y `DATABASE_URL_DIRECTA` de la rama `development`, más la API key y el ID del proyecto (Q-07). `NEON_PROJECT_ID` es el ID del proyecto (como `palabra-palabra-12345678`), no el `br-…` de una rama.
+      * `select version()` responde con la cadena directa de `development` (con `psql` o con el SQL Editor de Neon).
 
 * [x] T1.08: Plantilla de variables de entorno
    * Objetivo: Listar sin valores, en `.env.example`, todas las variables de ARCH §7.7 y §21.3, y asegurar que ningún archivo con secretos se versiona.
@@ -134,11 +134,11 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
    * Depende de: T1.09
    * Refs: ADR-11, ARCH §16.2, §18.2
    * Aceptación:
-      * `npm run db:migrate` la aplica en `dev` e `information_schema.domains` muestra los dos dominios.
+      * `npm run db:migrate` la aplica en `development` e `information_schema.domains` muestra los dos dominios.
       * `select 'no_existe'::clave_limite` falla por el `CHECK` del dominio.
 
-* [ ] T1.11: Pruebas de integración con rama efímera de Neon
-   * Objetivo: Añadir el proyecto de Vitest `integracion` (`tests/integracion/`), cuyo `globalSetup` crea una rama a partir de `dev` con la API de Neon, aplica las migraciones y la elimina al terminar.
+* [x] T1.11: Pruebas de integración con rama efímera de Neon
+   * Objetivo: Añadir el proyecto de Vitest `integracion` (`tests/integracion/`), cuyo `globalSetup` crea una rama a partir de `development` con la API de Neon, aplica las migraciones y la elimina al terminar.
    * Archivos: `vitest.config.ts`, `tests/integracion/global-setup.ts`, `tests/integracion/conexion.test.ts`, `package.json` (script `test:integracion`)
    * Depende de: T1.10
    * Refs: ARCH §8, §20 (párrafo final); Q-07
@@ -191,7 +191,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
    * Refs: RN-05, RN-06, RN-32, RN-33, D-02, ARCH §18.1, §18.2
    * Aceptación:
       * E1 y E2.
-      * En `dev`, un script SQL dentro de `BEGIN … ROLLBACK` que inserta plan, negocio, sede, recurso, servicio, `servicio_sede` y `servicio_sede_recurso`, y después borra el negocio, termina sin error (ARCH §18.1).
+      * En `development`, un script SQL dentro de `BEGIN … ROLLBACK` que inserta plan, negocio, sede, recurso, servicio, `servicio_sede` y `servicio_sede_recurso`, y después borra el negocio, termina sin error (ARCH §18.1).
 
 * [ ] T1.17: Esquema: horario semanal y bloqueos
    * Objetivo: Declarar `horario_semanal`, con `recurso_id` opcional para el horario propio de un empleado (D-19), y `bloqueo`, cuyo alcance es el negocio, una sede o un recurso.
@@ -219,7 +219,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
    * Aceptación:
       * E1 y E2.
       * El SQL incluye los cuatro `CHECK` y las seis FK compuestas de `cita`, y `evento_cita.id` es `GENERATED ALWAYS AS IDENTITY`.
-      * En `dev`, dentro de `BEGIN … ROLLBACK`, insertar una cita del negocio A con un servicio del negocio B falla por la FK compuesta (ARCH §6, defensa 2).
+      * En `development`, dentro de `BEGIN … ROLLBACK`, insertar una cita del negocio A con un servicio del negocio B falla por la FK compuesta (ARCH §6, defensa 2).
 
 * [ ] T1.20: Esquema: notificaciones y enlaces de calendario
    * Objetivo: Declarar `notificacion` y `enlace_calendario`, salvo el índice `enlace_calendario_vigente_uq` (T1.21).
@@ -237,7 +237,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
    * Refs: RN-35, D-06, ARCH §8, §18.2
    * Aceptación:
       * E2.
-      * `pg_indexes` muestra en `dev` las dos definiciones iguales a ARCH §18.2.
+      * `pg_indexes` muestra en `development` las dos definiciones iguales a ARCH §18.2.
       * `npm run db:generate` informa que no hay cambios: Drizzle no intenta borrar los índices.
 
 * [ ] T1.22: Auditoría: tabla, función y triggers
@@ -247,7 +247,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
    * Refs: RN-30, ADR-11, ARCH §16.4, §18.2
    * Aceptación:
       * E2.
-      * `select tgname from pg_trigger where tgname like 'auditar_%'` devuelve los seis triggers en `dev`.
+      * `select tgname from pg_trigger where tgname like 'auditar_%'` devuelve los seis triggers en `development`.
       * `auditoria_admin.negocio_id` no tiene FK, para que el registro sobreviva al negocio.
 
 * [ ] T1.23: Pruebas del esquema: sedes y recursos
@@ -331,7 +331,7 @@ El catálogo en código es la fuente de verdad (ARCH §16.2), y `src/servidor/pl
    * Depende de: T1.12, T1.29
    * Refs: RN-26, RN-27, ADR-11, ARCH §18.2 (Semilla); Q-01
    * Aceptación:
-      * Ejecutar `npm run db:semilla` dos veces en `dev` deja 1 fila en `plan`, 6 en `plan_funcionalidad` y 6 en `plan_limite`.
+      * Ejecutar `npm run db:semilla` dos veces en `development` deja 1 fila en `plan`, 6 en `plan_funcionalidad` y 6 en `plan_limite`.
       * La rama efímera de las pruebas de integración ya tiene el plan `ilimitado`.
 
 * [ ] T1.31: Función de acceso a planes
@@ -574,17 +574,17 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
    * Depende de: T1.06, T1.07, T1.36
    * Refs: RNF-04, ARCH §7.7, §19.2, §21.3; Q-06, Q-07
    * Aceptación:
-      * `npx wrangler secret list` muestra `DATABASE_URL` (rama `main`, con *pooler*), `CLERK_SECRET_KEY` y `CRON_SECRET`.
-      * `.env.production.local` tiene `DATABASE_URL_DIRECTA` de `main` y las variables `NEXT_PUBLIC_CLERK_*` de la instancia de Clerk que use el despliegue (Q-06).
+      * `npx wrangler secret list` muestra `DATABASE_URL` (rama `production`, con *pooler*), `CLERK_SECRET_KEY` y `CRON_SECRET`.
+      * `.env.production.local` tiene `DATABASE_URL_DIRECTA` de `production` y las variables `NEXT_PUBLIC_CLERK_*` de la instancia de Clerk que use el despliegue (Q-06).
 
 * [ ] T1.56: Despliegue en un comando, con migraciones
-   * Objetivo: Hacer que `npm run deploy` aplique las migraciones pendientes en `main` antes de compilar y desplegar (ARCH §21.4), y declarar `APP_URL` y `SUPERADMIN_CLERK_USER_IDS` en los `vars` de `wrangler.jsonc`.
+   * Objetivo: Hacer que `npm run deploy` aplique las migraciones pendientes en `production` antes de compilar y desplegar (ARCH §21.4), y declarar `APP_URL` y `SUPERADMIN_CLERK_USER_IDS` en los `vars` de `wrangler.jsonc`.
    * Archivos: `package.json` (scripts `deploy`, `db:migrate:prod` y `db:semilla:prod`), `wrangler.jsonc`
    * Depende de: T1.30, T1.54, T1.55
    * Refs: RNF-09, ARCH §8, §21.3, §21.4; Q-07
    * Aceptación:
-      * `npm run deploy` aplica todas las migraciones en `main` y despliega. Una segunda ejecución no encuentra migraciones pendientes.
-      * `npm run db:semilla:prod` deja en `main` el plan `ilimitado`, con 6 funcionalidades y 6 límites.
+      * `npm run deploy` aplica todas las migraciones en `production` y despliega. Una segunda ejecución no encuentra migraciones pendientes.
+      * `npm run db:semilla:prod` deja en `production` el plan `ilimitado`, con 6 funcionalidades y 6 límites.
 
 * [ ] T1.57: [manual] Verificación de punta a punta
    * Objetivo: Comprobar en `*.workers.dev`, con Clerk y Neon reales, el recorrido completo de la fase. Es la mitigación del riesgo principal de ARCH §23 y el criterio de salida de la fase.
@@ -610,7 +610,7 @@ Puntos que el PRD y ARCHITECTURE no definen. Mientras no haya respuesta, las tar
 | Q-04 | PRD §12 no asigna a ninguna fase: la función de acceso a planes (RN-25 a RN-30); la gestión de la suscripción (ADM-03, PAN-19, `aplicarVencimientos`, C-07 y C-08); ADM-05; ni `aplicarAsistenciaPorDefecto` (D-21). ¿En qué fase entra cada uno? | Los planes y el estado efectivo de la suscripción entran en la Fase 1. Se propone: ADM-03 y PAN-19 en la Fase 2; `aplicarVencimientos`, C-07, C-08, `aplicarAsistenciaPorDefecto` y ADM-05 en la Fase 6, junto al cron y los correos. Todo debe estar antes del día 18 (primer cliente en producción). | Alcance, §1.D, T1.54 |
 | Q-05 | La Fase 2 empieza con "Sede principal", pero RN-32 y F-11 la crean en el alta. | La creación va en la Fase 1, dentro del alta. La Fase 2 cubre su configuración (PAN-11, PAN-13 y PAN-14). | Alcance, T1.45 |
 | Q-06 | La instancia de producción de Clerk necesita un dominio propio, que llega en la Fase 9 (días 17 y 18). ¿Con qué instancia funciona el despliegue base? | `*.workers.dev` usa la instancia de desarrollo hasta la Fase 9. | T1.55, T1.57 |
-| Q-07 | ARCH §21.3 no lista las credenciales de la API de Neon para las ramas efímeras de las pruebas, ni dónde vive la cadena directa de `main` para migrar al desplegar. | `NEON_API_KEY` y `NEON_PROJECT_ID` en `.env.local`, y `DATABASE_URL_DIRECTA` de `main` en `.env.production.local`. | T1.07, T1.08, T1.11, T1.55, T1.56 |
+| Q-07 | ARCH §21.3 no lista las credenciales de la API de Neon para las ramas efímeras de las pruebas, ni dónde vive la cadena directa de `production` para migrar al desplegar. | `NEON_API_KEY` y `NEON_PROJECT_ID` en `.env.local`, y `DATABASE_URL_DIRECTA` de `production` en `.env.production.local`. | T1.07, T1.08, T1.11, T1.55, T1.56 |
 | Q-08 | ¿Qué pasa si la invitación de Clerk falla después del `COMMIT` del alta? El negocio queda creado sin invitación, y ADM no define cómo reenviarla. | El alta queda hecha y el formulario muestra el error de la invitación. Falta decidir cómo reenviarla (¿un botón en `/admin`?). | T1.46 |
 | Q-09 | ARCH §18.4 da a `altaNegocio` los errores `SLUG_NO_DISPONIBLE` y `DATOS_INVALIDOS`, sin decir cuál corresponde a cada caso. Tampoco define qué pasa si el correo del dueño ya pertenece a otro negocio (`miembro_negocio.correo` es único en todo el sistema, ARCH §7.8). | Slug reservado o repetido: `SLUG_NO_DISPONIBLE`. Formato de slug inválido, plan inexistente o correo del dueño ya usado: `DATOS_INVALIDOS`. | T1.45, T1.49 |
 | Q-10 | ¿Quién redacta la plantilla de la política de datos (D-05), que debe revisar un abogado (ARCH §19.3), y para cuándo? ¿Qué datos del negocio incluye (nombre, NIT, dirección, correo de contacto)? | Texto provisional que solo incluye el nombre del negocio y avisa que falta la revisión legal. Debe estar aprobado antes de la Fase 4 (página pública, RN-17). | T1.44 |

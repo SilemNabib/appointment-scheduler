@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Versión** | 0.7 (borrador) |
-| **Fecha** | 2026-10-08 |
+| **Versión** | 0.8 (borrador) |
+| **Fecha** | 2026-10-14 |
 | **Fuentes** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 · [PRD.md](PRD.md) v0.7 |
 
 > Este documento describe **cómo** se construye el producto del [PRD](PRD.md). Las referencias `RN-xx`, `D-xx`, `S-xx` y `P-xx` remiten a ese documento. Lo marcado como **propuesto** es una decisión de este documento que la fuente dejó abierta y que aún no se ha aceptado. Lo **aceptado** quedó confirmado en el PRD (D-06 a D-23).
@@ -19,6 +19,7 @@
 | 0.5 | 2026-10-08 | **Sedes (D-16, RN-32, ADR-15):**<br>• Nuevas tablas `sede` y `servicio_sede`.<br>• `sede_id` en `recurso`, `horario_semanal`, `bloqueo` y `cita`.<br>• `servicio` deja de tener `recurso_id`.<br>• `negocio` deja de tener `direccion` y `telefono_contacto`, que pasan a la sede.<br>• Nuevo límite `max_locations`.<br>• La API pública recibe `sedeId`.<br>Afecta a §5, §9, §10, §11, §16, §17, §18, §20, §22 y §24. |
 | 0.6 | 2026-10-08 | **Empleados (RN-33, D-17 a D-19, ADR-16):** nueva tabla `servicio_sede_recurso`; `servicio_sede` pierde `recurso_id` y gana `cliente_elige`; `recurso` gana `foto_url`, `descripcion` y `orden`, y un empleado (`profesional`) siempre tiene capacidad 1; `horario_semanal.recurso_id` para el horario propio; `cita.recurso_elegido`; la API pública acepta `recursoId`; el motor con varios recursos y la regla de asignación quedan especificados (§10.3) para cuando se construya el módulo. R2 guarda también las fotos. |
 | 0.7 | 2026-10-08 | Cuatro cambios:<br>• **RN-34:** `max_reprogramaciones_cliente` en la configuración y `cita.reprogramaciones_cliente`.<br>• **D-21:** `asistencia_por_defecto` y nueva tarea del cron `aplicarAsistenciaPorDefecto`.<br>• **D-22:** se elimina `revision_cliente`; prevalece el teléfono (§12).<br>• **RN-35:** invitaciones iCalendar (§14.6), enlace de calendario del dueño (§14.7, tabla `enlace_calendario`, ruta `/api/calendario/…`, `RL_CALENDARIO`, `CALENDARIO_SECRET`), `recurso.correo` y tipos `empleado_cita_nueva` y `empleado_cambio`.<br>Nuevo ADR-17. |
+| 0.8 | 2026-10-14 | **Ramas de Neon:** se llaman `development` (antes `dev`) y `production` (antes `main`), como quedaron en el proyecto creado (§20, §21.1). |
 
 ---
 
@@ -1855,7 +1856,7 @@ El panel usa **Server Actions** con los mismos casos de uso y los mismos código
 | Planes | Integración | Las claves de los dominios coinciden con el catálogo. Orden de resolución de §16.3, incluido `NULL` = ilimitado. Los triggers de auditoría registran los cambios. |
 | Humo E2E (opcional) | Playwright, viewport móvil | Reservar y luego cancelar con el link |
 
-Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin depender de la hora real. Las pruebas de integración crean una rama de Neon a partir de `dev`, aplican las migraciones y la eliminan al terminar.
+Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin depender de la hora real. Las pruebas de integración crean una rama de Neon a partir de `development`, aplican las migraciones y la eliminan al terminar.
 
 ## 21. Despliegue, entornos y operación
 
@@ -1864,7 +1865,7 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 | | Local | Producción |
 |---|---|---|
 | App | `next dev` (con `initOpenNextCloudflareForDev()` para los bindings) y `opennextjs-cloudflare preview` | Worker con dominio propio (`tuapp.com`) |
-| Base de datos | Rama `dev` de Neon | Rama `main` de Neon |
+| Base de datos | Rama `development` de Neon | Rama `production` de Neon |
 | Clerk | Instancia de desarrollo | Instancia de producción |
 | Resend | Clave de prueba | Dominio verificado (SPF, DKIM y DMARC) |
 

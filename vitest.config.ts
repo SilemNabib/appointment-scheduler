@@ -25,6 +25,19 @@ export default defineConfig({
           environment: "node",
         },
       },
+      {
+        extends: true,
+        test: {
+          name: "integracion",
+          include: ["tests/integracion/**/*.test.ts"],
+          environment: "node",
+          // Crea y elimina la rama efímera de Neon (ARCH §20).
+          globalSetup: ["tests/integracion/global-setup.ts"],
+          setupFiles: ["tests/integracion/setup.ts"],
+          testTimeout: 30_000,
+          hookTimeout: 60_000,
+        },
+      },
     ],
   },
 });

@@ -2,7 +2,7 @@ import { loadEnvConfig } from "@next/env";
 import { defineConfig } from "drizzle-kit";
 
 // Carga los archivos .env como Next. En modo desarrollo (por defecto) lee .env.local
-// y nunca .env.production.local, para no migrar `main` por accidente; las
+// y nunca .env.production.local, para no migrar `production` por accidente; las
 // migraciones de producción se ejecutan con NODE_ENV=production.
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 

@@ -422,7 +422,7 @@ Clerk solo autentica; la pertenencia al negocio vive en `miembro_negocio` (ADR-0
       * `vincular` guarda `clerk_user_id` y `vinculado_en` en un miembro pendiente. Una segunda llamada con el mismo correo y otro `clerkUserId` devuelve `null` y no cambia la fila (ARCH §7.4).
       * Toda función de `negocios.ts` recibe `negocioId` como primer parámetro (ARCH §6).
 
-* [ ] T1.40: `requireMiembro` y vinculación en el primer ingreso
+* [x] T1.40: `requireMiembro` y vinculación en el primer ingreso
    * Objetivo: Implementar `ContextoMiembro`, `requireMiembro` (memorizado por solicitud) y la vinculación por el correo principal verificado, como en ARCH §7.5.
    * Archivos: `src/servidor/auth/sesion.ts`, `tests/integracion/auth/require-miembro.test.ts`
    * Depende de: T1.27, T1.37, T1.39

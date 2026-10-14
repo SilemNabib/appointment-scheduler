@@ -680,3 +680,86 @@ export const eventoCita = pgTable(
     index("evento_cita_idx").on(t.citaId, t.creadoEn),
   ],
 );
+
+// ─── Notificaciones (ARCH §14; RN-20, S-16) ───────────────────────────────────
+
+export const notificacion = pgTable(
+  "notificacion",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    citaId: uuid("cita_id"),
+    tipo: tipoNotificacion("tipo").notNull(),
+    canal: canalNotificacion("canal").notNull().default("correo"),
+    destinatario: text("destinatario").notNull(),
+    datos: jsonb("datos").notNull().default({}), // p. ej. {"version": 2, "inicio_anterior": "…"}
+    claveIdempotencia: text("clave_idempotencia")
+      .notNull()
+      .unique("notificacion_clave_idempotencia_key"),
+    programadaPara: instante("programada_para").notNull().defaultNow(),
+    estado: estadoNotificacion("estado").notNull().default("pendiente"),
+    intentos: smallint("intentos").notNull().default(0),
+    bloqueadaHasta: instante("bloqueada_hasta"), // arriendo del procesador (ARCH §14.3)
+    proveedorMensajeId: text("proveedor_mensaje_id"),
+    ultimoError: text("ultimo_error"),
+    enviadaEn: instante("enviada_en"),
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "notificacion_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("notificacion_check", sql`(${t.estado} = 'enviada') = (${t.enviadaEn} IS NOT NULL)`),
+    // Los correos de la cuenta (C-07 y C-08) no tienen cita (S-16).
+    check(
+      "notificacion_check1",
+      sql`(${t.tipo} IN ('dueno_gracia', 'dueno_suspension')) = (${t.citaId} IS NULL)`,
+    ),
+    foreignKey({
+      name: "notificacion_cita_id_negocio_id_fkey",
+      columns: [t.citaId, t.negocioId],
+      foreignColumns: [cita.id, cita.negocioId],
+    }).onDelete("cascade"),
+    index("notificacion_cola_idx")
+      .on(t.programadaPara)
+      .where(sql`${t.estado} IN ('pendiente', 'enviando')`),
+    index("notificacion_cita_idx").on(t.citaId),
+  ],
+);
+
+// ─── Enlaces de calendario (ARCH §14.7; RN-35) ────────────────────────────────
+
+export const enlaceCalendario = pgTable(
+  "enlace_calendario",
+  {
+    id: uuid("id").primaryKey().defaultRandom(), // el token es HMAC(CALENDARIO_SECRET, "cal." + id)
+    negocioId: uuid("negocio_id").notNull(),
+    sedeId: uuid("sede_id"), // futuro: solo una sede (NULL = todo el negocio)
+    recursoId: uuid("recurso_id"), // futuro: solo un empleado
+    creadoPor: text("creado_por").notNull(), // clerk_user_id
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+    revocadoEn: instante("revocado_en"), // al regenerar se revoca el vigente
+    ultimoAccesoEn: instante("ultimo_acceso_en"),
+  },
+  (t) => [
+    foreignKey({
+      name: "enlace_calendario_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("enlace_calendario_check", sql`${t.recursoId} IS NULL OR ${t.sedeId} IS NOT NULL`),
+    foreignKey({
+      name: "enlace_calendario_sede_id_negocio_id_fkey",
+      columns: [t.sedeId, t.negocioId],
+      foreignColumns: [sede.id, sede.negocioId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "enlace_calendario_recurso_id_sede_id_fkey",
+      columns: [t.recursoId, t.sedeId],
+      foreignColumns: [recurso.id, recurso.sedeId],
+    }).onDelete("cascade"),
+    // enlace_calendario_vigente_uq (NULLS NOT DISTINCT y WHERE) va en una migración manual (T1.21).
+  ],
+);

@@ -221,7 +221,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * El SQL incluye los cuatro `CHECK` y las seis FK compuestas de `cita`, y `evento_cita.id` es `GENERATED ALWAYS AS IDENTITY`.
       * En `development`, dentro de `BEGIN … ROLLBACK`, insertar una cita del negocio A con un servicio del negocio B falla por la FK compuesta (ARCH §6, defensa 2).
 
-* [ ] T1.20: Esquema: notificaciones y enlaces de calendario
+* [x] T1.20: Esquema: notificaciones y enlaces de calendario
    * Objetivo: Declarar `notificacion` y `enlace_calendario`, salvo el índice `enlace_calendario_vigente_uq` (T1.21).
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T1.19

@@ -403,7 +403,7 @@ Clerk solo autentica; la pertenencia al negocio vive en `miembro_negocio` (ADR-0
       * Sin sesión, `/panel` y `/admin` redirigen a `/login`, tanto con `npm run dev` como con `npm run preview` (Workers).
       * `/` responde 200, sin redirección.
 
-* [ ] T1.38: Páginas de ingreso y registro
+* [x] T1.38: Páginas de ingreso y registro
    * Objetivo: Crear el layout del grupo `(auth)` con `<ClerkProvider localization={esES}>` y las páginas `/login` (`<SignIn/>`) y `/registro` (`<SignUp/>`).
    * Archivos: `src/app/(auth)/layout.tsx`, `src/app/(auth)/login/[[...rest]]/page.tsx`, `src/app/(auth)/registro/[[...rest]]/page.tsx`
    * Depende de: T1.37

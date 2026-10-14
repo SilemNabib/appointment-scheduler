@@ -500,7 +500,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * Un negocio dado de alta en `activa` con "pagado hasta 2026-10-09" aparece con vencimiento `2026-10-09`.
       * Un negocio con el vencimiento pasado hace un día aparece en gracia, con su fecha de suspensión; uno con más de 3 días aparece suspendido.
 
-* [ ] T1.48: `/admin`: layout y lista de negocios
+* [x] T1.48: `/admin`: layout y lista de negocios
    * Objetivo: Crear el layout de `(admin)` con `<ClerkProvider localization={esES}>` y `requireSuperadmin`, y la página `/admin` con la tabla de ADM-01 y el enlace "Nuevo negocio".
    * Archivos: `src/app/(admin)/layout.tsx`, `src/app/(admin)/admin/page.tsx`
    * Depende de: T1.38, T1.42, T1.47

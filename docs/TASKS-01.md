@@ -211,7 +211,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * E1 y E2.
       * El SQL incluye `UNIQUE (negocio_id, telefono_e164)`, el `CHECK` del formato E.164 y el índice único parcial `cliente_correo_uq … WHERE correo IS NOT NULL`.
 
-* [ ] T1.19: Esquema: citas y eventos
+* [x] T1.19: Esquema: citas y eventos
    * Objetivo: Declarar `cita` (instantánea, consentimiento, versiones, `recurso_elegido` y `reprogramaciones_cliente`) y `evento_cita`, con sus índices, salvo `cita_ocupacion_idx` (T1.21).
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T1.18

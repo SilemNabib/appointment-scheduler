@@ -12,12 +12,14 @@
 
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   customType,
   foreignKey,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -549,5 +551,132 @@ export const cliente = pgTable(
       sql`${t.anonimizadoEn} IS NOT NULL OR ${t.telefonoE164} IS NOT NULL OR ${t.correo} IS NOT NULL`,
     ),
     uniqueIndex("cliente_correo_uq").on(t.negocioId, t.correo).where(sql`${t.correo} IS NOT NULL`),
+  ],
+);
+
+// ─── Citas (ARCH §6, §10, §11, §18.2; RN-10, RN-12, RN-17, RN-33, RN-34) ──────
+
+export const cita = pgTable(
+  "cita",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    sedeId: uuid("sede_id").notNull(), // RN-32
+    servicioId: uuid("servicio_id").notNull(),
+    recursoId: uuid("recurso_id").notNull(), // asignado: elegido por el cliente o por el sistema (RN-33)
+    recursoElegido: boolean("recurso_elegido").notNull().default(false), // true si el cliente eligió a este empleado
+    clienteId: uuid("cliente_id").notNull(),
+    inicio: instante("inicio").notNull(),
+    fin: instante("fin").notNull(), // inicio + duración
+    ocupadoHasta: instante("ocupado_hasta").notNull(), // fin + buffer (RN-10)
+    estado: estadoCita("estado").notNull().default("confirmada"), // RN-12
+    origen: origenCita("origen").notNull(),
+    // Instantánea de la reserva (RN-18.3, ADR-13)
+    servicioNombre: text("servicio_nombre").notNull(),
+    clienteNombre: text("cliente_nombre").notNull(),
+    clienteApellido: text("cliente_apellido").notNull(),
+    clienteTelefono: text("cliente_telefono"),
+    clienteCorreo: text("cliente_correo"),
+    // Consentimiento (RN-17)
+    politicaDatosId: uuid("politica_datos_id"),
+    politicaAceptadaEn: instante("politica_aceptada_en"),
+    // Control
+    version: integer("version").notNull().default(1), // +1 en cada reprogramación; control optimista
+    tokenVersion: smallint("token_version").notNull().default(1), // +1 revoca los links (ARCH §13)
+    reprogramacionesCliente: smallint("reprogramaciones_cliente").notNull().default(0), // RN-34: solo las del cliente
+    canceladaEn: instante("cancelada_en"),
+    canceladaPor: tipoActor("cancelada_por"),
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+    actualizadoEn: instante("actualizado_en")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    foreignKey({
+      name: "cita_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("cita_reprogramaciones_cliente_check", sql`${t.reprogramacionesCliente} >= 0`),
+    unique("cita_id_negocio_id_key").on(t.id, t.negocioId),
+    check("cita_check", sql`${t.inicio} < ${t.fin} AND ${t.fin} <= ${t.ocupadoHasta}`),
+    check("cita_check1", sql`(${t.estado} = 'cancelada') = (${t.canceladaEn} IS NOT NULL)`),
+    check("cita_check2", sql`(${t.estado} = 'cancelada') = (${t.canceladaPor} IS NOT NULL)`),
+    // Las reservas públicas registran el consentimiento (RN-17).
+    check(
+      "cita_check3",
+      sql`${t.origen} = 'panel' OR (${t.politicaDatosId} IS NOT NULL AND ${t.politicaAceptadaEn} IS NOT NULL)`,
+    ),
+    // FK compuestas: una cita nunca mezcla datos de dos negocios (ARCH §6, defensa 2).
+    foreignKey({
+      name: "cita_sede_id_negocio_id_fkey",
+      columns: [t.sedeId, t.negocioId],
+      foreignColumns: [sede.id, sede.negocioId],
+    }),
+    foreignKey({
+      name: "cita_servicio_id_negocio_id_fkey",
+      columns: [t.servicioId, t.negocioId],
+      foreignColumns: [servicio.id, servicio.negocioId],
+    }),
+    // Servicio ofrecido en esa sede.
+    foreignKey({
+      name: "cita_servicio_id_sede_id_fkey",
+      columns: [t.servicioId, t.sedeId],
+      foreignColumns: [servicioSede.servicioId, servicioSede.sedeId],
+    }),
+    // Recurso de esa sede.
+    foreignKey({
+      name: "cita_recurso_id_sede_id_fkey",
+      columns: [t.recursoId, t.sedeId],
+      foreignColumns: [recurso.id, recurso.sedeId],
+    }),
+    foreignKey({
+      name: "cita_cliente_id_negocio_id_fkey",
+      columns: [t.clienteId, t.negocioId],
+      foreignColumns: [cliente.id, cliente.negocioId],
+    }),
+    foreignKey({
+      name: "cita_politica_datos_id_negocio_id_fkey",
+      columns: [t.politicaDatosId, t.negocioId],
+      foreignColumns: [politicaDatos.id, politicaDatos.negocioId],
+    }),
+    // cita_ocupacion_idx (con INCLUDE y WHERE) va en una migración manual (T1.21).
+    index("cita_agenda_idx").on(t.negocioId, t.inicio),
+    index("cita_sede_idx").on(t.sedeId, t.inicio),
+    // `DESC` de Postgres es `DESC NULLS FIRST`; Drizzle pondría `NULLS LAST`.
+    index("cita_cliente_idx").on(t.clienteId, t.inicio.desc().nullsFirst()),
+  ],
+);
+
+export const eventoCita = pgTable(
+  "evento_cita",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    negocioId: uuid("negocio_id").notNull(),
+    citaId: uuid("cita_id").notNull(),
+    tipo: text("tipo").notNull(),
+    actor: tipoActor("actor").notNull(),
+    actorId: text("actor_id"), // clerk_user_id cuando el actor es el dueño
+    // p. ej. {"inicio_anterior": "…", "inicio_nuevo": "…"}; NUNCA datos personales
+    datos: jsonb("datos").notNull().default({}),
+    creadoEn: instante("creado_en").notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      name: "evento_cita_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check(
+      "evento_cita_tipo_check",
+      sql`${t.tipo} IN ('creada', 'reprogramada', 'cancelada', 'completada', 'no_asistio', 'estado_corregido')`,
+    ),
+    foreignKey({
+      name: "evento_cita_cita_id_negocio_id_fkey",
+      columns: [t.citaId, t.negocioId],
+      foreignColumns: [cita.id, cita.negocioId],
+    }).onDelete("cascade"),
+    index("evento_cita_idx").on(t.citaId, t.creadoEn),
   ],
 );

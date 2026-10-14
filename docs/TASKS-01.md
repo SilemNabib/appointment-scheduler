@@ -303,7 +303,7 @@ Funciones puras que usa esta fase: sin E/S, sin Next y sin base de datos. Lo que
       * Con vencimiento el 10-oct a las 00:00 hora de Bogotá, el 12-oct a las 23:59 da `en_gracia` y el 13-oct a las 00:00 da `suspendida` (RN-31).
       * Con `estadoSuscripcion = 'suspendida'`, da `suspendida` en cualquier instante (RN-04).
 
-* [ ] T1.28: Validación de slugs
+* [x] T1.28: Validación de slugs
    * Objetivo: Definir la lista `RESERVADOS` de ARCH §5 y `validarSlug()`, que distingue un formato inválido de un slug reservado.
    * Archivos: `src/dominio/slug.ts`, `tests/unit/dominio/slug.test.ts`
    * Depende de: T1.03

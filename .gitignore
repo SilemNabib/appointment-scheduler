@@ -34,8 +34,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files: ningún archivo con secretos se versiona (RNF-04); solo la plantilla
 .env*
+!.env.example
+# secretos locales de wrangler (npm run preview)
+.dev.vars*
 
 # vercel
 .vercel

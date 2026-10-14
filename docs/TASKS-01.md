@@ -110,7 +110,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * `.env.local` tiene `DATABASE_URL` (con *pooler*) y `DATABASE_URL_DIRECTA` de la rama `dev`, más la API key y el ID del proyecto (Q-07).
       * `select version()` responde con la cadena directa de `dev` (con `psql` o con el SQL Editor de Neon).
 
-* [ ] T1.08: Plantilla de variables de entorno
+* [x] T1.08: Plantilla de variables de entorno
    * Objetivo: Listar sin valores, en `.env.example`, todas las variables de ARCH §7.7 y §21.3, y asegurar que ningún archivo con secretos se versiona.
    * Archivos: `.env.example`, `.gitignore`
    * Depende de: T1.01

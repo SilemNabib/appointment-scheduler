@@ -71,6 +71,13 @@
       "when": 1792006669701,
       "tag": "0009_notificaciones_y_calendario",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792006767846,
+      "tag": "0010_indices_manuales",
+      "breakpoints": true
     }
   ]
 }

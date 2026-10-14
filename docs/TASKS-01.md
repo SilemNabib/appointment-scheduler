@@ -230,7 +230,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * E1 y E2.
       * El SQL incluye `clave_idempotencia` `UNIQUE`, `CHECK ((tipo IN ('dueno_gracia', 'dueno_suspension')) = (cita_id IS NULL))` y el índice parcial `notificacion_cola_idx`.
 
-* [ ] T1.21: Migración manual: índices que Drizzle no expresa
+* [x] T1.21: Migración manual: índices que Drizzle no expresa
    * Objetivo: Crear en una migración manual `cita_ocupacion_idx` (con `INCLUDE` y `WHERE estado <> 'cancelada'`) y `enlace_calendario_vigente_uq` (con `NULLS NOT DISTINCT` y `WHERE revocado_en IS NULL`). Si la versión fijada de Drizzle expresa alguno, ese se declara en el esquema.
    * Archivos: nueva migración manual en `drizzle/`
    * Depende de: T1.20

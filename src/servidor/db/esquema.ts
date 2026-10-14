@@ -641,7 +641,7 @@ export const cita = pgTable(
       columns: [t.politicaDatosId, t.negocioId],
       foreignColumns: [politicaDatos.id, politicaDatos.negocioId],
     }),
-    // cita_ocupacion_idx (con INCLUDE y WHERE) va en una migración manual (T1.21).
+    // cita_ocupacion_idx (con INCLUDE y WHERE) está en la migración manual drizzle/0010_indices_manuales.sql.
     index("cita_agenda_idx").on(t.negocioId, t.inicio),
     index("cita_sede_idx").on(t.sedeId, t.inicio),
     // `DESC` de Postgres es `DESC NULLS FIRST`; Drizzle pondría `NULLS LAST`.
@@ -760,6 +760,6 @@ export const enlaceCalendario = pgTable(
       columns: [t.recursoId, t.sedeId],
       foreignColumns: [recurso.id, recurso.sedeId],
     }).onDelete("cascade"),
-    // enlace_calendario_vigente_uq (NULLS NOT DISTINCT y WHERE) va en una migración manual (T1.21).
+    // enlace_calendario_vigente_uq (NULLS NOT DISTINCT y WHERE) está en la migración manual drizzle/0010_indices_manuales.sql.
   ],
 );

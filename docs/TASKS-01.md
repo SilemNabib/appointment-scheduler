@@ -441,7 +441,7 @@ Clerk solo autentica; la pertenencia al negocio vive en `miembro_negocio` (ADR-0
       * El envoltorio devuelve `{ ok: false, error: 'NEGOCIO_SUSPENDIDO' }` ante ese `ErrorNegocio` y relanza cualquier otro error, incluidos `redirect()` y `notFound()` de Next (prueba unitaria).
       * `requireEscritura` decide solo con `ctx.suscripcion.estado`, sin otra consulta, y su comentario documenta la excepción de S-17. Su prueba con un negocio suspendido está en T1.43.
 
-* [ ] T1.42: `requireSuperadmin`
+* [x] T1.42: `requireSuperadmin`
    * Objetivo: Implementar `requireSuperadmin` con la lista `SUPERADMIN_CLERK_USER_IDS` (ADR-07). Responde 404 para no revelar que `/admin` existe.
    * Archivos: `src/servidor/auth/sesion.ts`, `tests/unit/servidor/require-superadmin.test.ts`
    * Depende de: T1.37

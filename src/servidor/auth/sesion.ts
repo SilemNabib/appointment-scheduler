@@ -1,6 +1,6 @@
 import "server-only";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { ErrorNegocio } from "@/dominio/resultado";
 import { estadoEfectivo, type EstadoEfectivo } from "@/dominio/suscripcion";
@@ -56,6 +56,21 @@ export async function requireEscritura(): Promise<ContextoMiembro> {
   const ctx = await requireMiembro();
   if (ctx.suscripcion.estado === "suspendida") throw new ErrorNegocio("NEGOCIO_SUSPENDIDO");
   return ctx;
+}
+
+/**
+ * Admin del SaaS: lista de IDs de Clerk en `SUPERADMIN_CLERK_USER_IDS`, separados por
+ * comas (ADR-07). Primera línea de toda página, Server Action y ruta de /admin.
+ * Responde 404 a cualquier otro, con o sin sesión, para no revelar que /admin existe.
+ */
+export async function requireSuperadmin(): Promise<{ clerkUserId: string }> {
+  const { userId } = await auth();
+  const permitidos = (process.env.SUPERADMIN_CLERK_USER_IDS ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  if (!userId || !permitidos.includes(userId)) notFound();
+  return { clerkUserId: userId };
 }
 
 /**

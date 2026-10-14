@@ -250,7 +250,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * `select tgname from pg_trigger where tgname like 'auditar_%'` devuelve los seis triggers en `development`.
       * `auditoria_admin.negocio_id` no tiene FK, para que el registro sobreviva al negocio.
 
-* [ ] T1.23: Pruebas del esquema: sedes y recursos
+* [x] T1.23: Pruebas del esquema: sedes y recursos
    * Objetivo: Probar las restricciones del modelo de sedes con datos mínimos creados por un ayudante de pruebas. El ayudante inserta el plan por SQL, porque la semilla llega en T1.30.
    * Archivos: `tests/integracion/fixtures.ts`, `tests/integracion/esquema/sedes.test.ts`
    * Depende de: T1.22

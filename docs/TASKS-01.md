@@ -260,7 +260,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * Una `cita` con un servicio que su sede no ofrece se rechaza por FK (ARCH §20, Sedes).
       * Un recurso con capacidad 0 se rechaza (RN-06).
 
-* [ ] T1.24: Pruebas del esquema: modelo de empleados
+* [x] T1.24: Pruebas del esquema: modelo de empleados
    * Objetivo: Probar que el modelo de empleados (D-17) ya protege sus invariantes, aunque no tenga interfaz.
    * Archivos: `tests/integracion/esquema/empleados.test.ts`
    * Depende de: T1.23

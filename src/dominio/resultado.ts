@@ -26,15 +26,15 @@ export const CODIGOS_ERROR = [
 
 export type CodigoError = (typeof CODIGOS_ERROR)[number];
 
-export type Resultado<T, E = CodigoError> =
-  | { ok: true; valor: T }
-  | { ok: false; error: E };
+export type Exito<T> = { ok: true; valor: T };
+export type Fallo<E> = { ok: false; error: E };
+export type Resultado<T, E = CodigoError> = Exito<T> | Fallo<E>;
 
-export function exito<T>(valor: T): Resultado<T, never> {
+export function exito<T>(valor: T): Exito<T> {
   return { ok: true, valor };
 }
 
-export function fallo<E>(error: E): Resultado<never, E> {
+export function fallo<E>(error: E): Fallo<E> {
   return { ok: false, error };
 }
 

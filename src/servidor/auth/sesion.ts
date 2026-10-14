@@ -2,6 +2,7 @@ import "server-only";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { ErrorNegocio } from "@/dominio/resultado";
 import { estadoEfectivo, type EstadoEfectivo } from "@/dominio/suscripcion";
 import * as miembros from "@/servidor/db/repositorios/miembros";
 import * as negocios from "@/servidor/db/repositorios/negocios";
@@ -40,6 +41,22 @@ export const requireMiembro = cache(async (): Promise<ContextoMiembro> => {
     suscripcion: estadoEfectivo(negocio, new Date()),
   };
 });
+
+/**
+ * Toda Server Action que MODIFICA datos empieza con esto. Con el negocio suspendido
+ * el panel es de solo lectura (RN-04, D-14): lanza `ErrorNegocio('NEGOCIO_SUSPENDIDO')`,
+ * que el envoltorio de las Server Actions (`servidor/accion.ts`) convierte en
+ * `{ ok: false, error: 'NEGOCIO_SUSPENDIDO' }`. Decide solo con el estado efectivo que
+ * ya trae el contexto, sin otra consulta: en gracia se puede escribir (RN-31).
+ *
+ * Excepción (S-17): `editarCliente` y `suprimirCliente` usan `requireMiembro` en su
+ * lugar, para atender los derechos del titular (Ley 1581) aun con el negocio suspendido.
+ */
+export async function requireEscritura(): Promise<ContextoMiembro> {
+  const ctx = await requireMiembro();
+  if (ctx.suscripcion.estado === "suspendida") throw new ErrorNegocio("NEGOCIO_SUSPENDIDO");
+  return ctx;
+}
 
 /**
  * Primer ingreso (ARCH §7.4): vincula al miembro pendiente cuyo correo es el

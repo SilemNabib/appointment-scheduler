@@ -432,7 +432,7 @@ Clerk solo autentica; la pertenencia al negocio vive en `miembro_negocio` (ADR-0
       * Con el correo principal sin verificar, redirige a `/sin-acceso` y el miembro conserva `clerk_user_id` en `NULL` (ARCH §7.4: "Un correo sin verificar nunca da acceso").
       * Sin sesión, redirige a `/login`.
 
-* [ ] T1.41: `requireEscritura` y envoltorio de Server Actions
+* [x] T1.41: `requireEscritura` y envoltorio de Server Actions
    * Objetivo: Implementar `requireEscritura`, que lanza `ErrorNegocio('NEGOCIO_SUSPENDIDO')` cuando el negocio está suspendido, y el envoltorio de Server Actions que convierte un `ErrorNegocio` en `{ ok: false, error }`.
    * Archivos: `src/servidor/auth/sesion.ts`, `src/servidor/accion.ts`, `tests/unit/servidor/accion.test.ts`
    * Depende de: T1.25, T1.40

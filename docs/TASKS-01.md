@@ -283,7 +283,7 @@ Funciones puras que usa esta fase: sin E/S, sin Next y sin base de datos. Lo que
       * `CodigoError` incluye los 10 códigos de la tabla de ARCH §18.5, más `SLUG_NO_DISPONIBLE`, `CONFLICTO_VERSION`, `ANTES_DEL_INICIO` y `FRANJAS_SOLAPADAS` (ARCH §18.4).
       * La prueba unitaria verifica que los constructores producen las dos ramas y que `ErrorNegocio` expone su `codigo`.
 
-* [ ] T1.26: Tiempo: hora local y UTC
+* [x] T1.26: Tiempo: hora local y UTC
    * Objetivo: Implementar en `dominio/tiempo.ts`, con `@date-fns/tz`, la conversión de una fecha y hora local a UTC con la zona del negocio, y la de una fecha de vencimiento local inclusiva al instante que se guarda (las 00:00 locales del día siguiente) y de vuelta.
    * Archivos: `src/dominio/tiempo.ts`, `tests/unit/dominio/tiempo.test.ts`, `package.json` (`date-fns` y `@date-fns/tz`, versiones exactas)
    * Depende de: T1.03

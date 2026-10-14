@@ -334,7 +334,7 @@ El catálogo en código es la fuente de verdad (ARCH §16.2), y `src/servidor/pl
       * Ejecutar `npm run db:semilla` dos veces en `development` deja 1 fila en `plan`, 6 en `plan_funcionalidad` y 6 en `plan_limite`.
       * La rama efímera de las pruebas de integración ya tiene el plan `ilimitado`.
 
-* [ ] T1.31: Función de acceso a planes
+* [x] T1.31: Función de acceso a planes
    * Objetivo: Implementar `tieneFuncionalidad`, `limite` (`null` = ilimitado), `exigirCupo` y `listarPlanes`, con la resolución de ARCH §16.3 (excepción, plan y catálogo), que distingue "no hay fila" de "fila con `NULL`".
    * Archivos: `src/servidor/planes/acceso.ts`, `tests/integracion/planes/acceso.test.ts`
    * Depende de: T1.13, T1.25, T1.30

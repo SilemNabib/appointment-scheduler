@@ -100,7 +100,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
 - **E1.** `npm run db:generate` crea una sola migración nueva cuyo SQL coincide con ARCH §18.2 para las tablas de la tarea (tipos, `DEFAULT`, `CHECK`, FK, `UNIQUE` e índices). Un segundo `npm run db:generate` informa que no hay cambios.
 - **E2.** `npm run db:migrate` aplica la migración en la rama `dev`, y `npm run test:integracion` pasa (aplica la cadena completa en una rama efímera).
 
-* [ ] T1.07: [manual] Proyecto de Neon
+* [x] T1.07: [manual] Proyecto de Neon
    * Objetivo: Crear el proyecto de Neon en la región `aws-us-east-1`, con las ramas `main` (producción) y `dev`, y una API key para crear las ramas efímeras de las pruebas.
    * Archivos: `.env.local` (no versionado)
    * Depende de: —
@@ -119,7 +119,7 @@ Las tablas se declaran en `src/servidor/db/esquema.ts`, que debe producir exacta
       * `.env.example` contiene cada nombre de ARCH §7.7 y §21.3, más los de Q-07.
       * `git check-ignore .env.local .dev.vars .env.production.local` lista los tres archivos.
 
-* [ ] T1.09: Drizzle y clientes de Neon
+* [x] T1.09: Drizzle y clientes de Neon
    * Objetivo: Instalar `drizzle-orm`, `drizzle-kit` y `@neondatabase/serverless` (versiones exactas), configurar `drizzle-kit` (esquema, carpeta `drizzle/` y cadena directa) y crear `db()` por HTTP y `enTransaccion()` por WebSocket, como en ARCH §8.
    * Archivos: `drizzle.config.ts`, `src/servidor/db/cliente.ts`, `src/servidor/db/esquema.ts` (vacío), `package.json` (scripts `db:generate`, `db:migrate` y `db:check`)
    * Depende de: T1.02, T1.07, T1.08

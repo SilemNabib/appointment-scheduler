@@ -4,16 +4,10 @@ import { ErrorNegocio } from "@/dominio/resultado";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
 import { exigirCupo, limite, listarPlanes, tieneFuncionalidad } from "@/servidor/planes/acceso";
-import { PLAN_ILIMITADO } from "@/servidor/planes/semilla";
-import { crearNegocio, crearPlan } from "../fixtures";
+import { crearNegocio, crearPlan, idPlanIlimitado } from "../fixtures";
 
 // Función de acceso a planes (RN-25, ARCH §16.3). El orden completo de la
 // resolución se prueba en T1.34.
-
-async function idPlanIlimitado() {
-  const planes = await listarPlanes();
-  return planes.find((p) => p.codigo === PLAN_ILIMITADO.codigo)!.id;
-}
 
 async function conExcepcion(negocioId: string, valor: number | null) {
   await db().insert(esquema.negocioLimite).values({ negocioId, limite: "max_services", valor });

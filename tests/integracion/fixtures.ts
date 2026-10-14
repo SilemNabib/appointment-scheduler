@@ -1,19 +1,27 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
+import { listarPlanes } from "@/servidor/planes/acceso";
+import { PLAN_ILIMITADO } from "@/servidor/planes/semilla";
 
 // Datos mínimos para las pruebas de integración. Cada llamada crea filas nuevas con
 // identificadores aleatorios, así las pruebas no dependen unas de otras.
 
 const sufijo = () => randomUUID().slice(0, 8);
 
-/** Plan mínimo insertado por SQL: la semilla del plan `ilimitado` llega en T1.30. */
+/** Plan mínimo, sin filas de funcionalidades ni de límites: todo sale del catálogo. */
 export async function crearPlan() {
   const [fila] = await db()
     .insert(esquema.plan)
     .values({ codigo: `prueba-${sufijo()}`, nombre: "Plan de prueba" })
     .returning({ id: esquema.plan.id });
   return fila.id;
+}
+
+/** Id del plan `ilimitado`, que la semilla crea en la rama efímera (T1.30). */
+export async function idPlanIlimitado() {
+  const planes = await listarPlanes();
+  return planes.find((p) => p.codigo === PLAN_ILIMITADO.codigo)!.id;
 }
 
 export async function crearNegocio(planId?: string) {

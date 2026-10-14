@@ -362,7 +362,7 @@ El catálogo en código es la fuente de verdad (ARCH §16.2), y `src/servidor/pl
       * Después de la semilla existe el plan `ilimitado`, con las 6 funcionalidades habilitadas y todos los límites en `NULL` (RN-26; Q-03).
       * Insertar un negocio sin `plan_id` falla (RN-26).
 
-* [ ] T1.34: Pruebas de planes: resolución
+* [x] T1.34: Pruebas de planes: resolución
    * Objetivo: Probar el orden de resolución de la función de acceso.
    * Archivos: `tests/integracion/planes/resolucion.test.ts`
    * Depende de: T1.31

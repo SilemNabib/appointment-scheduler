@@ -293,7 +293,7 @@ Funciones puras que usa esta fase: sin E/S, sin Next y sin base de datos. Lo que
       * "Pagado hasta el 9 de octubre" da `2026-10-10T05:00:00Z`, y la conversión inversa devuelve `2026-10-09` (ARCH §7.6).
       * Los resultados no cambian si la suite corre con `TZ` distinta de Bogotá (RN-03: "aunque el dispositivo esté en otra zona horaria").
 
-* [ ] T1.27: Estado efectivo de la suscripción
+* [x] T1.27: Estado efectivo de la suscripción
    * Objetivo: Implementar `estadoEfectivo()` y `DIAS_GRACIA = 3` tal como ARCH §7.6.
    * Archivos: `src/dominio/suscripcion.ts`, `tests/unit/dominio/suscripcion.test.ts`
    * Depende de: T1.03

@@ -316,7 +316,7 @@ Funciones puras que usa esta fase: sin E/S, sin Next y sin base de datos. Lo que
 
 El catálogo en código es la fuente de verdad (ARCH §16.2), y `src/servidor/planes/` es el único módulo que lee las tablas de planes y de excepciones (RN-25). PRD §12 no asigna los planes a ninguna fase, pero la Fase 1 los necesita para el alta (RN-26) y la Fase 2 para `max_services` (Q-04).
 
-* [ ] T1.29: Catálogo de funcionalidades y límites
+* [x] T1.29: Catálogo de funcionalidades y límites
    * Objetivo: Crear `FUNCIONALIDADES`, `LIMITES` y sus tipos exactamente como ARCH §16.2.
    * Archivos: `src/servidor/planes/catalogo.ts`, `tests/unit/planes/catalogo.test.ts`
    * Depende de: T1.02

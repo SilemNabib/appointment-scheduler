@@ -509,7 +509,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * El administrador ve en `/admin` la lista de negocios.
       * Si se quita su ID de `SUPERADMIN_CLERK_USER_IDS`, el mismo usuario recibe 404 en `/admin`.
 
-* [ ] T1.49: `/admin`: formulario de alta
+* [x] T1.49: `/admin`: formulario de alta
    * Objetivo: Crear el formulario de alta (ADM-02, F-11) y su Server Action, que llama a `requireSuperadmin` y a `altaNegocio`, muestra el mensaje de cada código de error y vuelve a `/admin` si el alta sale bien.
    * Archivos: `src/app/(admin)/admin/negocios/nuevo/page.tsx`, `src/app/(admin)/admin/negocios/nuevo/acciones.ts`
    * Depende de: T1.46, T1.48

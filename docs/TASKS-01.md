@@ -568,7 +568,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * Con `npm run preview`, `POST /api/interno/cron` sin el encabezado o con otro secreto responde 401, y con `Bearer CRON_SECRET` responde 204.
       * Con `wrangler dev --test-scheduled`, `GET /__scheduled` hace que el Worker invoque la ruta, y el registro muestra la respuesta 204.
 
-* [ ] T1.55: [manual] Secretos del Worker desplegado
+* [x] T1.55: [manual] Secretos del Worker desplegado
    * Objetivo: Cargar en el Worker los secretos de esta fase y preparar las variables de build del despliegue.
    * Archivos: `.env.production.local` (no versionado)
    * Depende de: T1.06, T1.07, T1.36
@@ -577,7 +577,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * `npx wrangler secret list` muestra `DATABASE_URL` (rama `production`, con *pooler*), `CLERK_SECRET_KEY` y `CRON_SECRET`.
       * `.env.production.local` tiene `DATABASE_URL_DIRECTA` de `production` y las variables `NEXT_PUBLIC_CLERK_*` de la instancia de Clerk que use el despliegue (Q-06).
 
-* [ ] T1.56: Despliegue en un comando, con migraciones
+* [x] T1.56: Despliegue en un comando, con migraciones
    * Objetivo: Hacer que `npm run deploy` aplique las migraciones pendientes en `production` antes de compilar y desplegar (ARCH §21.4), y declarar `APP_URL` y `SUPERADMIN_CLERK_USER_IDS` en los `vars` de `wrangler.jsonc`.
    * Archivos: `package.json` (scripts `deploy`, `db:migrate:prod` y `db:semilla:prod`), `wrangler.jsonc`
    * Depende de: T1.30, T1.54, T1.55

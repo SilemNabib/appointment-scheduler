@@ -1,13 +1,13 @@
 {
   "name": "agenda-citas",
-  "version": "0.37.3",
+  "version": "0.38.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && node scripts/limpiar-env-del-bundle.mjs && opennextjs-cloudflare deploy",
+    "deploy": "npm run db:migrate:prod && opennextjs-cloudflare build && node scripts/limpiar-env-del-bundle.mjs && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -16,8 +16,10 @@
     "verificar": "npm run typecheck && npm run lint && npm test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:prod": "node --env-file=.env.production.local node_modules/drizzle-kit/bin.cjs migrate",
     "db:check": "drizzle-kit check",
-    "db:semilla": "tsx --conditions=react-server scripts/semilla.ts"
+    "db:semilla": "tsx --conditions=react-server scripts/semilla.ts",
+    "db:semilla:prod": "node --env-file=.env.production.local --conditions=react-server --import tsx scripts/semilla.ts"
   },
   "dependencies": {
     "@clerk/localizations": "4.23.0",

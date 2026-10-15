@@ -2,8 +2,10 @@ import { loadEnvConfig } from "@next/env";
 import { defineConfig } from "drizzle-kit";
 
 // Carga los archivos .env como Next. En modo desarrollo (por defecto) lee .env.local
-// y nunca .env.production.local, para no migrar `production` por accidente; las
-// migraciones de producción se ejecutan con NODE_ENV=production.
+// y nunca .env.production.local, para no migrar `production` por accidente. Las
+// migraciones de producción (`npm run db:migrate:prod`) cargan antes
+// .env.production.local con `node --env-file`, y @next/env no pisa lo que ya está en
+// process.env (Q-07).
 loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 
 // Cadena directa, sin pooler: las migraciones no pasan por PgBouncer (ARCH §8).

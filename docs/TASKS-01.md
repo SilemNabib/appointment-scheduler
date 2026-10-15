@@ -519,7 +519,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * Un alta en local con un correo propio aparece en `/admin`, y el Dashboard de Clerk muestra la invitación pendiente.
       * El slug `admin` muestra "slug no disponible" y no crea nada.
 
-* [ ] T1.50: Panel: layout y primer ingreso del dueño
+* [x] T1.50: Panel: layout y primer ingreso del dueño
    * Objetivo: Crear el layout de `(panel)` con `<ClerkProvider localization={esES}>`, `requireMiembro` y un encabezado con el nombre del negocio (caso de uso `resumenNegocio`) y `<UserButton/>`, más una página `/panel` provisional. Configurar la redirección de Clerk tras ingresar o registrarse (Q-13).
    * Archivos: `src/app/(panel)/layout.tsx`, `src/app/(panel)/panel/page.tsx`, `src/servidor/casos-uso/resumen-negocio.ts`, `.env.example`
    * Depende de: T1.40, T1.49
@@ -528,7 +528,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * Al aceptar la invitación de T1.49, el dueño define su contraseña en `/registro`, llega a `/panel` y ve el nombre de su negocio. En la base, su miembro queda con `clerk_user_id` y `vinculado_en` (F-05, pasos 1 y 2; ARCH §7.4).
       * Desde `<UserButton/>`, el dueño cambia su contraseña y cierra sesión. Después, `/panel` redirige a `/login` (PAN-01).
 
-* [ ] T1.51: Página "sin acceso"
+* [x] T1.51: Página "sin acceso"
    * Objetivo: Crear `/sin-acceso`, a donde `requireMiembro` envía a un usuario válido sin negocio, con un mensaje y un botón para cerrar sesión.
    * Archivos: `src/app/(auth)/sin-acceso/page.tsx`
    * Depende de: T1.38, T1.50

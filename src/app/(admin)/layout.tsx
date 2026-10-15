@@ -11,7 +11,7 @@ export default async function AdminLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   await requireSuperadmin();
   return (
-    <ClerkProvider localization={esES}>
+    <ClerkProvider localization={esES} afterSignOutUrl="/login">
       <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <Link href="/admin" className="font-semibold">
           Agenda de citas · Admin

@@ -15,7 +15,7 @@ export default async function PanelLayout({
   const negocio = await resumenNegocio(ctx);
 
   return (
-    <ClerkProvider localization={esES}>
+    <ClerkProvider localization={esES} afterSignOutUrl="/login">
       <header className="flex items-center justify-between gap-4 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <Link href="/panel" className="truncate font-semibold">
           {negocio.nombre}

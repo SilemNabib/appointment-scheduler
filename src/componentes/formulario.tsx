@@ -154,7 +154,9 @@ export const claseBoton = (variante: keyof typeof VARIANTES_BOTON = "primario") 
 
 /**
  * Botón de envío que se deshabilita y cambia su texto mientras la Server Action del
- * formulario corre. Va dentro del `<form>`: lee su estado con `useFormStatus`.
+ * formulario corre. Va dentro del `<form>`: lee su estado con `useFormStatus`. Si el
+ * formulario tiene varios botones con `name` y `value`, todos se deshabilitan, pero
+ * solo cambia el texto del que se pulsó.
  */
 export function BotonEnviar({
   children,
@@ -167,10 +169,11 @@ export function BotonEnviar({
   textoEnviando: ReactNode;
   variante?: keyof typeof VARIANTES_BOTON;
 } & Omit<ComponentProps<"button">, "type" | "children">) {
-  const { pending } = useFormStatus();
+  const { pending, data } = useFormStatus();
+  const pulsado = props.name === undefined || data?.get(props.name) === String(props.value);
   return (
     <button {...props} type="submit" disabled={pending || props.disabled} className={claseBoton(variante)}>
-      {pending ? textoEnviando : children}
+      {pending && pulsado ? textoEnviando : children}
     </button>
   );
 }

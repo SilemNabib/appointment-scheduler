@@ -136,7 +136,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * Un PNG válido queda en `logo_url`, y reemplazarlo borra el anterior. Un SVG devuelve `DATOS_INVALIDOS` y no guarda nada.
       * `quitarLogo` deja `logo_url` en `NULL` y borra la imagen.
 
-* [ ] T2.11: Página "Negocio"
+* [x] T2.11: Página "Negocio"
    * Objetivo: Crear `/panel/configuracion/negocio` con el formulario de PAN-11 y sus Server Actions: nombre, logo con vista previa, colores, dirección y teléfono.
    * Archivos: `src/app/(panel)/panel/configuracion/negocio/page.tsx`, `src/app/(panel)/panel/configuracion/negocio/formulario.tsx`, `src/app/(panel)/panel/configuracion/negocio/acciones.ts`
    * Depende de: T2.05, T2.10

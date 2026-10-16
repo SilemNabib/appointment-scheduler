@@ -204,7 +204,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * Guardar el consultorio con capacidad 0 devuelve `DATOS_INVALIDOS` y la capacidad no cambia (RN-06).
       * Desactivar un servicio conserva sus citas tal como estaban (RN-05: "sus citas existentes se conservan").
 
-* [ ] T2.18: Pruebas del límite de servicios del plan
+* [x] T2.18: Pruebas del límite de servicios del plan
    * Objetivo: Probar que el límite `max_services` se valida en el servidor, llamando directamente a las Server Actions que lo exigen: crear y activar (ARCH §16.3).
    * Archivos: `tests/integracion/app/panel/servicios-limites.test.ts`
    * Depende de: T2.15, T2.17

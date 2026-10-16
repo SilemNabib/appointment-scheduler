@@ -100,7 +100,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * Se aceptan muestras mínimas de PNG, JPEG y WebP. Se rechazan un SVG, un GIF y un texto con nombre `.png` (ARCH §19.2: sin SVG).
       * Se acepta un archivo de 512 KB y se rechaza uno de 512 KB más 1 byte.
 
-* [ ] T2.07: [manual] Bucket de R2
+* [x] T2.07: [manual] Bucket de R2
    * Objetivo: Crear en Cloudflare R2 el bucket `agenda-media` de ARCH §21.2.
    * Archivos: —
    * Depende de: T1.05
@@ -109,7 +109,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * `npx wrangler r2 bucket list` muestra `agenda-media`.
       * El bucket no tiene acceso público (`r2.dev` desactivado), porque las imágenes se sirven a través del Worker (Q-21).
 
-* [ ] T2.08: Almacenamiento de imágenes y ruta pública
+* [x] T2.08: Almacenamiento de imágenes y ruta pública
    * Objetivo: Declarar el binding `MEDIA` en `wrangler.jsonc`, crear `guardarImagen` y `borrarImagen` (con nombre aleatorio y el tipo que detecta T2.06) y crear la ruta `GET /api/media/{clave}`, que sirve la imagen desde R2 con los encabezados de Q-21.
    * Archivos: `wrangler.jsonc`, `cloudflare-env.d.ts`, `src/servidor/archivos/imagenes.ts`, `src/app/api/media/[clave]/route.ts`
    * Depende de: T2.06, T2.07

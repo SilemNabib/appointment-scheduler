@@ -1,6 +1,5 @@
-// Basado en ARCH §21.2, reducido a lo que usa la Fase 1.
-// R2 (`r2_buckets`) y los límites de frecuencia (`ratelimits`) se añaden en la
-// fase que los usa.
+// Basado en ARCH §21.2, reducido a lo que ya se usa. Los límites de frecuencia
+// (`ratelimits`) se añaden en la fase que los usa.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "agenda-citas",
@@ -9,6 +8,8 @@
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "triggers": { "crons": ["*/5 * * * *"] }, // RN-21; manejador `scheduled` de worker.ts (§14.5)
+  // Logos y fotos (§2, §19.2). El bucket no es público: se sirven con /api/media/{clave} (Q-21).
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "agenda-media" }],
   // Variables del Worker que no son secretas (ARCH §21.3). Los secretos (DATABASE_URL,
   // CLERK_SECRET_KEY y CRON_SECRET) se cargan con `wrangler secret put`. En `npm run
   // preview`, .dev.vars las reemplaza.

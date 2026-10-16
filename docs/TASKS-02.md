@@ -167,7 +167,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * Un servicio de otro negocio devuelve `NO_ENCONTRADO`.
       * Con más servicios activos que `max_services`, los existentes se pueden editar y desactivar: solo crear o reactivar exige cupo (RN-28; ARCH §16.3).
 
-* [ ] T2.14: Caso de uso `guardarConsultorio`
+* [x] T2.14: Caso de uso `guardarConsultorio`
    * Objetivo: Implementar `guardarConsultorio`, que guarda el nombre y la capacidad (un entero mayor o igual que 1) del consultorio de la sede principal.
    * Archivos: `src/servidor/casos-uso/consultorio.ts`, `src/servidor/db/repositorios/recursos.ts`, `tests/integracion/casos-uso/consultorio.test.ts`
    * Depende de: T2.01

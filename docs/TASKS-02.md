@@ -318,7 +318,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * En un negocio nuevo, la página muestra los valores por defecto de D-09 y guarda los cambios.
       * La asistencia por defecto ofrece "Asistió", "No asistió" y "Siempre decido yo" (D-21). La ayuda del límite de reprogramaciones explica que vacío es sin límite y que 0 no permite reprogramar (RN-34).
 
-* [ ] T2.29: Página de recordatorios
+* [x] T2.29: Página de recordatorios
    * Objetivo: Crear `/panel/configuracion/recordatorios` con el momento del recordatorio (PAN-16) y su Server Action.
    * Archivos: `src/app/(panel)/panel/configuracion/recordatorios/page.tsx`, `src/app/(panel)/panel/configuracion/recordatorios/formulario.tsx`, `src/app/(panel)/panel/configuracion/recordatorios/acciones.ts`
    * Depende de: T2.28

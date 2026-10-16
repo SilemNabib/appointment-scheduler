@@ -5,6 +5,7 @@ import type { ContextoMiembro } from "@/servidor/auth/sesion";
 import { enTransaccion } from "@/servidor/db/cliente";
 import * as negocios from "@/servidor/db/repositorios/negocios";
 import * as politicas from "@/servidor/db/repositorios/politicas";
+import { politicaInicial } from "@/servidor/politica-datos/plantilla";
 
 // Política de tratamiento de datos (PAN-17; D-05, RN-17; ARCH §18.3). Publicar crea la
 // versión siguiente y no toca las anteriores: la que aceptó cada cliente no cambia. La
@@ -23,6 +24,13 @@ export const esquemaPolitica = z.object({
 /** Todas las versiones, de la vigente (la de mayor versión) a la más vieja. */
 export async function listarPoliticas(ctx: Ctx): Promise<politicas.VersionPolitica[]> {
   return politicas.listar(ctx.negocioId);
+}
+
+/** La plantilla del SaaS con el nombre del negocio, para empezar de nuevo desde ella (D-05). */
+export async function plantillaPolitica(ctx: Ctx): Promise<string> {
+  const negocio = await negocios.resumen(ctx.negocioId);
+  if (!negocio) throw new Error(`No existe el negocio ${ctx.negocioId} del contexto.`);
+  return politicaInicial(negocio.nombre);
 }
 
 export async function publicarPolitica(

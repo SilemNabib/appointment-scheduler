@@ -336,7 +336,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * Publicar en un negocio con la v1 crea la v2, y la v1 conserva su contenido y su fecha (ARCH §18.3: "La política aceptada no cambia").
       * Un texto vacío devuelve `DATOS_INVALIDOS`, y el repositorio no expone ninguna función de `UPDATE` ni de `DELETE` sobre `politica_datos`.
 
-* [ ] T2.31: Página de la política de datos
+* [x] T2.31: Página de la política de datos
    * Objetivo: Crear `/panel/configuracion/politica` con su Server Action. La página tiene el editor del texto (Markdown), que parte de la versión vigente; un botón para partir de la plantilla del SaaS; el historial de versiones con su fecha; y un aviso de que publicar crea una versión nueva, que aplica a las reservas siguientes.
    * Archivos: `src/app/(panel)/panel/configuracion/politica/page.tsx`, `src/app/(panel)/panel/configuracion/politica/formulario.tsx`, `src/app/(panel)/panel/configuracion/politica/acciones.ts`
    * Depende de: T2.05, T2.30

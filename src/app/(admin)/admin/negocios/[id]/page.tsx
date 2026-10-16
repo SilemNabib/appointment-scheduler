@@ -5,11 +5,13 @@ import { EstadoEfectivo, ESTADOS_SUSCRIPCION, Vencimiento } from "@/componentes/
 import { ANILLO_FOCO } from "@/componentes/formulario";
 import { requireSuperadmin } from "@/servidor/auth/sesion";
 import { detalleNegocioAdmin } from "@/servidor/casos-uso/detalle-negocio-admin";
+import { BotonSuspender, FormularioFinPrueba, FormularioPago } from "./formularios";
 
 export const metadata: Metadata = { title: "Negocio · Admin" };
 
-// Detalle de un negocio (ADM-01, ADM-03): los datos de la suscripción. Un id que no
-// existe responde 404.
+// Detalle de un negocio (ADM-01, ADM-03): los datos de la suscripción y sus acciones:
+// registrar un pago, cambiar el fin de la prueba (solo en prueba, Q-25) y suspender.
+// Un id que no existe responde 404.
 export default async function DetalleNegocio({ params }: { params: Promise<{ id: string }> }) {
   await requireSuperadmin();
   const { id } = await params;
@@ -45,6 +47,18 @@ export default async function DetalleNegocio({ params }: { params: Promise<{ id:
           </div>
         ))}
       </dl>
+
+      <FormularioPago negocioId={negocio.id} pagadoHasta={negocio.pagadoHasta} />
+      {negocio.estadoSuscripcion === "prueba" && (
+        <FormularioFinPrueba negocioId={negocio.id} finPrueba={negocio.finPrueba} />
+      )}
+      {negocio.estadoSuscripcion === "suspendida" ? (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          El negocio está suspendido. Registra un pago para reactivarlo.
+        </p>
+      ) : (
+        <BotonSuspender negocioId={negocio.id} nombre={negocio.nombre} />
+      )}
     </section>
   );
 }

@@ -403,7 +403,7 @@ Entra en esta fase por el supuesto de Q-04 (TASKS-01). Si esa pregunta se respon
       * Cada fila de la lista abre el detalle de su negocio.
       * Un id inexistente responde 404.
 
-* [ ] T2.38: `/admin`: acciones de suscripción
+* [x] T2.38: `/admin`: acciones de suscripción
    * Objetivo: Agregar al detalle los formularios y sus Server Actions, detrás de `requireSuperadmin`: registrar un pago, cambiar el fin de la prueba (solo en `prueba`) y suspender, con confirmación.
    * Archivos: `src/app/(admin)/admin/negocios/[id]/page.tsx`, `src/app/(admin)/admin/negocios/[id]/acciones.ts`, `src/app/(admin)/admin/negocios/[id]/formularios.tsx`
    * Depende de: T2.36, T2.37

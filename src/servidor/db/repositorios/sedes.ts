@@ -69,3 +69,18 @@ export async function actualizarContactoPrincipal(
     .returning({ id: sede.id });
   return filas.length > 0;
 }
+
+/**
+ * Toma la fila de la sede principal hasta el fin de la transacción y devuelve su id,
+ * o `null` si no existe. Serializa los cambios que reemplazan datos de la sede, como
+ * la semana completa del horario. `NO KEY UPDATE` no bloquea las filas nuevas que la
+ * referencian por FK.
+ */
+export async function bloquearPrincipal(negocioId: string, tx: Transaccion): Promise<string | null> {
+  const [fila] = await tx
+    .select({ id: sede.id })
+    .from(sede)
+    .where(and(eq(sede.negocioId, negocioId), eq(sede.id, idSedePrincipal(negocioId))))
+    .for("no key update");
+  return fila?.id ?? null;
+}

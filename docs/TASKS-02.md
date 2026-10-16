@@ -226,7 +226,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * El mismo día se aceptan 8:00–12:00 con 14:00–18:00, y 8:00–12:00 con 12:00–14:00 (contiguas, D-12). En cambio, 8:00–12:00 con 11:00–13:00 devuelve `FRANJAS_SOLAPADAS` con el día afectado.
       * Se rechaza una franja que termina a la misma hora o antes de empezar, o con un día fuera de 1 a 7. La misma franja en días distintos se acepta.
 
-* [ ] T2.20: Caso de uso `guardarHorarioSemanal`
+* [x] T2.20: Caso de uso `guardarHorarioSemanal`
    * Objetivo: Implementar `guardarHorarioSemanal` y `leerHorarioSemanal` para la sede principal (`recurso_id` en `NULL`). Guardar valida con T2.19 y reemplaza la semana completa en una transacción (ARCH §17.3).
    * Archivos: `src/servidor/casos-uso/horario.ts`, `src/servidor/db/repositorios/horarios.ts`, `tests/integracion/casos-uso/horario.test.ts`
    * Depende de: T2.01, T2.19

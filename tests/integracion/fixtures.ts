@@ -192,6 +192,17 @@ export async function sesionDeDueno(suscripcion: Partial<DatosSuscripcion> = {})
   return { negocioId, clerkUserId };
 }
 
+/** Excepción de un límite del plan para el negocio (`negocio_limite`; `null` = ilimitado). */
+export async function fijarLimite(negocioId: string, limite: "max_services" | "max_resources", valor: number | null) {
+  await db()
+    .insert(esquema.negocioLimite)
+    .values({ negocioId, limite, valor })
+    .onConflictDoUpdate({
+      target: [esquema.negocioLimite.negocioId, esquema.negocioLimite.limite],
+      set: { valor },
+    });
+}
+
 /** Filas que dejó (o no) un alta: negocios con ese slug y miembros con ese correo. */
 export async function filasDelAlta(slug: string, correo: string) {
   const [negocios] = await db().select({ total: count() }).from(esquema.negocio).where(eq(esquema.negocio.slug, slug));

@@ -148,7 +148,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
 
 ### 2.C Servicios y consultorio (PAN-12, PAN-13)
 
-* [ ] T2.12: Caso de uso `guardarServicio`
+* [x] T2.12: Caso de uso `guardarServicio`
    * Objetivo: Implementar `guardarServicio` (ARCH §18.4). Al crear, exige cupo de `max_services` y, en una transacción, crea el servicio, su `servicio_sede` en la sede principal (sin `cliente_elige`) y su `servicio_sede_recurso` con el consultorio. Al editar, cambia el nombre, la descripción, la duración y el buffer de un servicio del negocio.
    * Archivos: `src/servidor/casos-uso/servicios.ts`, `src/servidor/db/repositorios/servicios.ts`, `tests/integracion/casos-uso/servicios.test.ts`
    * Depende de: T2.01

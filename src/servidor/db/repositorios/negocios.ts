@@ -27,6 +27,17 @@ export async function suscripcion(negocioId: string): Promise<DatosSuscripcion |
   return fila ?? null;
 }
 
+/**
+ * Toma la fila del negocio hasta el fin de la transacción, para que dos operaciones
+ * que cuentan y luego crean (como el cupo de un límite del plan) no se crucen.
+ * `NO KEY UPDATE` no bloquea las filas nuevas que referencian al negocio por FK.
+ * Devuelve si el negocio existe.
+ */
+export async function bloquear(negocioId: string, tx: Transaccion): Promise<boolean> {
+  const filas = await tx.select({ id: negocio.id }).from(negocio).where(eq(negocio.id, negocioId)).for("no key update");
+  return filas.length > 0;
+}
+
 export type ResumenNegocio = { nombre: string; slug: string; zonaHoraria: string };
 
 /** Nombre, slug y zona horaria, para el encabezado y los avisos del panel. */

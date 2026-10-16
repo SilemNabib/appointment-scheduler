@@ -309,7 +309,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * El límite de reprogramaciones vacío se guarda como sin límite (`NULL`), y 0 se guarda como "no se permite" (RN-34).
       * `guardarRecordatorio` con "ninguno" deja `recordatorio_horas_antes` en `NULL`, y con 0 devuelve `DATOS_INVALIDOS`.
 
-* [ ] T2.28: Página de reglas de reserva
+* [x] T2.28: Página de reglas de reserva
    * Objetivo: Crear `/panel/configuracion/reglas` con los campos de PAN-15 y su Server Action. Cada campo lleva su unidad y una ayuda que explica su efecto.
    * Archivos: `src/app/(panel)/panel/configuracion/reglas/page.tsx`, `src/app/(panel)/panel/configuracion/reglas/formulario.tsx`, `src/app/(panel)/panel/configuracion/reglas/acciones.ts`
    * Depende de: T2.05, T2.27

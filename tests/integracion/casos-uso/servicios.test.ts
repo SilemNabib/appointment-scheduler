@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { describe, expect, test, vi } from "vitest";
-import { guardarServicio, type EntradaServicio } from "@/servidor/casos-uso/servicios";
+import {
+  activarServicio,
+  desactivarServicio,
+  guardarServicio,
+  type EntradaServicio,
+} from "@/servidor/casos-uso/servicios";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
 import * as recursos from "@/servidor/db/repositorios/recursos";
@@ -148,5 +153,65 @@ describe("guardarServicio: editar", () => {
       });
     }
     expect(await filasDe(deB)).toEqual(antes);
+  });
+});
+
+describe("activarServicio y desactivarServicio", () => {
+  /** Las filas del servicio sin `actualizado_en`, que cambia con cualquier UPDATE. */
+  async function sinFecha(id: string) {
+    const { servicio, ...resto } = await filasDe(id);
+    return { servicio: { ...servicio, actualizadoEn: null }, ...resto };
+  }
+
+  test("desactivar y volver a activar cambia servicio.activo y nada más (RN-05)", async () => {
+    const { negocioId } = await sesionDeDueno();
+    const id = await crear(negocioId);
+    const antes = await sinFecha(id);
+
+    expect(await desactivarServicio({ negocioId }, id)).toEqual({ ok: true, valor: undefined });
+    expect(await sinFecha(id)).toEqual({ ...antes, servicio: { ...antes.servicio, activo: false } });
+
+    expect(await activarServicio({ negocioId }, id)).toEqual({ ok: true, valor: undefined });
+    expect(await sinFecha(id)).toEqual(antes);
+  });
+
+  test("un servicio de otro negocio, inexistente o con un id inválido devuelve NO_ENCONTRADO, y no cambia (ARCH §6)", async () => {
+    const a = await sesionDeDueno();
+    const b = await sesionDeDueno();
+    const deB = await crear(b.negocioId);
+    await desactivarServicio({ negocioId: b.negocioId }, deB);
+    const antes = await filasDe(deB);
+
+    for (const id of [deB, randomUUID(), "no-es-un-id", null]) {
+      expect(await activarServicio({ negocioId: a.negocioId }, id)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+      expect(await desactivarServicio({ negocioId: a.negocioId }, id)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+    }
+    expect(await filasDe(deB)).toEqual(antes);
+  });
+
+  test("con más servicios activos que max_services, se pueden editar y desactivar; reactivar exige cupo (RN-28)", async () => {
+    const { negocioId } = await sesionDeDueno();
+    const [uno, dos, tres] = [
+      await crear(negocioId, { nombre: "Uno" }),
+      await crear(negocioId, { nombre: "Dos" }),
+      await crear(negocioId, { nombre: "Tres" }),
+    ];
+    await fijarLimite(negocioId, "max_services", 1); // 3 activos, límite 1
+
+    expect(await guardarServicio({ negocioId }, examenVisual({ id: uno, nombre: "Uno editado" }))).toMatchObject({
+      ok: true,
+    });
+    expect(await desactivarServicio({ negocioId }, dos)).toMatchObject({ ok: true });
+    expect(await desactivarServicio({ negocioId }, tres)).toMatchObject({ ok: true });
+
+    // Queda 1 activo: reactivar otro superaría el límite.
+    expect(await activarServicio({ negocioId }, dos)).toEqual({ ok: false, error: "LIMITE_PLAN" });
+    expect((await filasDe(dos)).servicio.activo).toBe(false);
+
+    // Activar el que ya está activo no exige cupo ni cambia nada.
+    expect(await activarServicio({ negocioId }, uno)).toEqual({ ok: true, valor: undefined });
+
+    await desactivarServicio({ negocioId }, uno);
+    expect(await activarServicio({ negocioId }, dos)).toEqual({ ok: true, valor: undefined });
   });
 });

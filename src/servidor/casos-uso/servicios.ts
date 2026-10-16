@@ -72,6 +72,37 @@ export async function guardarServicio(
   );
 }
 
+/** Un id que no es un uuid no existe: responde igual que uno de otro negocio (ARCH §6). */
+const esId = (id: unknown): id is string => z.uuid().safeParse(id).success;
+
+/**
+ * Vuelve a ofrecer un servicio inactivo. Reactivar exige cupo de `max_services`, igual
+ * que crear (RN-28; ARCH §16.3). Activar uno que ya está activo no cambia nada.
+ */
+export async function activarServicio(
+  ctx: Ctx,
+  id: unknown,
+): Promise<Resultado<void, "NO_ENCONTRADO" | "LIMITE_PLAN">> {
+  if (!esId(id)) return fallo("NO_ENCONTRADO");
+  return conCupo(() =>
+    enTransaccion(async (tx): Promise<Resultado<void, "NO_ENCONTRADO">> => {
+      const activo = await servicios.activoParaCambiar(ctx.negocioId, id, tx);
+      if (activo === null) return fallo("NO_ENCONTRADO");
+      if (!activo) {
+        await exigirCupoDeServicios(ctx.negocioId, tx);
+        await servicios.activar(ctx.negocioId, id, tx);
+      }
+      return exito(undefined);
+    }),
+  );
+}
+
+/** Deja de ofrecer un servicio. Sus citas existentes se conservan (RN-05). No exige cupo (RN-28). */
+export async function desactivarServicio(ctx: Ctx, id: unknown): Promise<Resultado<void, "NO_ENCONTRADO">> {
+  if (!esId(id)) return fallo("NO_ENCONTRADO");
+  return (await servicios.desactivar(ctx.negocioId, id)) ? exito(undefined) : fallo("NO_ENCONTRADO");
+}
+
 /**
  * Cuenta los servicios activos con la fila del negocio tomada, así dos altas
  * simultáneas no pasan juntas del límite. Lanza `LIMITE_PLAN` (ARCH §16.3).

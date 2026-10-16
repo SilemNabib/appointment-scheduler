@@ -72,3 +72,35 @@ export async function actualizar(negocioId: string, id: string, datos: DatosServ
     .returning({ id: servicio.id });
   return filas.length > 0;
 }
+
+/** Si el servicio del negocio está activo, con su fila tomada hasta el fin de la transacción; `null` si no existe. */
+export async function activoParaCambiar(negocioId: string, id: string, tx: Transaccion): Promise<boolean | null> {
+  const [fila] = await tx
+    .select({ activo: servicio.activo })
+    .from(servicio)
+    .where(and(eq(servicio.negocioId, negocioId), eq(servicio.id, id)))
+    .for("update");
+  return fila ? fila.activo : null;
+}
+
+// Activar o desactivar solo cambia `servicio.activo`: la oferta en la sede y las
+// citas existentes quedan como estaban (RN-05). Devuelven si encontraron el servicio.
+
+/** Activa, dentro de la transacción que comprobó el cupo (`activoParaCambiar`). */
+export async function activar(negocioId: string, id: string, tx: Transaccion): Promise<boolean> {
+  const filas = await tx
+    .update(servicio)
+    .set({ activo: true })
+    .where(and(eq(servicio.negocioId, negocioId), eq(servicio.id, id)))
+    .returning({ id: servicio.id });
+  return filas.length > 0;
+}
+
+export async function desactivar(negocioId: string, id: string): Promise<boolean> {
+  const filas = await db()
+    .update(servicio)
+    .set({ activo: false })
+    .where(and(eq(servicio.negocioId, negocioId), eq(servicio.id, id)))
+    .returning({ id: servicio.id });
+  return filas.length > 0;
+}

@@ -157,7 +157,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * Crear deja el servicio activo, ofrecido en la sede principal y atendido por el consultorio.
       * Una duración fuera de 5 a 720 minutos o un buffer fuera de 0 a 240 devuelve `DATOS_INVALIDOS`. Editar un servicio inexistente o de otro negocio devuelve `NO_ENCONTRADO` (ARCH §6, defensa 3).
 
-* [ ] T2.13: Activar y desactivar servicios
+* [x] T2.13: Activar y desactivar servicios
    * Objetivo: Implementar `activarServicio`, que exige cupo de `max_services` porque el cupo se valida al crear o reactivar (RN-28), y `desactivarServicio`. Desactivar no toca las citas existentes.
    * Archivos: `src/servidor/casos-uso/servicios.ts`, `src/servidor/db/repositorios/servicios.ts`, `tests/integracion/casos-uso/servicios.test.ts`
    * Depende de: T2.12

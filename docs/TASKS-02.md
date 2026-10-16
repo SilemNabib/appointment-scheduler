@@ -185,7 +185,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * El dueño crea "Examen visual" de 30 minutos, lo cambia a 45 minutos con 10 de buffer, lo desactiva y lo vuelve a activar.
       * La lista distingue los servicios inactivos sin depender solo del color (RNF-03).
 
-* [ ] T2.16: Página del consultorio
+* [x] T2.16: Página del consultorio
    * Objetivo: Crear `/panel/configuracion/consultorio` con el formulario de PAN-13 (nombre y capacidad) y su Server Action.
    * Archivos: `src/app/(panel)/panel/configuracion/consultorio/page.tsx`, `src/app/(panel)/panel/configuracion/consultorio/formulario.tsx`, `src/app/(panel)/panel/configuracion/consultorio/acciones.ts`
    * Depende de: T2.05, T2.14

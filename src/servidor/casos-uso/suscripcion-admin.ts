@@ -51,3 +51,26 @@ export async function registrarPago(
   });
   return registrado ? exito({ pagadoHasta }) : fallo("DATOS_INVALIDOS");
 }
+
+export const esquemaNegocioAdmin = z.object({ negocioId: z.string() });
+
+/**
+ * Suspende el negocio a mano (ADM-03) y encola C-08 para cada dueño, en una
+ * transacción auditada con el admin como autor (S-16; ARCH §7.6). Desde ahí el panel
+ * queda en solo lectura (D-14). Un negocio ya suspendido devuelve `ESTADO_INVALIDO`.
+ */
+export async function suspenderNegocio(
+  entrada: unknown,
+  admin: Admin,
+): Promise<Resultado<void, "NO_ENCONTRADO" | "ESTADO_INVALIDO">> {
+  const leida = esquemaNegocioAdmin.safeParse(entrada);
+  if (!leida.success || !esId(leida.data.negocioId)) return fallo("NO_ENCONTRADO");
+  const { negocioId } = leida.data;
+  if (!(await negocios.suscripcionParaAdmin(negocioId))) return fallo("NO_ENCONTRADO");
+
+  const suspendido = await enTransaccion(async (tx) => {
+    await fijarActor(tx, admin.clerkUserId);
+    return negocios.suspender(negocioId, tx);
+  });
+  return suspendido ? exito(undefined) : fallo("ESTADO_INVALIDO");
+}

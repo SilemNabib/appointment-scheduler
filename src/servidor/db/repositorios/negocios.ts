@@ -1,11 +1,12 @@
 import "server-only";
-import { and, asc, eq, isNull, lt, or } from "drizzle-orm";
+import { and, asc, eq, isNull, lt, ne, or, sql } from "drizzle-orm";
 import type { DatosSuscripcion } from "@/dominio/suscripcion";
 import { db, type Transaccion } from "../cliente";
 import {
   configuracionNegocio,
   miembroNegocio,
   negocio,
+  notificacion,
   politicaDatos,
   recurso,
   sede,
@@ -159,6 +160,29 @@ export async function registrarPago(negocioId: string, pagadoHasta: Date, tx: Tr
     .where(and(eq(negocio.id, negocioId), or(isNull(negocio.pagadoHasta), lt(negocio.pagadoHasta, pagadoHasta))))
     .returning({ id: negocio.id });
   return filas.length > 0;
+}
+
+/**
+ * Suspende el negocio y, en la misma transacción, encola C-08 (`dueno_suspension`, sin
+ * cita) para cada dueño, con la clave de ARCH §14.1. Solo si no estaba suspendido: así
+ * no se crea otro aviso. Devuelve si lo suspendió. El envío llega en la Fase 6.
+ */
+export async function suspender(negocioId: string, tx: Transaccion): Promise<boolean> {
+  const filas = await tx
+    .update(negocio)
+    .set({ estadoSuscripcion: "suspendida" })
+    .where(and(eq(negocio.id, negocioId), ne(negocio.estadoSuscripcion, "suspendida")))
+    .returning({ id: negocio.id });
+  if (filas.length === 0) return false;
+
+  // Igual que la suspensión del cron (ARCH §7.6): una fila por dueño.
+  await tx.execute(sql`
+    INSERT INTO ${notificacion} (negocio_id, tipo, destinatario, clave_idempotencia)
+    SELECT m.negocio_id, 'dueno_suspension', m.correo,
+           'dueno_suspension:' || m.id || ':' || extract(epoch FROM now())::bigint
+      FROM ${miembroNegocio} m
+     WHERE m.negocio_id = ${negocioId} AND m.rol = 'dueno'`);
+  return true;
 }
 
 export type DatosNuevoNegocio = {

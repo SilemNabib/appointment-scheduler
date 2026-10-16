@@ -376,7 +376,7 @@ Entra en esta fase por el supuesto de Q-04 (TASKS-01). Si esa pregunta se respon
       * Una fecha que no supera el `pagado_hasta` actual devuelve `DATOS_INVALIDOS`, y un negocio inexistente, `NO_ENCONTRADO`.
       * "Pagado hasta 2026-11-09" se guarda como `2026-11-10T05:00:00Z` (ARCH §7.6).
 
-* [ ] T2.35: Caso de uso `suspenderNegocio`
+* [x] T2.35: Caso de uso `suspenderNegocio`
    * Objetivo: Implementar `suspenderNegocio`. En una transacción con el admin como autor, pasa el negocio a `suspendida` y encola C-08 (`dueno_suspension`, sin cita) para cada dueño, con la clave de idempotencia de ARCH §14.1. El envío llega en la Fase 6.
    * Archivos: `src/servidor/casos-uso/suscripcion-admin.ts`, `src/servidor/db/repositorios/negocios.ts`, `tests/integracion/casos-uso/suscripcion-admin.test.ts`
    * Depende de: T2.34

@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { describe, expect, test } from "vitest";
-import { registrarPago } from "@/servidor/casos-uso/suscripcion-admin";
+import { registrarPago, suspenderNegocio } from "@/servidor/casos-uso/suscripcion-admin";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
-import { ADMIN_PRUEBA, crearNegocio } from "../fixtures";
+import { ADMIN_PRUEBA, crearMiembro, crearNegocio } from "../fixtures";
 
 // Acciones del admin sobre la suscripción (ADM-03; RN-04, RN-30, RN-31; ARCH §7.6 y
 // §18.4). Los efectos sobre el acceso del dueño se prueban en T2.39.
@@ -92,5 +92,49 @@ describe("registrarPago", () => {
         despues: expect.objectContaining({ estado_suscripcion: "activa" }),
       }),
     ]);
+  });
+});
+
+describe("suspenderNegocio", () => {
+  async function notificacionesDe(negocioId: string) {
+    return db().select().from(esquema.notificacion).where(eq(esquema.notificacion.negocioId, negocioId));
+  }
+
+  test("suspende y crea una notificación dueno_suspension pendiente, sin cita, dirigida al correo del dueño (S-16)", async () => {
+    const negocioId = await crearNegocio(undefined, {
+      estadoSuscripcion: "activa",
+      pagadoHasta: new Date("2026-12-01T05:00:00Z"),
+    });
+    const dueno = await crearMiembro(negocioId);
+
+    expect(await suspenderNegocio({ negocioId }, ADMIN_PRUEBA)).toEqual({ ok: true, valor: undefined });
+
+    expect((await negocio(negocioId)).estadoSuscripcion).toBe("suspendida");
+    const notificaciones = await notificacionesDe(negocioId);
+    expect(notificaciones).toEqual([
+      expect.objectContaining({
+        tipo: "dueno_suspension",
+        estado: "pendiente",
+        citaId: null,
+        canal: "correo",
+        destinatario: dueno.correo,
+        claveIdempotencia: expect.stringMatching(new RegExp(`^dueno_suspension:${dueno.id}:\\d+$`)),
+      }),
+    ]);
+  });
+
+  test("suspender un negocio ya suspendido devuelve ESTADO_INVALIDO y no crea otra notificación", async () => {
+    const negocioId = await crearNegocio();
+    await crearMiembro(negocioId);
+    await suspenderNegocio({ negocioId }, ADMIN_PRUEBA);
+
+    expect(await suspenderNegocio({ negocioId }, ADMIN_PRUEBA)).toEqual({ ok: false, error: "ESTADO_INVALIDO" });
+    expect(await notificacionesDe(negocioId)).toHaveLength(1);
+  });
+
+  test("un negocio inexistente devuelve NO_ENCONTRADO", async () => {
+    for (const negocioId of [randomUUID(), "no-es-un-id"]) {
+      expect(await suspenderNegocio({ negocioId }, ADMIN_PRUEBA)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+    }
   });
 });

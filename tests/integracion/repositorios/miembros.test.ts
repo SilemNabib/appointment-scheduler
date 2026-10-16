@@ -71,7 +71,11 @@ describe("repositorios/negocios", () => {
       finPrueba: fila.finPrueba,
       pagadoHasta: null,
     });
-    expect(await negocios.resumen(negocioId)).toEqual({ nombre: fila.nombre, slug: fila.slug });
+    expect(await negocios.resumen(negocioId)).toEqual({
+      nombre: fila.nombre,
+      slug: fila.slug,
+      zonaHoraria: "America/Bogota",
+    });
     expect(await negocios.suscripcion(randomUUID())).toBeNull();
     expect(await negocios.resumen(randomUUID())).toBeNull();
   });

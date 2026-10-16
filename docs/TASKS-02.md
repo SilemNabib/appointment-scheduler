@@ -78,7 +78,7 @@
       * El formulario de alta de `/admin` (T1.49) pasa a usar los componentes y se comporta igual: el slug `admin` sigue mostrando "slug no disponible".
       * Con el teclado, cada campo del formulario de alta se alcanza en orden y muestra el foco.
 
-* [ ] T2.05: Navegación del panel y avisos de suscripción
+* [x] T2.05: Navegación del panel y avisos de suscripción
    * Objetivo: Ampliar el layout del panel con la navegación, usable en celular, y con el aviso de PAN-19. Las secciones de la navegación son Inicio, Bloqueos y Configuración (Negocio, Servicios, Consultorio, Horario, Reglas de reserva, Recordatorios y Política de datos). El aviso depende de la suscripción: en gracia dice "Tu suscripción venció. Renueva antes del {fecha} para no perder el servicio"; suspendida, avisa que el panel está en solo lectura e invita a renovar.
    * Archivos: `src/app/(panel)/layout.tsx`, `src/componentes/panel/navegacion.tsx`, `src/componentes/panel/aviso-suscripcion.tsx`, `src/servidor/casos-uso/resumen-negocio.ts`, `src/servidor/db/repositorios/negocios.ts`
    * Depende de: T2.03, T2.04

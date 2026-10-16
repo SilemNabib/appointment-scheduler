@@ -27,10 +27,12 @@ export async function suscripcion(negocioId: string): Promise<DatosSuscripcion |
   return fila ?? null;
 }
 
-/** Nombre y slug, para el encabezado del panel. */
-export async function resumen(negocioId: string): Promise<{ nombre: string; slug: string } | null> {
+export type ResumenNegocio = { nombre: string; slug: string; zonaHoraria: string };
+
+/** Nombre, slug y zona horaria, para el encabezado y los avisos del panel. */
+export async function resumen(negocioId: string): Promise<ResumenNegocio | null> {
   const [fila] = await db()
-    .select({ nombre: negocio.nombre, slug: negocio.slug })
+    .select({ nombre: negocio.nombre, slug: negocio.slug, zonaHoraria: negocio.zonaHoraria })
     .from(negocio)
     .where(eq(negocio.id, negocioId));
   return fila ?? null;

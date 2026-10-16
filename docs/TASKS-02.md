@@ -367,7 +367,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
 
 Entra en esta fase por el supuesto de Q-04 (TASKS-01). Si esa pregunta se responde de otra forma, el módulo se mueve completo a la fase que se elija.
 
-* [ ] T2.34: Caso de uso `registrarPago`
+* [x] T2.34: Caso de uso `registrarPago`
    * Objetivo: Implementar `registrarPago`. Recibe el negocio y la nueva fecha de "pagado hasta" como fecha local inclusiva y, en una sola sentencia auditada con el admin como autor, deja `estado_suscripcion = 'activa'` y el nuevo `pagado_hasta` (las 00:00 locales del día siguiente).
    * Archivos: `src/servidor/casos-uso/suscripcion-admin.ts`, `src/servidor/db/repositorios/negocios.ts`, `tests/integracion/casos-uso/suscripcion-admin.test.ts`
    * Depende de: T1.26, T1.47

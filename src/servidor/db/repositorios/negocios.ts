@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull, lt, or } from "drizzle-orm";
 import type { DatosSuscripcion } from "@/dominio/suscripcion";
 import { db, type Transaccion } from "../cliente";
 import {
@@ -126,6 +126,39 @@ export async function listarParaAdmin(): Promise<FilaNegocioAdmin[]> {
     })
     .from(negocio)
     .orderBy(asc(negocio.nombre), asc(negocio.slug));
+}
+
+// ─── Suscripción desde el admin (ADM-03; ARCH §7.6 y §18.4) ──────────────────
+// Solo se llaman detrás de `requireSuperadmin`. Van dentro de una transacción con
+// `app.actor` = el admin, para que los triggers los auditen con su autor (RN-30).
+
+/** La suscripción y la zona del negocio, para las acciones del admin. */
+export async function suscripcionParaAdmin(
+  negocioId: string,
+): Promise<(DatosSuscripcion & { zonaHoraria: string }) | null> {
+  const [fila] = await db()
+    .select({
+      zonaHoraria: negocio.zonaHoraria,
+      estadoSuscripcion: negocio.estadoSuscripcion,
+      finPrueba: negocio.finPrueba,
+      pagadoHasta: negocio.pagadoHasta,
+    })
+    .from(negocio)
+    .where(eq(negocio.id, negocioId));
+  return fila ?? null;
+}
+
+/**
+ * Registra un pago en una sola sentencia: `estado_suscripcion = 'activa'` y el nuevo
+ * `pagado_hasta`, solo si supera el actual (RN-31; ARCH §7.6). Devuelve si cambió.
+ */
+export async function registrarPago(negocioId: string, pagadoHasta: Date, tx: Transaccion): Promise<boolean> {
+  const filas = await tx
+    .update(negocio)
+    .set({ estadoSuscripcion: "activa", pagadoHasta })
+    .where(and(eq(negocio.id, negocioId), or(isNull(negocio.pagadoHasta), lt(negocio.pagadoHasta, pagadoHasta))))
+    .returning({ id: negocio.id });
+  return filas.length > 0;
 }
 
 export type DatosNuevoNegocio = {

@@ -68,6 +68,26 @@ export async function actualizarMarca(negocioId: string, datos: MarcaNegocio, tx
   return filas.length > 0;
 }
 
+/**
+ * Cambia `logo_url` (una ruta de `/api/media/…` o `NULL`) y devuelve la anterior, o
+ * `null` si el negocio no existe. La fila queda tomada hasta el fin de la transacción,
+ * así dos cambios simultáneos no se quedan con la misma anterior (Q-21).
+ */
+export async function reemplazarLogo(
+  negocioId: string,
+  logoUrl: string | null,
+  tx: Transaccion,
+): Promise<{ anterior: string | null } | null> {
+  const [actual] = await tx
+    .select({ logoUrl: negocio.logoUrl })
+    .from(negocio)
+    .where(eq(negocio.id, negocioId))
+    .for("update");
+  if (!actual) return null;
+  await tx.update(negocio).set({ logoUrl }).where(eq(negocio.id, negocioId));
+  return { anterior: actual.logoUrl };
+}
+
 export type FilaNegocioAdmin = DatosSuscripcion & {
   id: string;
   slug: string;

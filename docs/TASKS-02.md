@@ -127,7 +127,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * Guardar actualiza `negocio` y la sede principal del negocio del contexto, y deja intactas las demás sedes y los demás negocios.
       * Un color fuera del formato `#rrggbb` o un nombre vacío devuelve `DATOS_INVALIDOS` y no cambia nada.
 
-* [ ] T2.10: Casos de uso del logo
+* [x] T2.10: Casos de uso del logo
    * Objetivo: Implementar `subirLogo` y `quitarLogo`. `subirLogo` valida la imagen con T2.06, la guarda en R2 y actualiza `negocio.logo_url`. Si falla la escritura en la base, borra la imagen subida; si sale bien, borra la anterior (Q-21).
    * Archivos: `src/servidor/casos-uso/logo-negocio.ts`, `tests/integracion/casos-uso/logo-negocio.test.ts`
    * Depende de: T2.08, T2.09

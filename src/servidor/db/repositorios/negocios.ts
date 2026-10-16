@@ -185,6 +185,16 @@ export async function suspender(negocioId: string, tx: Transaccion): Promise<boo
   return true;
 }
 
+/** Cambia `fin_prueba`, solo con el negocio en `prueba` (Q-25). Devuelve si lo cambió. */
+export async function cambiarFinPrueba(negocioId: string, finPrueba: Date, tx: Transaccion): Promise<boolean> {
+  const filas = await tx
+    .update(negocio)
+    .set({ finPrueba })
+    .where(and(eq(negocio.id, negocioId), eq(negocio.estadoSuscripcion, "prueba")))
+    .returning({ id: negocio.id });
+  return filas.length > 0;
+}
+
 export type DatosNuevoNegocio = {
   slug: string;
   nombre: string;

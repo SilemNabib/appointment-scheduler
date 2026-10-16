@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { describe, expect, test } from "vitest";
-import { registrarPago, suspenderNegocio } from "@/servidor/casos-uso/suscripcion-admin";
+import { cambiarFinPrueba, registrarPago, suspenderNegocio } from "@/servidor/casos-uso/suscripcion-admin";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
 import { ADMIN_PRUEBA, crearMiembro, crearNegocio } from "../fixtures";
@@ -136,5 +136,47 @@ describe("suspenderNegocio", () => {
     for (const negocioId of [randomUUID(), "no-es-un-id"]) {
       expect(await suspenderNegocio({ negocioId }, ADMIN_PRUEBA)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
     }
+  });
+});
+
+describe("cambiarFinPrueba", () => {
+  test("cambia fin_prueba a las 00:00 locales del día siguiente a la fecha elegida (ARCH §7.6)", async () => {
+    const negocioId = await crearNegocio(); // en prueba
+
+    expect(await cambiarFinPrueba({ negocioId, finPrueba: "2026-11-15" }, ADMIN_PRUEBA)).toEqual({
+      ok: true,
+      valor: { finPrueba: new Date("2026-11-16T05:00:00Z") },
+    });
+    expect(await negocio(negocioId)).toMatchObject({
+      estadoSuscripcion: "prueba",
+      finPrueba: new Date("2026-11-16T05:00:00Z"),
+    });
+  });
+
+  test.each([
+    ["activa", { estadoSuscripcion: "activa" as const, pagadoHasta: new Date("2026-12-01T05:00:00Z") }],
+    ["suspendida", { estadoSuscripcion: "suspendida" as const }],
+  ])("con el negocio %s devuelve ESTADO_INVALIDO y no cambia nada (Q-25)", async (_, campos) => {
+    const negocioId = await crearNegocio(undefined, campos);
+    const antes = await negocio(negocioId);
+
+    expect(await cambiarFinPrueba({ negocioId, finPrueba: "2026-11-15" }, ADMIN_PRUEBA)).toEqual({
+      ok: false,
+      error: "ESTADO_INVALIDO",
+    });
+    expect(await negocio(negocioId)).toEqual(antes);
+  });
+
+  test("una fecha inválida devuelve DATOS_INVALIDOS, y un negocio inexistente, NO_ENCONTRADO", async () => {
+    const negocioId = await crearNegocio();
+
+    expect(await cambiarFinPrueba({ negocioId, finPrueba: "2026-02-30" }, ADMIN_PRUEBA)).toEqual({
+      ok: false,
+      error: "DATOS_INVALIDOS",
+    });
+    expect(await cambiarFinPrueba({ negocioId: randomUUID(), finPrueba: "2026-11-15" }, ADMIN_PRUEBA)).toEqual({
+      ok: false,
+      error: "NO_ENCONTRADO",
+    });
   });
 });

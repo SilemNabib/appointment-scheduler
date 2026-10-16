@@ -74,3 +74,42 @@ export async function suspenderNegocio(
   });
   return suspendido ? exito(undefined) : fallo("ESTADO_INVALIDO");
 }
+
+export const esquemaFinPrueba = z.object({
+  negocioId: z.string(),
+  /** Último día de la prueba, fecha local inclusiva `YYYY-MM-DD`. */
+  finPrueba: z.iso.date(),
+});
+
+/**
+ * Cambia el fin de la prueba (ADM-03), en una transacción auditada con el admin como
+ * autor (RN-30). Solo con el negocio en `prueba`: uno suspendido se reactiva con
+ * `registrarPago` (Q-25).
+ */
+export async function cambiarFinPrueba(
+  entrada: unknown,
+  admin: Admin,
+): Promise<Resultado<{ finPrueba: Date }, "DATOS_INVALIDOS" | "NO_ENCONTRADO" | "ESTADO_INVALIDO">> {
+  const leida = esquemaFinPrueba.safeParse(entrada);
+  if (!leida.success) return fallo("DATOS_INVALIDOS");
+  const { negocioId } = leida.data;
+  if (!esId(negocioId)) return fallo("NO_ENCONTRADO");
+
+  const actual = await negocios.suscripcionParaAdmin(negocioId);
+  if (!actual) return fallo("NO_ENCONTRADO");
+  if (actual.estadoSuscripcion !== "prueba") return fallo("ESTADO_INVALIDO");
+
+  let finPrueba: Date;
+  try {
+    finPrueba = vencimientoAInstante(leida.data.finPrueba, actual.zonaHoraria);
+  } catch {
+    return fallo("DATOS_INVALIDOS");
+  }
+
+  // El estado se vuelve a comprobar en el UPDATE, por si cambió mientras tanto.
+  const cambiado = await enTransaccion(async (tx) => {
+    await fijarActor(tx, admin.clerkUserId);
+    return negocios.cambiarFinPrueba(negocioId, finPrueba, tx);
+  });
+  return cambiado ? exito({ finPrueba }) : fallo("ESTADO_INVALIDO");
+}

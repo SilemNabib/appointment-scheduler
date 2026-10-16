@@ -385,7 +385,7 @@ Entra en esta fase por el supuesto de Q-04 (TASKS-01). Si esa pregunta se respon
       * Suspender crea una notificación `dueno_suspension` pendiente, sin `cita_id`, dirigida al correo del dueño.
       * Suspender un negocio que ya está suspendido devuelve `ESTADO_INVALIDO` y no crea otra notificación.
 
-* [ ] T2.36: Caso de uso `cambiarFinPrueba`
+* [x] T2.36: Caso de uso `cambiarFinPrueba`
    * Objetivo: Implementar `cambiarFinPrueba` (ADM-03), que recibe la nueva fecha de fin de prueba como fecha local inclusiva. Solo aplica a negocios en `prueba` (Q-25), y el cambio queda auditado con el admin como autor.
    * Archivos: `src/servidor/casos-uso/suscripcion-admin.ts`, `src/servidor/db/repositorios/negocios.ts`, `tests/integracion/casos-uso/suscripcion-admin.test.ts`
    * Depende de: T2.35

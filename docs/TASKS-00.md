@@ -42,8 +42,8 @@ Cada bloque del plan de entrega (PRD §12) es una fase.
 
 | Fase | Días | Entrega (PRD §12) | Estado |
 |---|---|---|---|
-| [1](TASKS-01.md#fase-1-proyecto-esquema-clerk-estructura-multi-negocio-y-despliegue-base) | 1–2 | Proyecto, esquema, Clerk, estructura multi-negocio y despliegue base | **Desarrollada en este documento** (T1.01–T1.57) |
-| 2 | 3–4 | Sede principal, servicios por sede, recursos, horario semanal, bloqueos y configuración | Pendiente |
+| [1](TASKS-01.md#fase-1-proyecto-esquema-clerk-estructura-multi-negocio-y-despliegue-base) | 1–2 | Proyecto, esquema, Clerk, estructura multi-negocio y despliegue base | **Terminada**: [TASKS-01](TASKS-01.md) (T1.01–T1.57) |
+| [2](TASKS-02.md#fase-2-sede-principal-servicios-por-sede-recursos-horario-semanal-bloqueos-y-configuración) | 3–4 | Sede principal, servicios por sede, recursos, horario semanal, bloqueos y configuración | **Desarrollada**: [TASKS-02](TASKS-02.md) (T2.01–T2.42) |
 | 3 | 5–7 | Motor de disponibilidad y reserva transaccional (con pruebas) | Pendiente |
 | 4 | 8–9 | Página pública de reservas | Pendiente |
 | 5 | 10–11 | Panel: calendario y citas manuales | Pendiente |

@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import { db, type Transaccion } from "../cliente";
 import { servicio, servicioSede, servicioSedeRecurso } from "../esquema";
+import { idSedePrincipal } from "./sedes";
 
 // Servicios del catálogo y su oferta en la sede principal (RN-05, RN-06, RN-32,
 // RN-33). Toda función recibe `negocioId` y lo usa en el WHERE (ARCH §6, defensa 1).
@@ -103,4 +104,24 @@ export async function desactivar(negocioId: string, id: string): Promise<boolean
     .where(and(eq(servicio.negocioId, negocioId), eq(servicio.id, id)))
     .returning({ id: servicio.id });
   return filas.length > 0;
+}
+
+/** Servicios activos que se ofrecen (con `servicio_sede` activo) en la sede principal (PAN-18). */
+export async function contarOfrecidosEnLaPrincipal(negocioId: string): Promise<number> {
+  const [{ total }] = await db()
+    .select({ total: count() })
+    .from(servicio)
+    .innerJoin(
+      servicioSede,
+      and(eq(servicioSede.servicioId, servicio.id), eq(servicioSede.negocioId, servicio.negocioId)),
+    )
+    .where(
+      and(
+        eq(servicio.negocioId, negocioId),
+        eq(servicio.activo, true),
+        eq(servicioSede.activo, true),
+        eq(servicioSede.sedeId, idSedePrincipal(negocioId)),
+      ),
+    );
+  return total;
 }

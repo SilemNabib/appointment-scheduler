@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, count, eq, isNull } from "drizzle-orm";
 import type { FranjaValida } from "@/dominio/horario";
 import { db, type Transaccion } from "../cliente";
 import { horarioSemanal } from "../esquema";
@@ -39,4 +39,13 @@ export async function reemplazarSemana(
   await tx.insert(horarioSemanal).values(
     franjas.map((f) => ({ negocioId, sedeId, diaSemana: f.dia, horaInicio: f.inicio, horaFin: f.fin })),
   );
+}
+
+/** Franjas del horario de la sede principal, sin las de los empleados (PAN-18). */
+export async function contarFranjasPrincipal(negocioId: string): Promise<number> {
+  const [{ total }] = await db()
+    .select({ total: count() })
+    .from(horarioSemanal)
+    .where(deLaSede(negocioId, idSedePrincipal(negocioId)));
+  return total;
 }

@@ -345,7 +345,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * El dueño publica una versión nueva y la ve encabezando el historial; la anterior sigue en la lista.
       * "Usar la plantilla" carga el texto de `politicaInicial` con el nombre del negocio.
 
-* [ ] T2.32: Inicio del panel: lista de verificación y enlace público
+* [x] T2.32: Inicio del panel: lista de verificación y enlace público
    * Objetivo: Implementar `estadoConfiguracion` (cuántos servicios activos y franjas de horario tiene la sede principal) y reemplazar la página provisional de `/panel` por dos cosas: la lista de verificación de F-05 (paso 3) y el enlace a la página pública con el aviso de PAN-18 (Q-22).
    * Archivos: `src/servidor/casos-uso/estado-configuracion.ts`, `src/app/(panel)/panel/page.tsx`, `tests/integracion/casos-uso/estado-configuracion.test.ts`
    * Depende de: T2.05, T2.13, T2.20

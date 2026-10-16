@@ -28,8 +28,11 @@ export const esquemaServicio = z.object({
   nombre: z.string().trim().min(1).max(120),
   descripcion: textoOpcional(500),
   duracionMinutos: z.coerce.number().int().min(5).max(720),
-  /** Vacío = 0. */
-  bufferMinutos: z.coerce.number().int().min(0).max(240),
+  /** Vacío o ausente = 0 (RN-05, D-02). */
+  bufferMinutos: z.preprocess(
+    (valor) => (valor === undefined || valor === null || valor === "" ? 0 : valor),
+    z.coerce.number().int().min(0).max(240),
+  ),
 });
 
 export type EntradaServicio = z.input<typeof esquemaServicio>;

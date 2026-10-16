@@ -194,7 +194,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * El dueño cambia el nombre y la capacidad, y una capacidad de 0 muestra el error.
       * La ayuda explica que la capacidad es el número de citas simultáneas (glosario del PRD).
 
-* [ ] T2.17: Pruebas de servicios y recursos
+* [x] T2.17: Pruebas de servicios y recursos
    * Objetivo: Probar las reglas de servicios y recursos con los casos de uso del módulo.
    * Archivos: `tests/integracion/casos-uso/servicios-reglas.test.ts`
    * Depende de: T2.02, T2.13, T2.14

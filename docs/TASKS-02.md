@@ -412,7 +412,7 @@ Entra en esta fase por el supuesto de Q-04 (TASKS-01). Si esa pregunta se respon
       * Al registrar un pago, un negocio suspendido queda "Al día" en la lista, y su dueño vuelve a poder guardar cambios en el panel.
       * Suspender pide confirmación, y después el panel del dueño queda en solo lectura con su aviso (PAN-19).
 
-* [ ] T2.39: Pruebas de la suscripción desde el admin
+* [x] T2.39: Pruebas de la suscripción desde el admin
    * Objetivo: Probar los efectos de las acciones de ADM-03 sobre el acceso del dueño y la auditoría.
    * Archivos: `tests/integracion/casos-uso/suscripcion-admin-reglas.test.ts`
    * Depende de: T2.02, T2.36

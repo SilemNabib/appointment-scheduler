@@ -327,7 +327,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * El dueño elige un número de horas antes de la cita o "Ninguno", y al volver ve lo que guardó.
       * La ayuda aclara que una cita reservada después de ese momento no recibe recordatorio (S-12).
 
-* [ ] T2.30: Casos de uso de la política de datos
+* [x] T2.30: Casos de uso de la política de datos
    * Objetivo: Implementar `listarPoliticas` y `publicarPolitica`. Publicar crea la versión siguiente con el texto nuevo, sin modificar las anteriores; la vigente es la de mayor versión.
    * Archivos: `src/servidor/casos-uso/politica-datos.ts`, `src/servidor/db/repositorios/politicas.ts`, `tests/integracion/casos-uso/politica-datos.test.ts`
    * Depende de: T1.44

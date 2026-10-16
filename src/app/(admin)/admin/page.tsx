@@ -1,43 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireSuperadmin } from "@/servidor/auth/sesion";
-import { listarNegocios, type NegocioEnLista } from "@/servidor/casos-uso/listar-negocios";
+import { EstadoEfectivo, ESTADOS_SUSCRIPCION, Vencimiento } from "@/componentes/admin/estado-suscripcion";
+import { ANILLO_FOCO } from "@/componentes/formulario";
+import { listarNegocios } from "@/servidor/casos-uso/listar-negocios";
 
 export const metadata: Metadata = { title: "Negocios · Admin" };
 
-const ESTADOS_SUSCRIPCION: Record<NegocioEnLista["estadoSuscripcion"], string> = {
-  prueba: "Prueba",
-  activa: "Activa",
-  suspendida: "Suspendida",
-};
-
-/** Fecha local inclusiva `YYYY-MM-DD`, sin pasar por la zona del servidor. */
-function fechaLocal(fecha: string) {
-  const [anio, mes, dia] = fecha.split("-").map(Number);
-  return new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: "UTC" }).format(
-    new Date(Date.UTC(anio, mes - 1, dia)),
-  );
-}
-
-/** Instante en la zona del negocio (ARCH §9, regla 3). */
-function instante(valor: Date, zonaHoraria: string) {
-  return new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: zonaHoraria }).format(
-    valor,
-  );
-}
-
-function EstadoEfectivo({ negocio }: { negocio: NegocioEnLista }) {
-  const { estado } = negocio;
-  if (estado.estado === "al_dia") return <span className="text-emerald-700 dark:text-emerald-400">Al día</span>;
-  if (estado.estado === "suspendida") return <span className="font-medium text-red-700 dark:text-red-400">Suspendido</span>;
-  return (
-    <span className="text-amber-700 dark:text-amber-400">
-      En gracia: se suspende el {instante(estado.suspendeEn, negocio.zonaHoraria)}
-    </span>
-  );
-}
-
-// Lista de negocios (ADM-01).
+// Lista de negocios (ADM-01). Cada nombre abre el detalle del negocio (ADM-03).
 export default async function NegociosAdmin() {
   await requireSuperadmin();
   const negocios = await listarNegocios();
@@ -73,12 +43,21 @@ export default async function NegociosAdmin() {
               {negocios.map((n) => (
                 <tr key={n.id} className="border-b border-zinc-100 dark:border-zinc-900">
                   <td className="py-2 pr-4 font-mono">{n.slug}</td>
-                  <td className="py-2 pr-4">{n.nombre}</td>
+                  <td className="py-2 pr-4">
+                    <Link
+                      href={`/admin/negocios/${n.id}`}
+                      className={`rounded-sm font-medium text-teal-700 underline dark:text-teal-400 ${ANILLO_FOCO}`}
+                    >
+                      {n.nombre}
+                    </Link>
+                  </td>
                   <td className="py-2 pr-4">{n.plan}</td>
                   <td className="py-2 pr-4">{ESTADOS_SUSCRIPCION[n.estadoSuscripcion]}</td>
-                  <td className="py-2 pr-4">{n.vencimiento ? fechaLocal(n.vencimiento) : "—"}</td>
+                  <td className="py-2 pr-4">
+                    <Vencimiento fecha={n.vencimiento} />
+                  </td>
                   <td className="py-2">
-                    <EstadoEfectivo negocio={n} />
+                    <EstadoEfectivo estado={n.estado} zonaHoraria={n.zonaHoraria} />
                   </td>
                 </tr>
               ))}

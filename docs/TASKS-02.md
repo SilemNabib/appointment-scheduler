@@ -394,7 +394,7 @@ Entra en esta fase por el supuesto de Q-04 (TASKS-01). Si esa pregunta se respon
       * Cambia `fin_prueba` a las 00:00 locales del día siguiente a la fecha elegida.
       * Con el negocio en `activa` o en `suspendida`, devuelve `ESTADO_INVALIDO` (Q-25).
 
-* [ ] T2.37: `/admin`: detalle del negocio
+* [x] T2.37: `/admin`: detalle del negocio
    * Objetivo: Crear `/admin/negocios/{id}` con los datos de la suscripción (estado, vencimiento como fecha local inclusiva y estado efectivo), con un caso de uso `detalleNegocioAdmin`, y enlazar cada fila de la lista de ADM-01 a su detalle.
    * Archivos: `src/servidor/casos-uso/detalle-negocio-admin.ts`, `src/app/(admin)/admin/negocios/[id]/page.tsx`, `src/app/(admin)/admin/page.tsx`
    * Depende de: T1.48

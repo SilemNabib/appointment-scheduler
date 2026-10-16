@@ -113,20 +113,25 @@ export type FilaNegocioAdmin = DatosSuscripcion & {
  * negocios y por eso no recibe `negocioId`: el admin no pertenece a ninguno (ARCH §6,
  * "Admin: explícito"). Solo se llama detrás de `requireSuperadmin`.
  */
+const columnasAdmin = {
+  id: negocio.id,
+  slug: negocio.slug,
+  nombre: negocio.nombre,
+  planId: negocio.planId,
+  zonaHoraria: negocio.zonaHoraria,
+  estadoSuscripcion: negocio.estadoSuscripcion,
+  finPrueba: negocio.finPrueba,
+  pagadoHasta: negocio.pagadoHasta,
+};
+
 export async function listarParaAdmin(): Promise<FilaNegocioAdmin[]> {
-  return db()
-    .select({
-      id: negocio.id,
-      slug: negocio.slug,
-      nombre: negocio.nombre,
-      planId: negocio.planId,
-      zonaHoraria: negocio.zonaHoraria,
-      estadoSuscripcion: negocio.estadoSuscripcion,
-      finPrueba: negocio.finPrueba,
-      pagadoHasta: negocio.pagadoHasta,
-    })
-    .from(negocio)
-    .orderBy(asc(negocio.nombre), asc(negocio.slug));
+  return db().select(columnasAdmin).from(negocio).orderBy(asc(negocio.nombre), asc(negocio.slug));
+}
+
+/** Un negocio, para el detalle del admin (ADM-03). El admin elige el negocio (ARCH §6). */
+export async function detalleParaAdmin(negocioId: string): Promise<FilaNegocioAdmin | null> {
+  const [fila] = await db().select(columnasAdmin).from(negocio).where(eq(negocio.id, negocioId));
+  return fila ?? null;
 }
 
 // ─── Suscripción desde el admin (ADM-03; ARCH §7.6 y §18.4) ──────────────────

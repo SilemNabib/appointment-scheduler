@@ -21,27 +21,33 @@ export type NegocioEnLista = {
   estado: EstadoEfectivo;
 };
 
+/** Una fila del admin como la muestra la lista (y el detalle, T2.37). */
+export function aNegocioEnLista(
+  n: negocios.FilaNegocioAdmin,
+  codigoDelPlan: ReadonlyMap<string, string>,
+  ahora: Date,
+): NegocioEnLista {
+  // Un negocio suspendido muestra el último vencimiento que tenga.
+  const vence =
+    n.estadoSuscripcion === "prueba"
+      ? n.finPrueba
+      : n.estadoSuscripcion === "activa"
+        ? n.pagadoHasta
+        : (n.pagadoHasta ?? n.finPrueba);
+  return {
+    id: n.id,
+    slug: n.slug,
+    nombre: n.nombre,
+    plan: codigoDelPlan.get(n.planId) ?? n.planId,
+    zonaHoraria: n.zonaHoraria,
+    estadoSuscripcion: n.estadoSuscripcion,
+    vencimiento: vence ? instanteAVencimiento(vence, n.zonaHoraria) : null,
+    estado: estadoEfectivo(n, ahora),
+  };
+}
+
 export async function listarNegocios(ahora: Date = new Date()): Promise<NegocioEnLista[]> {
   const [filas, planes] = await Promise.all([negocios.listarParaAdmin(), listarPlanes()]);
   const codigoDelPlan = new Map(planes.map((p) => [p.id, p.codigo]));
-
-  return filas.map((n) => {
-    // Un negocio suspendido muestra el último vencimiento que tenga.
-    const vence =
-      n.estadoSuscripcion === "prueba"
-        ? n.finPrueba
-        : n.estadoSuscripcion === "activa"
-          ? n.pagadoHasta
-          : (n.pagadoHasta ?? n.finPrueba);
-    return {
-      id: n.id,
-      slug: n.slug,
-      nombre: n.nombre,
-      plan: codigoDelPlan.get(n.planId) ?? n.planId,
-      zonaHoraria: n.zonaHoraria,
-      estadoSuscripcion: n.estadoSuscripcion,
-      vencimiento: vence ? instanteAVencimiento(vence, n.zonaHoraria) : null,
-      estado: estadoEfectivo(n, ahora),
-    };
-  });
+  return filas.map((n) => aNegocioEnLista(n, codigoDelPlan, ahora));
 }

@@ -42,7 +42,7 @@
 
 ### 2.A Base del panel
 
-* [ ] T2.01: Repositorios de la sede principal y su consultorio
+* [x] T2.01: Repositorios de la sede principal y su consultorio
    * Objetivo: Crear `sedes.principal(negocioId)` y `recursos.consultorioPrincipal(negocioId)`, que resuelven la sede y el recurso sobre los que actúa toda la configuración del MVP (Q-20).
    * Archivos: `src/servidor/db/repositorios/sedes.ts`, `src/servidor/db/repositorios/recursos.ts`, `tests/integracion/repositorios/sedes.test.ts`
    * Depende de: T1.39, T1.45

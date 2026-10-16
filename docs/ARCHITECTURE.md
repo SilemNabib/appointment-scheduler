@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Versión** | 0.8 (borrador) |
-| **Fecha** | 2026-10-14 |
+| **Versión** | 0.9 (borrador) |
+| **Fecha** | 2026-10-16 |
 | **Fuentes** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 · [PRD.md](PRD.md) v0.7 |
 
 > Este documento describe **cómo** se construye el producto del [PRD](PRD.md). Las referencias `RN-xx`, `D-xx`, `S-xx` y `P-xx` remiten a ese documento. Lo marcado como **propuesto** es una decisión de este documento que la fuente dejó abierta y que aún no se ha aceptado. Lo **aceptado** quedó confirmado en el PRD (D-06 a D-23).
@@ -20,6 +20,7 @@
 | 0.6 | 2026-10-08 | **Empleados (RN-33, D-17 a D-19, ADR-16):** nueva tabla `servicio_sede_recurso`; `servicio_sede` pierde `recurso_id` y gana `cliente_elige`; `recurso` gana `foto_url`, `descripcion` y `orden`, y un empleado (`profesional`) siempre tiene capacidad 1; `horario_semanal.recurso_id` para el horario propio; `cita.recurso_elegido`; la API pública acepta `recursoId`; el motor con varios recursos y la regla de asignación quedan especificados (§10.3) para cuando se construya el módulo. R2 guarda también las fotos. |
 | 0.7 | 2026-10-08 | Cuatro cambios:<br>• **RN-34:** `max_reprogramaciones_cliente` en la configuración y `cita.reprogramaciones_cliente`.<br>• **D-21:** `asistencia_por_defecto` y nueva tarea del cron `aplicarAsistenciaPorDefecto`.<br>• **D-22:** se elimina `revision_cliente`; prevalece el teléfono (§12).<br>• **RN-35:** invitaciones iCalendar (§14.6), enlace de calendario del dueño (§14.7, tabla `enlace_calendario`, ruta `/api/calendario/…`, `RL_CALENDARIO`, `CALENDARIO_SECRET`), `recurso.correo` y tipos `empleado_cita_nueva` y `empleado_cambio`.<br>Nuevo ADR-17. |
 | 0.8 | 2026-10-14 | **Ramas de Neon:** se llaman `development` (antes `dev`) y `production` (antes `main`), como quedaron en el proyecto creado (§20, §21.1). |
+| 0.9 | 2026-10-16 | **Hallazgos de la Fase 1:**<br>• El middleware es `src/proxy.ts`, sin `createRouteMatcher`, y los `<ClerkProvider>` llevan `afterSignOutUrl="/login"` (§4, §7.3).<br>• El `Request` de `scheduled` lleva el encabezado `host` (§14.5).<br>• Dónde vive cada valor (§21.3).<br>• `npm run deploy` migra `production`, compila, quita los `.env` del bundle y despliega; scripts contra `production` (§21.4).<br>• Riesgos nuevos: el proxy en Workers y Clerk en `http://localhost`; tamaño medido del Worker (§21.4, §23). |
 
 ---
 
@@ -114,7 +115,7 @@ flowchart LR
 │  │  ├─ gestion-cita/          # Firma y verificación de los links (§13)
 │  │  └─ rate-limit/            # §15
 │  ├─ componentes/
-│  └─ middleware.ts             # Clerk (§7.3)
+│  └─ proxy.ts                  # Clerk (§7.3). En Next.js 16 reemplaza a middleware.ts
 ├─ drizzle/                     # Migraciones SQL versionadas (generadas y manuales)
 ├─ tests/
 ├─ worker.ts                    # Entrada del Worker: fetch de OpenNext + scheduled (§14.5)
@@ -197,13 +198,14 @@ Así, los datos de los pacientes nunca pasan por Clerk, y cambiar de proveedor d
 ### 7.3 Middleware
 
 ```ts
-// src/middleware.ts  (en Next.js 16 el archivo se llama proxy.ts)
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+// src/proxy.ts  (Next.js 16 renombró middleware.ts a proxy.ts)
+import { clerkMiddleware } from '@clerk/nextjs/server';
 
-const esPrivada = createRouteMatcher(['/panel(.*)', '/admin(.*)']);
+// /panel y /admin, con o sin subrutas (no /panelito)
+const RUTA_PRIVADA = /^\/(panel|admin)(\/|$)/;
 
 export default clerkMiddleware(async (auth, req) => {
-  if (esPrivada(req)) await auth.protect(); // Sin sesión: redirige a /login
+  if (RUTA_PRIVADA.test(req.nextUrl.pathname)) await auth.protect(); // Sin sesión: redirige a NEXT_PUBLIC_CLERK_SIGN_IN_URL (/login)
 });
 
 export const config = {
@@ -216,6 +218,10 @@ export const config = {
 ```
 
 El middleware **solo autentica**. La autorización (a qué negocio pertenece el usuario y si es admin) se verifica de nuevo en cada página, Server Action y ruta, porque el middleware no sabe nada del negocio.
+
+- **Sin `createRouteMatcher`:** Clerk 7 lo marca como obsoleto (se quita en la próxima versión mayor y avisa en cada arranque), porque su comparación puede diferir de cómo Next resuelve las rutas. Por eso la ruta se compara con una expresión regular propia. Esa comparación es solo una comodidad: lleva a `/login` a quien llega sin sesión, en lugar del 404 de `requireSuperadmin` en `/admin`. La defensa real son `requireMiembro` y `requireSuperadmin` (§7.5).
+- **Runtime:** Next.js 16 ejecuta `proxy.ts` siempre en Node.js (la opción `runtime` no está disponible), y OpenNext lo empaqueta para Workers como función experimental. Ver el riesgo en §23.
+- **Cerrar sesión:** los `<ClerkProvider>` de `(auth)`, `(panel)` y `(admin)` (§7.2) llevan `afterSignOutUrl="/login"`. Clerk no lo lee de una variable de entorno, y sin la prop, cerrar sesión desde `<UserButton/>` lleva a la raíz `/`. El botón de `/sin-acceso` hace lo mismo con `<SignOutButton redirectUrl="/login">`.
 
 ### 7.4 Vinculación entre el usuario de Clerk y el negocio
 
@@ -793,16 +799,27 @@ export default {
   fetch: handler.fetch,
   async scheduled(_evento, env, ctx) {
     // Se invoca la ruta interna dentro del mismo Worker, sin pasar por la red pública
-    const req = new Request(`${env.APP_URL}/api/interno/cron`, {
+    const url = new URL('/api/interno/cron', env.APP_URL);
+    const solicitud = new Request(url, {
       method: 'POST',
-      headers: { authorization: `Bearer ${env.CRON_SECRET}` },
+      headers: {
+        host: url.host, // Imprescindible: ver abajo
+        authorization: `Bearer ${env.CRON_SECRET}`,
+      },
     });
-    ctx.waitUntil(handler.fetch(req, env, ctx));
+    ctx.waitUntil(
+      (handler.fetch(solicitud, env, ctx) as Promise<Response>).then((respuesta) =>
+        // Workers Logs: el cron corrió y con qué respuesta (§21.4)
+        console.log(JSON.stringify({ evento: 'cron', ruta: '/api/interno/cron', estado: respuesta.status })),
+      ),
+    );
   },
 } satisfies ExportedHandler<CloudflareEnv>;
 
-// Si la configuración de OpenNext usa Durable Objects (caché y colas), también se re-exportan desde aquí.
+// Si la configuración de OpenNext usa Durable Objects (caché y colas), también se reexportan desde aquí.
 ```
+
+**El encabezado `host` es obligatorio.** `isExternal` de `@opennextjs/aws` compara el host de la URL con ese encabezado. Sin él, toma la URL absoluta como externa y la reenvía por la red hacia `APP_URL`, es decir, al propio `*.workers.dev` a través de Internet. Con `host`, la atiende el mismo Worker. Se comprobó con `wrangler dev --test-scheduled` y `APP_URL` apuntando a un host inexistente: la ruta respondió 204 igual.
 
 ### 14.6 Invitaciones de calendario (RN-35)
 
@@ -1895,7 +1912,7 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 | Nombre | Tipo | Uso |
 |---|---|---|
 | `DATABASE_URL` | Secreto | Neon, endpoint con *pooler* |
-| `DATABASE_URL_DIRECTA` | Solo local y CI | Migraciones |
+| `DATABASE_URL_DIRECTA` | Solo local y CI | Migraciones y semilla (§21.4) |
 | `CLERK_SECRET_KEY` | Secreto | Clerk (§7.7) |
 | `NEXT_PUBLIC_CLERK_*` | Variable de build | Clerk (§7.7) |
 | `RESEND_API_KEY` | Secreto | Correo |
@@ -1908,12 +1925,27 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 | `CORREO_CUENTA` | Variable | `cuenta@tuapp.com` (C-07 y C-08) |
 | `CORREO_SOPORTE` | Variable | Destino de las respuestas a C-07 y C-08 |
 
+**Dónde vive cada valor** (ningún archivo con valores se versiona; RNF-04):
+
+| Valores | Desarrollo | Producción |
+|---|---|---|
+| Secretos y variables del Worker | `.env.local` (`next dev` y scripts) y `.dev.vars` (`npm run preview`) | Secretos del Worker (`wrangler secret put`) y `vars` de `wrangler.jsonc` |
+| Variables de build (`NEXT_PUBLIC_*`) | `.env.local` | `.env.production.local`, en la máquina que despliega |
+| `DATABASE_URL_DIRECTA` | `.env.local` (rama `development`) | `.env.production.local` (rama `production`; Q-07 de [TASKS-01](TASKS-01.md)) |
+
 ### 21.4 Operación
 
-- **Despliegue:** migraciones (si las hay), luego `opennextjs-cloudflare build` y `opennextjs-cloudflare deploy`.
+- **Despliegue:** `npm run deploy` hace todo, en orden, y se detiene en el primer paso que falle:
+  1. `npm run db:migrate:prod`: aplica en `production` las migraciones pendientes (§8);
+  2. `opennextjs-cloudflare build`;
+  3. `node scripts/limpiar-env-del-bundle.mjs`: quita los `.env` del bundle (ver abajo);
+  4. `opennextjs-cloudflare deploy`.
+- **Los `.env` no viajan en el bundle:** al compilar, OpenNext copia los valores de `.env`, `.env.production`, `.env.local` y `.env.production.local` en `.open-next/cloudflare/next-env.mjs`, dentro del bundle, y el Worker los usa como respaldo de `process.env`. Desde la máquina de desarrollo, eso subiría a Cloudflare los secretos de `.env.local` (la base `development`, `NEON_API_KEY`, `CLERK_SECRET_KEY`…) y la cadena directa de `production`, y un secreto que faltara en el Worker tomaría en silencio el valor de desarrollo. `scripts/limpiar-env-del-bundle.mjs` deja en ese archivo solo las `NEXT_PUBLIC_*`, que Next ya incrusta en el JavaScript del navegador, y falla si el archivo no existe o si queda cualquier otra variable. Todo lo demás llega por los secretos y los `vars` del Worker (§21.3). `npm run preview` no lo ejecuta, porque es local y necesita `.env.local`.
+- **Scripts contra `production`:** `npm run db:migrate:prod` y `npm run db:semilla:prod` cargan `.env.production.local` con `node --env-file=.env.production.local` (fallan si el archivo no existe) y usan su `DATABASE_URL_DIRECTA` (Q-07). `drizzle.config.ts` y `scripts/semilla.ts` cargan después los `.env` con `@next/env` en modo desarrollo, que lee `.env.local` y nunca `.env.production.local`, y no reemplaza lo que ya está en `process.env`. Así, `db:migrate` y `db:semilla` nunca apuntan a `production` por accidente. La semilla muestra el host al que se conecta.
 - **Copias de seguridad:** restauración a un punto en el tiempo de Neon, con la ventana que dé el plan. Además, un `pg_dump` cifrado semanal (recomendado, porque hay datos de salud).
 - **Observabilidad:** Workers Logs. El panel de `/admin` (ADM-05) muestra las notificaciones `fallida` y las `pendiente` con más de 15 minutos de atraso. Esta última es la señal de que el cron no está corriendo.
 - **Costo:** si el bundle de OpenNext supera el límite de tamaño del plan gratuito de Workers, se usa Workers Paid (≈ USD 5/mes). Neon, Clerk y Resend caben en sus planes gratuitos con este volumen. Los límites vigentes se verifican al contratar.
+- **Tamaño del Worker:** el despliegue de T1.56 informó 12.646 KiB, 2880 KiB comprimidos, cerca del límite de 3 MiB comprimidos del plan gratuito (quedan unos 190 KiB), y las fases siguientes suman dependencias (Resend, React Email…). Mientras no se decida Q-17 de [TASKS-01](TASKS-01.md), cada despliegue anota en su commit el tamaño que informa `wrangler` (§23).
 
 ## 22. Decisiones de diseño (ADR)
 
@@ -1942,7 +1974,9 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
 | Incompatibilidades entre Next.js, OpenNext y Clerk | Bloqueo en los días 1 y 2 | Desplegar el día 1 un esqueleto con Clerk y Neon funcionando (ya está en el plan). Fijar las versiones. |
-| El bundle supera el límite de tamaño de Workers | No se puede desplegar en el plan gratuito | Workers Paid desde el inicio si hace falta (§21.4) |
+| `src/proxy.ts` en Workers: Next.js 16 lo ejecuta siempre en Node.js, y `@opennextjs/cloudflare` 1.20.9 lo empaqueta para Workers solo como función experimental ("Node.js middleware support is experimental") | Si deja de funcionar al actualizar Next u OpenNext, `/panel` y `/admin` pierden la redirección a `/login` y Clerk puede dejar de leer la sesión en el servidor | Funciona desplegado (T1.57). Versiones fijadas; después de actualizar, comprobar con `npm run preview` que `/panel` y `/admin` redirigen sin sesión. Si falla, la alternativa es `middleware.ts` (obsoleto en Next.js 16) con runtime Edge (§7.3). |
+| El Worker supera el límite de tamaño del plan gratuito (3 MiB comprimidos) | No se puede desplegar en el plan gratuito | El despliegue de T1.56 midió 2880 KiB comprimidos, cerca del límite (§21.4). Se anota el tamaño de cada despliegue y se pasa a Workers Paid si hace falta (Q-17 de [TASKS-01](TASKS-01.md)). |
+| Clerk en `http://localhost`: las cookies del *handshake* llegan con `SameSite=None` sin `Secure`, Chrome las descarta y Clerk registra "Refreshing the session token resulted in an infinite redirect loop" | Solo en desarrollo: el servidor trata la solicitud como sin sesión y el Clerk del navegador devuelve al usuario pasando por `/login`. En https (`*.workers.dev`) no ocurre. | Si aparece, probar los flujos con sesión en el Worker desplegado. Solución posible: `next dev --experimental-https`, que sirve la app local en https con un certificado autofirmado. |
 | Errores de zona horaria | Citas en la hora o el día equivocados | §9; pruebas obligatorias del caso de las 7:00 p. m.; formato siempre con la zona del negocio |
 | Arranque en frío de Neon (escala a cero) | La primera consulta tarda cientos de milisegundos | Aceptable con este volumen. En producción se puede desactivar la suspensión automática. |
 | Latencia entre Workers y Neon en transacciones con varias consultas | Reservas lentas | Región `us-east-1`, pocas consultas por transacción y Smart Placement (§8) |

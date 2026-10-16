@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Versión** | 0.1 (borrador) |
-| **Fecha** | 2026-10-08 |
-| **Fuentes** | [PRD.md](PRD.md) v0.7 · [ARCHITECTURE.md](ARCHITECTURE.md) v0.8 |
+| **Versión** | 0.2 (borrador) |
+| **Fecha** | 2026-10-16 |
+| **Fuentes** | [PRD.md](PRD.md) v0.7 · [ARCHITECTURE.md](ARCHITECTURE.md) v0.9 |
 
 > El PRD manda en el **qué** y ARCHITECTURE en el **cómo**. Si una tarea contradice a alguno de los dos, se corrige la tarea. Lo que los documentos no definen está en [Preguntas](#preguntas) y cada tarea afectada lo cita con su ID (`Q-xx`).
 
@@ -611,7 +611,7 @@ Puntos que el PRD y ARCHITECTURE no definen. Mientras no haya respuesta, las tar
 | Q-05 | La Fase 2 empieza con "Sede principal", pero RN-32 y F-11 la crean en el alta. | La creación va en la Fase 1, dentro del alta. La Fase 2 cubre su configuración (PAN-11, PAN-13 y PAN-14). | Alcance, T1.45 |
 | Q-06 | La instancia de producción de Clerk necesita un dominio propio, que llega en la Fase 9 (días 17 y 18). ¿Con qué instancia funciona el despliegue base? | `*.workers.dev` usa la instancia de desarrollo hasta la Fase 9. | T1.55, T1.57 |
 | Q-07 | ARCH §21.3 no lista las credenciales de la API de Neon para las ramas efímeras de las pruebas, ni dónde vive la cadena directa de `production` para migrar al desplegar. | `NEON_API_KEY` y `NEON_PROJECT_ID` en `.env.local`, y `DATABASE_URL_DIRECTA` de `production` en `.env.production.local`. | T1.07, T1.08, T1.11, T1.55, T1.56 |
-| Q-08 | ¿Qué pasa si la invitación de Clerk falla después del `COMMIT` del alta? El negocio queda creado sin invitación, y ADM no define cómo reenviarla. | El alta queda hecha y el formulario muestra el error de la invitación. Falta decidir cómo reenviarla (¿un botón en `/admin`?). | T1.46 |
+| Q-08 | ¿Qué pasa si la invitación de Clerk falla después del `COMMIT` del alta? El negocio queda creado sin invitación, y ADM no define cómo reenviarla. | Implementado así en T1.46 y T1.49: el alta queda hecha, Workers Logs registra `invitacion_fallida` con el `negocioId` (sin el correo, ARCH §19.2) y el formulario avisa que el negocio quedó creado sin invitación. El reenvío hoy es manual, desde el Dashboard de Clerk (Users → Invitations) con el correo del dueño. Falta decidir si `/admin` tendrá un botón para reenviarla, y en qué fase. | T1.46, T1.49 |
 | Q-09 | ARCH §18.4 da a `altaNegocio` los errores `SLUG_NO_DISPONIBLE` y `DATOS_INVALIDOS`, sin decir cuál corresponde a cada caso. Tampoco define qué pasa si el correo del dueño ya pertenece a otro negocio (`miembro_negocio.correo` es único en todo el sistema, ARCH §7.8). | Slug reservado o repetido: `SLUG_NO_DISPONIBLE`. Formato de slug inválido, plan inexistente o correo del dueño ya usado: `DATOS_INVALIDOS`. | T1.45, T1.49 |
 | Q-10 | ¿Quién redacta la plantilla de la política de datos (D-05), que debe revisar un abogado (ARCH §19.3), y para cuándo? ¿Qué datos del negocio incluye (nombre, NIT, dirección, correo de contacto)? | Texto provisional que solo incluye el nombre del negocio y avisa que falta la revisión legal. Debe estar aprobado antes de la Fase 4 (página pública, RN-17). | T1.44 |
 | Q-11 | `negocio.correo_contacto`, que es el `reply_to` de los correos de citas (ARCH §14.3), no aparece en ADM-02 ni en PAN-11. ¿Se pide en el alta, se usa el del dueño o se configura en el panel? | El alta lo deja en `NULL`. Se decide antes de la Fase 6. | T1.45 |
@@ -620,3 +620,4 @@ Puntos que el PRD y ARCHITECTURE no definen. Mientras no haya respuesta, las tar
 | Q-14 | RN-25 menciona una "búsqueda en la integración continua", pero ARCH no define un sistema de CI ni desde dónde se despliega. | Verificación local con `npm run verificar` y despliegue desde la máquina del desarrollador. ¿Se quiere CI (por ejemplo, GitHub Actions), y desde qué fase? | T1.32, T1.56 |
 | Q-15 | Ningún documento define qué muestra la raíz `tuapp.com/` (¿página del SaaS, redirección?). | Una página provisional mínima. | T1.01 |
 | Q-16 | ARCH §20 (Sedes) incluye "`max_locations` limita las sedes activas", pero `guardarSede` es de la interfaz posterior (D-16). ¿Se prueba en el MVP? | Se pospone hasta que exista `guardarSede`. La Fase 1 prueba solo la parte de las sedes que depende del esquema y del alta. | T1.23 |
+| Q-17 | El despliegue de T1.56 informó 2880 KiB comprimidos, cerca del límite de 3 MiB del plan gratuito de Workers (ARCH §21.4, §23), y las fases siguientes suman dependencias (Resend, React Email…). ¿Se pasa a Workers Paid (≈ USD 5/mes), y cuándo: ya, o cuando un despliegue lo exija? | Se sigue en el plan gratuito. Cada despliegue anota en su commit el tamaño que informa `wrangler`, como en T1.06, y la cuenta pasa a Workers Paid antes del despliegue que supere el límite. | T1.06, T1.56 y los despliegues de las fases siguientes |

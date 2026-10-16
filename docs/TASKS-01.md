@@ -586,7 +586,7 @@ Cubre ADM-01, ADM-02, F-11 y los pasos 1 y 2 de F-05. La invitación la envía C
       * `npm run deploy` aplica todas las migraciones en `production` y despliega. Una segunda ejecución no encuentra migraciones pendientes.
       * `npm run db:semilla:prod` deja en `production` el plan `ilimitado`, con 6 funcionalidades y 6 límites.
 
-* [ ] T1.57: [manual] Verificación de punta a punta
+* [x] T1.57: [manual] Verificación de punta a punta
    * Objetivo: Comprobar en `*.workers.dev`, con Clerk y Neon reales, el recorrido completo de la fase. Es la mitigación del riesgo principal de ARCH §23 y el criterio de salida de la fase.
    * Archivos: —
    * Depende de: T1.51, T1.53, T1.56

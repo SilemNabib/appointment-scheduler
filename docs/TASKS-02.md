@@ -255,7 +255,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * El 14-oct-2026 en `America/Bogota` da `[2026-10-14T05:00:00Z, 2026-10-15T05:00:00Z)`, y del 14 al 16 da `[2026-10-14T05:00:00Z, 2026-10-17T05:00:00Z)`.
       * Si `hasta` es anterior a `desde`, lanza un error.
 
-* [ ] T2.23: Caso de uso `crearBloqueo`
+* [x] T2.23: Caso de uso `crearBloqueo`
    * Objetivo: Implementar `crearBloqueo` para la sede principal, con tres tipos: una hora (un rango dentro de un día), un día completo o un rango de días, y un motivo opcional. Dentro de una transacción:
       1. toma con `FOR UPDATE` los recursos de la sede, ordenados por `id`;
       2. busca las citas `confirmada` con `ocupado_hasta > ahora` cuyo intervalo `[inicio, ocupado_hasta)` se solapa con el del bloqueo;

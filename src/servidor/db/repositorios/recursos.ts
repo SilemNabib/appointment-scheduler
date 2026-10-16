@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 import { QueryBuilder } from "drizzle-orm/pg-core";
-import { db } from "../cliente";
+import { db, type Transaccion } from "../cliente";
 import { recurso } from "../esquema";
 import { idSedePrincipal } from "./sedes";
 
@@ -67,4 +67,20 @@ export async function actualizarConsultorioPrincipal(
     .where(and(eq(recurso.negocioId, negocioId), eq(recurso.id, idPrincipal)))
     .returning({ id: recurso.id });
   return filas.length > 0;
+}
+
+/**
+ * Toma con `FOR UPDATE`, ordenados por `id`, todos los recursos de la sede (activos o
+ * no), hasta el fin de la transacción. Es el bloqueo que serializa las escrituras de
+ * agenda (ARCH §11.3): ordenarlos evita que dos operaciones se esperen en orden
+ * cruzado. Devuelve sus ids.
+ */
+export async function bloquearDeSede(negocioId: string, sedeId: string, tx: Transaccion): Promise<string[]> {
+  const filas = await tx
+    .select({ id: recurso.id })
+    .from(recurso)
+    .where(and(eq(recurso.negocioId, negocioId), eq(recurso.sedeId, sedeId)))
+    .orderBy(asc(recurso.id))
+    .for("update");
+  return filas.map((f) => f.id);
 }

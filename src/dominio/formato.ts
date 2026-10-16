@@ -1,4 +1,4 @@
-import { localAUtc, type FechaLocal, type HoraLocal } from "./tiempo";
+import { fechaLocal, localAUtc, type FechaLocal, type HoraLocal } from "./tiempo";
 
 // Cómo se muestran las fechas y las horas (RN-03, RNF-02; ARCH §9, regla 3): con
 // `Intl.DateTimeFormat('es-CO')`, la hora en formato de 12 horas ("7:00 p. m.") y
@@ -50,4 +50,28 @@ export function formatearFechaLocal(fecha: FechaLocal): string {
  */
 export function formatearHoraLocal(hora: HoraLocal): string {
   return formatearHora(localAUtc("2000-01-01", hora, "UTC"), "UTC");
+}
+
+/**
+ * Un intervalo `[inicio, fin)` en palabras, en la zona del negocio, como se muestran
+ * los bloqueos (PAN-08). Si empieza y termina a medianoche local son días completos:
+ * "14 de octubre de 2026, todo el día" o "Del 14 de octubre de 2026 al 16 de octubre
+ * de 2026". Si cabe en un día: "14 de octubre de 2026, de 2:00 p. m. a 4:30 p. m.".
+ * Si no: "Del … a las … al … a las …".
+ */
+export function formatearIntervalo(inicio: Date, fin: Date, zona: string): string {
+  const aMedianoche = (instante: Date) =>
+    localAUtc(fechaLocal(instante, zona), "00:00", zona).getTime() === instante.getTime();
+  // El último instante incluido: `fin` no forma parte del intervalo.
+  const [desde, hasta] = [fechaLocal(inicio, zona), fechaLocal(new Date(fin.getTime() - 1), zona)];
+
+  if (aMedianoche(inicio) && aMedianoche(fin)) {
+    return desde === hasta
+      ? `${formatearFechaLocal(desde)}, todo el día`
+      : `Del ${formatearFechaLocal(desde)} al ${formatearFechaLocal(hasta)}`;
+  }
+  if (desde === hasta) {
+    return `${formatearFecha(inicio, zona)}, de ${formatearHora(inicio, zona)} a ${formatearHora(fin, zona)}`;
+  }
+  return `Del ${formatearFechaHora(inicio, zona)} al ${formatearFechaHora(fin, zona)}`;
 }

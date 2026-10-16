@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type ComponentProps, type ReactNode } from "react";
+import { startTransition, useActionState, useId, type ComponentProps, type FormEvent, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
 // Piezas que repiten los formularios del panel y del admin (RNF-03; Q-26: estilo de la
@@ -153,27 +153,49 @@ export const claseBoton = (variante: keyof typeof VARIANTES_BOTON = "primario") 
   `rounded-md px-4 py-2 text-sm font-medium disabled:opacity-60 ${VARIANTES_BOTON[variante]} ${ANILLO_FOCO}`;
 
 /**
+ * Envía un formulario a una Server Action sin el reinicio automático que React hace
+ * al terminar una `<form action>`. Ese reinicio devuelve cada campo a su valor
+ * inicial, también los controlados por estado (radios, casillas o listas): el
+ * formulario mostraría una opción y enviaría otra. Úsalo cuando el formulario tenga
+ * campos controlados: `<form onSubmit={alEnviar}>` y `<BotonEnviar enviando={enviando}>`.
+ * Los valores escritos se quedan como están, también después de un error.
+ */
+export function useEnvio<E>(fn: (previo: Awaited<E>, datos: FormData) => Promise<E>, inicial: Awaited<E>) {
+  const [estado, despachar, enviando] = useActionState<E, FormData>(fn, inicial);
+  const alEnviar = (evento: FormEvent<HTMLFormElement>) => {
+    evento.preventDefault();
+    const datos = new FormData(evento.currentTarget, (evento.nativeEvent as SubmitEvent).submitter);
+    startTransition(() => despachar(datos));
+  };
+  return [estado, alEnviar, enviando] as const;
+}
+
+/**
  * Botón de envío que se deshabilita y cambia su texto mientras la Server Action del
- * formulario corre. Va dentro del `<form>`: lee su estado con `useFormStatus`. Si el
- * formulario tiene varios botones con `name` y `value`, todos se deshabilitan, pero
- * solo cambia el texto del que se pulsó.
+ * formulario corre. Con `<form action>` lee su estado con `useFormStatus`; con
+ * `useEnvio`, recibe `enviando`. Si el formulario tiene varios botones con `name` y
+ * `value`, todos se deshabilitan, pero solo cambia el texto del que se pulsó.
  */
 export function BotonEnviar({
   children,
   textoEnviando,
   variante,
+  enviando = false,
   ...props
 }: {
   children: ReactNode;
   /** Lo que dice mientras se envía, como "Guardando…". */
   textoEnviando: ReactNode;
   variante?: keyof typeof VARIANTES_BOTON;
+  /** Para formularios con `useEnvio`, que `useFormStatus` no ve. */
+  enviando?: boolean;
 } & Omit<ComponentProps<"button">, "type" | "children">) {
   const { pending, data } = useFormStatus();
   const pulsado = props.name === undefined || data?.get(props.name) === String(props.value);
+  const ocupado = pending || enviando;
   return (
-    <button {...props} type="submit" disabled={pending || props.disabled} className={claseBoton(variante)}>
-      {pending && pulsado ? textoEnviando : children}
+    <button {...props} type="submit" disabled={ocupado || props.disabled} className={claseBoton(variante)}>
+      {(pending && pulsado) || enviando ? textoEnviando : children}
     </button>
   );
 }

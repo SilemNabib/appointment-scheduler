@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Aviso } from "@/componentes/aviso";
-import { BotonEnviar, Entrada, Opcion, Seccion } from "@/componentes/formulario";
+import { BotonEnviar, Entrada, Opcion, Seccion, useEnvio } from "@/componentes/formulario";
 import { mensajeDeError } from "@/componentes/mensajes";
 import { TAMANO_MAXIMO_IMAGEN } from "@/dominio/imagen";
 import type { DatosNegocio } from "@/servidor/casos-uso/guardar-negocio";
@@ -11,13 +11,9 @@ import { guardarDatosNegocio, quitarLogoNegocio, subirLogoNegocio } from "./acci
 // Formularios de PAN-11. Validan en el servidor (Q-02); los atributos de HTML solo
 // ayudan a escribir bien. Con el negocio suspendido quedan deshabilitados (D-14).
 
-type Estado = { error?: string; exito?: string; valores?: Record<string, string> };
+type Estado = { error?: string; exito?: string };
 
 const ERROR_LOGO = "El logo debe ser una imagen PNG, JPEG o WebP de hasta 512 KB.";
-
-/** Lo que escribió el dueño, para no perderlo cuando el servidor devuelve un error. */
-const textos = (formulario: FormData) =>
-  Object.fromEntries([...formulario].filter(([, valor]) => typeof valor === "string")) as Record<string, string>;
 
 function Mensajes({ estado }: { estado: Estado }) {
   if (estado.error) return <Aviso tipo="error">{estado.error}</Aviso>;
@@ -99,24 +95,24 @@ export function FormularioLogo({ logoUrl, soloLectura }: { logoUrl: string | nul
 }
 
 export function FormularioNegocio({ datos, soloLectura }: { datos: DatosNegocio; soloLectura: boolean }) {
-  const [estado, enviar] = useActionState<Estado, FormData>(async (_previo, formulario) => {
+  // `useEnvio` y no `<form action>`: la casilla del color secundario es controlada, y el
+  // reinicio automático del formulario la dejaría distinta del campo que habilita.
+  const [estado, alEnviar, enviando] = useEnvio<Estado>(async (_previo, formulario) => {
     const resultado = await guardarDatosNegocio(formulario);
     if (resultado.ok) return { exito: "Guardaste los datos del negocio." };
     return {
       error: mensajeDeError(resultado.error, {
         DATOS_INVALIDOS: "Revisa los datos: el nombre no puede quedar vacío y los colores deben ser válidos.",
       }),
-      valores: textos(formulario),
     };
   }, {});
-  const v = estado.valores;
 
   // Sin color secundario, su campo queda deshabilitado y no se envía: se guarda vacío.
   const [conSecundario, setConSecundario] = useState(datos.colorSecundario !== null);
 
   return (
     <Seccion titulo="Datos del negocio">
-      <form action={enviar} className="flex flex-col gap-4">
+      <form onSubmit={alEnviar} className="flex flex-col gap-4">
         <Mensajes estado={estado} />
         <fieldset disabled={soloLectura} className="flex flex-col gap-4">
           <Entrada
@@ -125,7 +121,7 @@ export function FormularioNegocio({ datos, soloLectura }: { datos: DatosNegocio;
             etiqueta="Nombre"
             required
             maxLength={120}
-            defaultValue={v?.nombre ?? datos.nombre}
+            defaultValue={datos.nombre}
           />
           <div className="flex flex-wrap items-start gap-6">
             <Entrada
@@ -133,7 +129,7 @@ export function FormularioNegocio({ datos, soloLectura }: { datos: DatosNegocio;
               name="colorPrimario"
               type="color"
               etiqueta="Color principal"
-              defaultValue={v?.colorPrimario ?? datos.colorPrimario}
+              defaultValue={datos.colorPrimario}
               className="h-10 w-20 p-1"
             />
             <div className="flex flex-col gap-2">
@@ -143,7 +139,7 @@ export function FormularioNegocio({ datos, soloLectura }: { datos: DatosNegocio;
                 type="color"
                 etiqueta="Color secundario"
                 disabled={!conSecundario}
-                defaultValue={v?.colorSecundario ?? datos.colorSecundario ?? "#ffffff"}
+                defaultValue={datos.colorSecundario ?? "#ffffff"}
                 className="h-10 w-20 p-1"
               />
               <Opcion
@@ -160,7 +156,7 @@ export function FormularioNegocio({ datos, soloLectura }: { datos: DatosNegocio;
             etiqueta="Dirección"
             ayuda="La ven tus clientes al reservar. Opcional."
             maxLength={200}
-            defaultValue={v?.direccion ?? datos.direccion ?? ""}
+            defaultValue={datos.direccion ?? ""}
           />
           <Entrada
             id="telefono"
@@ -169,10 +165,12 @@ export function FormularioNegocio({ datos, soloLectura }: { datos: DatosNegocio;
             etiqueta="Teléfono"
             ayuda="Para que tus clientes te contacten. Opcional."
             maxLength={30}
-            defaultValue={v?.telefono ?? datos.telefono ?? ""}
+            defaultValue={datos.telefono ?? ""}
           />
           <div>
-            <BotonEnviar textoEnviando="Guardando…">Guardar cambios</BotonEnviar>
+            <BotonEnviar textoEnviando="Guardando…" enviando={enviando}>
+              Guardar cambios
+            </BotonEnviar>
           </div>
         </fieldset>
       </form>

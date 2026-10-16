@@ -277,7 +277,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * La lista no incluye los bloqueos que ya terminaron ni los de otros negocios.
       * Eliminar un bloqueo inexistente o de otro negocio devuelve `NO_ENCONTRADO`.
 
-* [ ] T2.25: Página de bloqueos
+* [x] T2.25: Página de bloqueos
    * Objetivo: Crear `/panel/bloqueos` con sus Server Actions: el formulario (tipo, fechas, horas y motivo), la lista con fecha y hora locales, y un botón para eliminar con confirmación. Ante `BLOQUEO_CON_CITAS`, la página lista las citas que impiden el bloqueo.
    * Archivos: `src/app/(panel)/panel/bloqueos/page.tsx`, `src/app/(panel)/panel/bloqueos/formulario.tsx`, `src/app/(panel)/panel/bloqueos/acciones.ts`
    * Depende de: T2.03, T2.05, T2.24

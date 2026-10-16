@@ -1,17 +1,17 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Aviso } from "@/componentes/aviso";
-import { BotonEnviar, claseBoton, GrupoCampos, Selector } from "@/componentes/formulario";
+import { BotonEnviar, claseBoton, GrupoCampos, useEnvio } from "@/componentes/formulario";
 import { mensajeDeError } from "@/componentes/mensajes";
+import { aMinutos, horaDe, SelectorHora } from "@/componentes/selector-hora";
 import { formatearHoraLocal } from "@/dominio/formato";
 import { DIAS_SEMANA, type DiaSemana, type FranjaValida } from "@/dominio/horario";
 import { guardarHorarioPanel } from "./acciones";
 
 // Formulario de PAN-14: los siete días, con franjas que se agregan y se quitan, y
-// "Cerrado" en los días sin franjas. Las horas se eligen de una lista cada 15 minutos
-// y se muestran en formato de 12 horas (RNF-02), sin depender del formato del
-// dispositivo. Valida en el servidor (Q-02).
+// "Cerrado" en los días sin franjas. Las horas se eligen con `SelectorHora`, en
+// formato de 12 horas (RNF-02). Valida en el servidor (Q-02).
 
 const NOMBRES: Record<DiaSemana, string> = {
   1: "Lunes",
@@ -27,18 +27,6 @@ type Rango = { inicio: string; fin: string };
 type Semana = Record<DiaSemana, Rango[]>;
 type Estado = { error?: string; exito?: string; dias?: DiaSemana[] };
 
-const PASO_MINUTOS = 15;
-const aHora = (minutos: number) =>
-  `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
-const aMinutos = (hora: string) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
-
-/** 00:00, 00:15… 23:45. */
-const HORAS = Array.from({ length: (24 * 60) / PASO_MINUTOS }, (_, i) => aHora(i * PASO_MINUTOS));
-const ULTIMA = HORAS[HORAS.length - 1];
-
-/** Las horas de la lista, más la elegida si no cae en ella (por ejemplo, una guardada a mano). */
-const opciones = (elegida: string) => (HORAS.includes(elegida) ? HORAS : [...HORAS, elegida].sort());
-
 function semanaDe(franjas: FranjaValida[]): Semana {
   const semana = Object.fromEntries(DIAS_SEMANA.map((dia) => [dia, [] as Rango[]])) as unknown as Semana;
   for (const { dia, inicio, fin } of franjas) semana[dia].push({ inicio, fin });
@@ -48,8 +36,7 @@ function semanaDe(franjas: FranjaValida[]): Semana {
 /** Franja nueva: empieza donde termina la última del día y dura 4 horas, sin pasar de las 23:45. */
 function franjaNueva(rangos: Rango[]): Rango {
   const inicio = rangos.at(-1)?.fin ?? "08:00";
-  const fin = aHora(Math.min(aMinutos(inicio) + 4 * 60, aMinutos(ULTIMA)));
-  return { inicio, fin };
+  return { inicio, fin: horaDe(aMinutos(inicio) + 4 * 60) };
 }
 
 const listaDe = (dias: DiaSemana[]) =>
@@ -58,7 +45,9 @@ const listaDe = (dias: DiaSemana[]) =>
 export function FormularioHorario({ franjas, soloLectura }: { franjas: FranjaValida[]; soloLectura: boolean }) {
   const [semana, setSemana] = useState<Semana>(() => semanaDe(franjas));
 
-  const [estado, enviar] = useActionState<Estado, FormData>(async () => {
+  // `useEnvio` y no `<form action>`: las horas son listas controladas por el estado, y
+  // el reinicio automático del formulario las dejaría distintas de lo que se guarda.
+  const [estado, alEnviar, enviando] = useEnvio<Estado>(async () => {
     const lista = DIAS_SEMANA.flatMap((dia) => semana[dia].map((r) => ({ dia, ...r })));
     const resultado = await guardarHorarioPanel({ franjas: lista });
     if (resultado.ok) return { exito: "Guardaste el horario." };
@@ -79,7 +68,7 @@ export function FormularioHorario({ franjas, soloLectura }: { franjas: FranjaVal
     setSemana((s) => ({ ...s, [dia]: s[dia].filter((_, i) => i !== indice) }));
 
   return (
-    <form action={enviar} className="flex flex-col gap-6">
+    <form onSubmit={alEnviar} className="flex flex-col gap-6">
       {estado.error && <Aviso tipo="error">{estado.error}</Aviso>}
       {estado.exito && <Aviso tipo="exito">{estado.exito}</Aviso>}
       <fieldset disabled={soloLectura} className="flex flex-col gap-6">
@@ -95,30 +84,18 @@ export function FormularioHorario({ franjas, soloLectura }: { franjas: FranjaVal
             ) : (
               semana[dia].map((rango, indice) => (
                 <div key={indice} className="flex flex-wrap items-end gap-3">
-                  <Selector
+                  <SelectorHora
                     id={`dia${dia}-${indice}-inicio`}
                     etiqueta="Desde"
                     value={rango.inicio}
                     onChange={(e) => cambiar(dia, indice, "inicio", e.target.value)}
-                  >
-                    {opciones(rango.inicio).map((hora) => (
-                      <option key={hora} value={hora}>
-                        {formatearHoraLocal(hora)}
-                      </option>
-                    ))}
-                  </Selector>
-                  <Selector
+                  />
+                  <SelectorHora
                     id={`dia${dia}-${indice}-fin`}
                     etiqueta="Hasta"
                     value={rango.fin}
                     onChange={(e) => cambiar(dia, indice, "fin", e.target.value)}
-                  >
-                    {opciones(rango.fin).map((hora) => (
-                      <option key={hora} value={hora}>
-                        {formatearHoraLocal(hora)}
-                      </option>
-                    ))}
-                  </Selector>
+                  />
                   <button type="button" onClick={() => quitar(dia, indice)} className={claseBoton("secundario")}>
                     Quitar
                     <span className="sr-only">
@@ -138,7 +115,9 @@ export function FormularioHorario({ franjas, soloLectura }: { franjas: FranjaVal
           </GrupoCampos>
         ))}
         <div>
-          <BotonEnviar textoEnviando="Guardando…">Guardar horario</BotonEnviar>
+          <BotonEnviar textoEnviando="Guardando…" enviando={enviando}>
+            Guardar horario
+          </BotonEnviar>
         </div>
       </fieldset>
     </form>

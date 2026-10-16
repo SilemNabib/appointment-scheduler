@@ -5,6 +5,7 @@ import {
   formatearFechaLocal,
   formatearHora,
   formatearHoraLocal,
+  formatearIntervalo,
 } from "@/dominio/formato";
 
 // Formato de fechas y horas (RN-03, RNF-02; ARCH §9, regla 3).
@@ -72,5 +73,38 @@ describe("formato de fechas y horas locales", () => {
   test("una fecha o una hora inválidas lanzan un error", () => {
     expect(() => formatearFechaLocal("2026-02-30")).toThrow(RangeError);
     expect(() => formatearHoraLocal("25:00")).toThrow(RangeError);
+  });
+});
+
+describe("formatearIntervalo", () => {
+  const intervalo = (inicio: string, fin: string) =>
+    normalizar(formatearIntervalo(new Date(inicio), new Date(fin), BOGOTA));
+
+  test("un día completo local", () => {
+    expect(intervalo("2026-10-14T05:00:00Z", "2026-10-15T05:00:00Z")).toBe("14 de octubre de 2026, todo el día");
+  });
+
+  test("varios días completos", () => {
+    expect(intervalo("2026-10-14T05:00:00Z", "2026-10-17T05:00:00Z")).toBe(
+      "Del 14 de octubre de 2026 al 16 de octubre de 2026",
+    );
+  });
+
+  test("unas horas de un día, en la zona del negocio y con 12 horas (RNF-02)", () => {
+    expect(intervalo("2026-10-14T19:00:00Z", "2026-10-14T21:30:00Z")).toBe(
+      "14 de octubre de 2026, de 2:00 p. m. a 4:30 p. m.",
+    );
+  });
+
+  test("unas horas que terminan a medianoche siguen siendo del mismo día", () => {
+    expect(intervalo("2026-10-15T04:00:00Z", "2026-10-15T05:00:00Z")).toBe(
+      "14 de octubre de 2026, de 11:00 p. m. a 12:00 a. m.",
+    );
+  });
+
+  test("un intervalo que cruza la medianoche sin empezar en ella", () => {
+    expect(intervalo("2026-10-15T03:00:00Z", "2026-10-15T07:00:00Z")).toBe(
+      "Del 14 de octubre de 2026 a las 10:00 p. m. al 15 de octubre de 2026 a las 2:00 a. m.",
+    );
   });
 });

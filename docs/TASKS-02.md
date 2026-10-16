@@ -286,7 +286,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * El dueño crea un bloqueo de una hora, uno de día completo y uno de un rango de días, los ve en la lista en hora de Colombia y elimina uno.
       * Con una cita confirmada en el rango, creada por SQL en `development`, el panel lista esa cita y no crea el bloqueo (F-09).
 
-* [ ] T2.26: Pruebas de bloqueos
+* [x] T2.26: Pruebas de bloqueos
    * Objetivo: Probar la regla de D-15 en `crearBloqueo`. El otro caso de ARCH §20 (un bloqueo y una reserva simultáneos) va en la Fase 3, cuando exista `reservarCita`.
    * Archivos: `tests/integracion/casos-uso/bloqueos-reglas.test.ts`
    * Depende de: T2.02, T2.24

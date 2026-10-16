@@ -176,7 +176,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * Cambia el nombre y la capacidad del consultorio de la sede principal, y de ningún otro recurso.
       * Una capacidad que no es un número entero devuelve `DATOS_INVALIDOS`.
 
-* [ ] T2.15: Página de servicios
+* [x] T2.15: Página de servicios
    * Objetivo: Crear `/panel/configuracion/servicios` con sus Server Actions: la lista de servicios activos e inactivos, el formulario para crear y editar, y los botones para activar y desactivar. El error `LIMITE_PLAN` se muestra como "límite del plan".
    * Archivos: `src/app/(panel)/panel/configuracion/servicios/page.tsx`, `src/app/(panel)/panel/configuracion/servicios/formulario.tsx`, `src/app/(panel)/panel/configuracion/servicios/acciones.ts`
    * Depende de: T2.05, T2.13

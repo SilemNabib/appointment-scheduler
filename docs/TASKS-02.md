@@ -442,7 +442,7 @@ Entra en esta fase por el supuesto de Q-04 (TASKS-01). Si esa pregunta se respon
       * Con el negocio suspendido, cada Server Action que modifica datos en esta fase (negocio, logo, servicios, consultorio, horario, bloqueos, reglas, recordatorio y política) devuelve `NEGOCIO_SUSPENDIDO` y no cambia nada (RN-04; ARCH §20).
       * Con el negocio suspendido, las lecturas de esas páginas siguen funcionando (ARCH §20: "se puede consultar").
 
-* [ ] T2.42: Despliegue y verificación de la fase
+* [x] T2.42: Despliegue y verificación de la fase
    * Objetivo: Desplegar la fase con `npm run deploy` y recorrer en `*.workers.dev` la configuración completa de un negocio de prueba.
    * Archivos: — (el commit anota el tamaño del Worker, como pide Q-17 de TASKS-01)
    * Depende de: T2.32, T2.38, T2.39, T2.41

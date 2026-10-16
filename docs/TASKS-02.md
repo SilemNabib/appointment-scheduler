@@ -297,7 +297,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
 
 ### 2.F Reglas, recordatorio, política e inicio del panel (PAN-15 a PAN-18)
 
-* [ ] T2.27: Casos de uso de las reglas de reserva y el recordatorio
+* [x] T2.27: Casos de uso de las reglas de reserva y el recordatorio
    * Objetivo: Implementar `leerConfiguracion`, `guardarReglasReserva` y `guardarRecordatorio`.
       * `guardarReglasReserva` guarda la granularidad (15, 30 o 60), la anticipación mínima en minutos, la máxima en días (de 1 a 365), el plazo de cancelación en horas, el límite de reprogramaciones (vacío = sin límite; 0 = no se permite) y la asistencia por defecto.
       * `guardarRecordatorio` guarda las horas antes de la cita, o "ninguno", que se guarda como `NULL`.

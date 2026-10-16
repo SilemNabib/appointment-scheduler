@@ -235,7 +235,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * Guardar una semana reemplaza todas las franjas de la sede principal, sin tocar los horarios de otras sedes ni los horarios propios de los recursos.
       * Con franjas solapadas devuelve `FRANJAS_SOLAPADAS`, y la semana anterior queda intacta.
 
-* [ ] T2.21: Página del horario
+* [x] T2.21: Página del horario
    * Objetivo: Crear `/panel/configuracion/horario` con los siete días, franjas que se pueden agregar y quitar en cada día, y "Cerrado" en los días sin franjas, más su Server Action.
    * Archivos: `src/app/(panel)/panel/configuracion/horario/page.tsx`, `src/app/(panel)/panel/configuracion/horario/formulario.tsx`, `src/app/(panel)/panel/configuracion/horario/acciones.ts`
    * Depende de: T2.05, T2.20

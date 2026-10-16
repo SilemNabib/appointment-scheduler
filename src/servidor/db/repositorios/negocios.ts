@@ -38,6 +38,36 @@ export async function resumen(negocioId: string): Promise<ResumenNegocio | null>
   return fila ?? null;
 }
 
+export type MarcaNegocio = {
+  nombre: string;
+  colorPrimario: string;
+  colorSecundario: string | null;
+};
+
+/** Nombre, logo y colores, para la configuración del negocio (PAN-11). */
+export async function marca(negocioId: string): Promise<(MarcaNegocio & { logoUrl: string | null }) | null> {
+  const [fila] = await db()
+    .select({
+      nombre: negocio.nombre,
+      logoUrl: negocio.logoUrl,
+      colorPrimario: negocio.colorPrimario,
+      colorSecundario: negocio.colorSecundario,
+    })
+    .from(negocio)
+    .where(eq(negocio.id, negocioId));
+  return fila ?? null;
+}
+
+/** Cambia el nombre y los colores (PAN-11). Devuelve si el negocio existe. */
+export async function actualizarMarca(negocioId: string, datos: MarcaNegocio, tx: Transaccion): Promise<boolean> {
+  const filas = await tx
+    .update(negocio)
+    .set(datos)
+    .where(eq(negocio.id, negocioId))
+    .returning({ id: negocio.id });
+  return filas.length > 0;
+}
+
 export type FilaNegocioAdmin = DatosSuscripcion & {
   id: string;
   slug: string;

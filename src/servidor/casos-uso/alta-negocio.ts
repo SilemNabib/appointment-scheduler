@@ -8,18 +8,10 @@ import { enTransaccion, fijarActor } from "@/servidor/db/cliente";
 import * as negocios from "@/servidor/db/repositorios/negocios";
 import { listarPlanes } from "@/servidor/planes/acceso";
 import { politicaInicial } from "@/servidor/politica-datos/plantilla";
+import { textoOpcional } from "./esquemas";
 
 // Alta de un negocio desde /admin (ADM-02, F-11; ARCH §18.4). El esquema vive aquí y
 // el formulario valida solo en el servidor (Q-02).
-
-/** Texto opcional de un formulario: vacío o ausente = `null`. */
-const textoOpcional = (maximo: number) =>
-  z
-    .string()
-    .trim()
-    .max(maximo)
-    .nullish()
-    .transform((valor) => valor || null);
 
 export const esquemaAltaNegocio = z.object({
   slug: z.string().trim(),

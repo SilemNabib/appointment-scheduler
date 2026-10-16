@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 import { QueryBuilder } from "drizzle-orm/pg-core";
-import { db } from "../cliente";
+import { db, type Transaccion } from "../cliente";
 import { sede } from "../esquema";
 
 // Sedes del negocio (RN-32, D-16). Toda función recibe `negocioId` y lo usa en el
@@ -51,4 +51,21 @@ export async function principal(negocioId: string): Promise<Sede | null> {
     .orderBy(...ordenPrincipal)
     .limit(1);
   return fila ?? null;
+}
+
+/**
+ * Cambia la dirección y el teléfono de la sede principal (PAN-11), y de ninguna otra.
+ * Devuelve si la encontró.
+ */
+export async function actualizarContactoPrincipal(
+  negocioId: string,
+  datos: Pick<Sede, "direccion" | "telefono">,
+  tx: Transaccion,
+): Promise<boolean> {
+  const filas = await tx
+    .update(sede)
+    .set(datos)
+    .where(and(eq(sede.negocioId, negocioId), eq(sede.id, idSedePrincipal(negocioId))))
+    .returning({ id: sede.id });
+  return filas.length > 0;
 }

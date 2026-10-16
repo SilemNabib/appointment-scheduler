@@ -118,7 +118,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
       * Con `npm run preview`, una imagen guardada responde 200 en `/api/media/{clave}` con su `Content-Type`, `Cache-Control: public, max-age=31536000, immutable` y `X-Content-Type-Options: nosniff`. Una clave inexistente responde 404.
       * La clave guardada es aleatoria y no contiene el nombre original del archivo.
 
-* [ ] T2.09: Caso de uso `guardarNegocio`
+* [x] T2.09: Caso de uso `guardarNegocio`
    * Objetivo: Implementar `guardarNegocio`, que guarda en una transacción el nombre, el color primario y el secundario (`#rrggbb` en minúsculas), y la dirección y el teléfono de la sede principal.
    * Archivos: `src/servidor/casos-uso/guardar-negocio.ts`, `src/servidor/db/repositorios/negocios.ts`, `src/servidor/db/repositorios/sedes.ts`, `tests/integracion/casos-uso/guardar-negocio.test.ts`
    * Depende de: T2.01

@@ -91,7 +91,7 @@
 
 Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que no hay tarea de pruebas de cierre: los criterios quedan en cada tarea. La solo lectura de sus Server Actions se prueba en T2.41.
 
-* [ ] T2.06: Validación de imágenes
+* [x] T2.06: Validación de imágenes
    * Objetivo: Crear en `dominio/imagen.ts` la validación de los logos. Detecta PNG, JPEG o WebP por los primeros bytes del archivo, sin fiarse del nombre ni del tipo que declara el navegador, y rechaza los archivos de más de 512 KB.
    * Archivos: `src/dominio/imagen.ts`, `tests/unit/dominio/imagen.test.ts`
    * Depende de: T1.03

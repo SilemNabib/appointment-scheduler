@@ -433,7 +433,7 @@ Entra en esta fase por el supuesto de Q-04 (TASKS-01). Si esa pregunta se respon
       * Desde la sesión del dueño de A, editar, activar o desactivar un servicio de B devuelve `NO_ENCONTRADO`, y B no cambia (RN-01).
       * Desde la sesión de A, eliminar un bloqueo de B devuelve `NO_ENCONTRADO`, y el bloqueo sigue (RN-01).
 
-* [ ] T2.41: Pruebas de solo lectura
+* [x] T2.41: Pruebas de solo lectura
    * Objetivo: Probar cada Server Action de escritura de la fase con el negocio suspendido.
    * Archivos: `tests/integracion/app/panel/solo-lectura.test.ts`
    * Depende de: T2.11, T2.16, T2.21, T2.29, T2.31, T2.40

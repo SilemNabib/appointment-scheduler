@@ -424,7 +424,7 @@ Entra en esta fase por el supuesto de Q-04 (TASKS-01). Si esa pregunta se respon
 
 ### 2.H Cierre de la fase
 
-* [ ] T2.40: Pruebas multi-negocio de la fase
+* [x] T2.40: Pruebas multi-negocio de la fase
    * Objetivo: Probar, con las Server Actions de esta fase que reciben identificadores del cliente, que un dueño no alcanza datos de otro negocio.
    * Archivos: `tests/integracion/app/panel/multi-negocio.test.ts`
    * Depende de: T2.15, T2.25

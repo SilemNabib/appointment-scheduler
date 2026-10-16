@@ -7,7 +7,7 @@ import * as negocios from "@/servidor/db/repositorios/negocios";
 import * as recursos from "@/servidor/db/repositorios/recursos";
 import * as servicios from "@/servidor/db/repositorios/servicios";
 import { exigirCupo } from "@/servidor/planes/acceso";
-import { textoOpcional } from "./esquemas";
+import { esId, textoOpcional } from "./esquemas";
 
 // Servicios del catálogo (PAN-12; RN-05, RN-06, RN-25, RN-28, RN-32; ARCH §16.3 y
 // §18.4). En el MVP cada servicio se ofrece en la sede principal y lo atiende su
@@ -74,9 +74,6 @@ export async function guardarServicio(
     }),
   );
 }
-
-/** Un id que no es un uuid no existe: responde igual que uno de otro negocio (ARCH §6). */
-const esId = (id: unknown): id is string => z.uuid().safeParse(id).success;
 
 /**
  * Vuelve a ofrecer un servicio inactivo. Reactivar exige cupo de `max_services`, igual

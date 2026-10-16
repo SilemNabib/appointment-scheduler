@@ -268,7 +268,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * El error `BLOQUEO_CON_CITAS` trae, para cada cita, su inicio, su servicio y el nombre del cliente, para que el panel la liste (F-09).
       * La transacción toma los bloqueos de fila antes de buscar las citas (revisión del código). La prueba de concurrencia con una reserva va en la Fase 3.
 
-* [ ] T2.24: Listar y eliminar bloqueos
+* [x] T2.24: Listar y eliminar bloqueos
    * Objetivo: Implementar `listarBloqueos`, con los bloqueos vigentes y futuros de la sede principal ordenados por inicio, y `eliminarBloqueo`.
    * Archivos: `src/servidor/casos-uso/bloqueos.ts`, `src/servidor/db/repositorios/bloqueos.ts`, `tests/integracion/casos-uso/bloqueos.test.ts`
    * Depende de: T2.23

@@ -1,7 +1,8 @@
 import "server-only";
-import { and, asc, eq, gt, lt } from "drizzle-orm";
-import { type Transaccion } from "../cliente";
+import { and, asc, eq, gt, isNull, lt, or } from "drizzle-orm";
+import { db, type Transaccion } from "../cliente";
 import { bloqueo, cita } from "../esquema";
+import { idSedePrincipal } from "./sedes";
 
 // Bloqueos puntuales (PAN-08; RN-07, D-15; ARCH §11.3 y §17.3). Intervalos UTC
 // semiabiertos `[inicio, fin)`. En el MVP se guardan con la sede principal y sin
@@ -65,4 +66,34 @@ export async function crear(
     .values({ negocioId, ...datos, recursoId: null })
     .returning({ id: bloqueo.id });
   return id;
+}
+
+export type Bloqueo = Intervalo & { id: string; motivo: string | null };
+
+/**
+ * Bloqueos que afectan a la sede principal y aún no terminan (`fin > ahora`), por
+ * inicio: los de la sede y los de todo el negocio (`sede_id` en `NULL`), como los lee
+ * la reserva (ARCH §11.2).
+ */
+export async function vigentesDeLaPrincipal(negocioId: string, ahora: Date): Promise<Bloqueo[]> {
+  return db()
+    .select({ id: bloqueo.id, inicio: bloqueo.inicio, fin: bloqueo.fin, motivo: bloqueo.motivo })
+    .from(bloqueo)
+    .where(
+      and(
+        eq(bloqueo.negocioId, negocioId),
+        or(isNull(bloqueo.sedeId), eq(bloqueo.sedeId, idSedePrincipal(negocioId))),
+        gt(bloqueo.fin, ahora),
+      ),
+    )
+    .orderBy(asc(bloqueo.inicio), asc(bloqueo.id));
+}
+
+/** Elimina un bloqueo del negocio. Devuelve si lo encontró. */
+export async function eliminar(negocioId: string, id: string): Promise<boolean> {
+  const filas = await db()
+    .delete(bloqueo)
+    .where(and(eq(bloqueo.negocioId, negocioId), eq(bloqueo.id, id)))
+    .returning({ id: bloqueo.id });
+  return filas.length > 0;
 }

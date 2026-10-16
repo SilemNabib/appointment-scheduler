@@ -8,7 +8,7 @@ import * as bloqueos from "@/servidor/db/repositorios/bloqueos";
 import * as negocios from "@/servidor/db/repositorios/negocios";
 import * as recursos from "@/servidor/db/repositorios/recursos";
 import * as sedes from "@/servidor/db/repositorios/sedes";
-import { textoOpcional } from "./esquemas";
+import { esId, textoOpcional } from "./esquemas";
 
 // Bloqueos puntuales de la sede principal (PAN-08, F-09; RN-07, D-15, Q-20; ARCH §11.3,
 // §17.3 y §18.4). Las fechas y horas que elige el dueño son locales del negocio; aquí
@@ -17,7 +17,7 @@ import { textoOpcional } from "./esquemas";
 
 type Ctx = Pick<ContextoMiembro, "negocioId">;
 
-export type { CitaQueImpide } from "@/servidor/db/repositorios/bloqueos";
+export type { Bloqueo, CitaQueImpide } from "@/servidor/db/repositorios/bloqueos";
 
 const motivo = textoOpcional(200);
 
@@ -86,4 +86,18 @@ export async function crearBloqueo(
     const id = await bloqueos.crear(ctx.negocioId, { sedeId: sede.id, ...rango, motivo: leida.data.motivo }, tx);
     return exito({ id });
   });
+}
+
+/** Bloqueos vigentes y futuros, por inicio (PAN-08). Los que ya terminaron no se muestran. */
+export async function listarBloqueos(ctx: Ctx, ahora: Date = new Date()): Promise<bloqueos.Bloqueo[]> {
+  return bloqueos.vigentesDeLaPrincipal(ctx.negocioId, ahora);
+}
+
+/**
+ * Elimina un bloqueo. Uno inexistente o de otro negocio responde igual: `NO_ENCONTRADO`
+ * (ARCH §6). Eliminarlo no toma el bloqueo de los recursos: solo libera horas.
+ */
+export async function eliminarBloqueo(ctx: Ctx, id: unknown): Promise<Resultado<void, "NO_ENCONTRADO">> {
+  if (!esId(id)) return fallo("NO_ENCONTRADO");
+  return (await bloqueos.eliminar(ctx.negocioId, id)) ? exito(undefined) : fallo("NO_ENCONTRADO");
 }

@@ -19,3 +19,6 @@ export const color = z
   .trim()
   .toLowerCase()
   .regex(/^#[0-9a-f]{6}$/);
+
+/** Un id que no es un uuid no existe: el caso de uso responde `NO_ENCONTRADO`, como con uno de otro negocio (ARCH §6). */
+export const esId = (id: unknown): id is string => z.uuid().safeParse(id).success;

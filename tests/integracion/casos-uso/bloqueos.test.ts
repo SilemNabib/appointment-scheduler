@@ -1,6 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { describe, expect, test, vi } from "vitest";
-import { crearBloqueo, type EntradaBloqueo } from "@/servidor/casos-uso/bloqueos";
+import {
+  crearBloqueo,
+  eliminarBloqueo,
+  listarBloqueos,
+  type EntradaBloqueo,
+} from "@/servidor/casos-uso/bloqueos";
 import { leerConsultorio } from "@/servidor/casos-uso/consultorio";
 import { guardarServicio } from "@/servidor/casos-uso/servicios";
 import { db } from "@/servidor/db/cliente";
@@ -143,5 +149,46 @@ describe("crearBloqueo", () => {
 
     expect(await crearBloqueo({ negocioId: n.negocioId }, entrada, AHORA)).toEqual({ ok: false, error: "DATOS_INVALIDOS" });
     expect(await bloqueosDe(n.negocioId)).toEqual([]);
+  });
+});
+
+describe("listarBloqueos y eliminarBloqueo", () => {
+  async function insertarBloqueo(negocioId: string, sedeId: string, inicio: string, fin: string) {
+    const [fila] = await db()
+      .insert(esquema.bloqueo)
+      .values({ negocioId, sedeId, inicio: new Date(inicio), fin: new Date(fin) })
+      .returning({ id: esquema.bloqueo.id });
+    return fila.id;
+  }
+
+  test("lista los vigentes y futuros por inicio, sin los que ya terminaron ni los de otros negocios", async () => {
+    const n = await negocioConServicio();
+    const otro = await negocioConServicio();
+    const futuro = await insertarBloqueo(n.negocioId, n.sedeId, "2030-03-10T05:00:00Z", "2030-03-11T05:00:00Z");
+    const vigente = await insertarBloqueo(n.negocioId, n.sedeId, "2030-03-04T14:00:00Z", "2030-03-04T16:00:00Z");
+    await insertarBloqueo(n.negocioId, n.sedeId, "2030-03-03T05:00:00Z", "2030-03-04T05:00:00Z"); // terminó
+    await insertarBloqueo(n.negocioId, n.sedeId, "2030-03-04T14:00:00Z", "2030-03-04T15:00:00Z"); // termina justo ahora
+    await insertarBloqueo(otro.negocioId, otro.sedeId, "2030-03-05T05:00:00Z", "2030-03-06T05:00:00Z");
+
+    expect((await listarBloqueos({ negocioId: n.negocioId }, AHORA)).map((b) => b.id)).toEqual([vigente, futuro]);
+  });
+
+  test("eliminar quita el bloqueo del negocio", async () => {
+    const n = await negocioConServicio();
+    const id = await insertarBloqueo(n.negocioId, n.sedeId, "2030-03-10T05:00:00Z", "2030-03-11T05:00:00Z");
+
+    expect(await eliminarBloqueo({ negocioId: n.negocioId }, id)).toEqual({ ok: true, valor: undefined });
+    expect(await bloqueosDe(n.negocioId)).toEqual([]);
+  });
+
+  test("eliminar un bloqueo inexistente o de otro negocio devuelve NO_ENCONTRADO, y el bloqueo sigue (ARCH §6)", async () => {
+    const a = await negocioConServicio();
+    const b = await negocioConServicio();
+    const deB = await insertarBloqueo(b.negocioId, b.sedeId, "2030-03-10T05:00:00Z", "2030-03-11T05:00:00Z");
+
+    for (const id of [deB, randomUUID(), "no-es-un-id"]) {
+      expect(await eliminarBloqueo({ negocioId: a.negocioId }, id)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+    }
+    expect(await bloqueosDe(b.negocioId)).toHaveLength(1);
   });
 });

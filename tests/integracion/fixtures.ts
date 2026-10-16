@@ -1,8 +1,13 @@
 import { randomUUID } from "node:crypto";
+import { auth } from "@clerk/nextjs/server";
 import { count, eq } from "drizzle-orm";
-import type { EntradaAltaNegocio } from "@/servidor/casos-uso/alta-negocio";
+import { vi } from "vitest";
+import type { DatosSuscripcion } from "@/dominio/suscripcion";
+import { fechaLocal, ZONA_HORARIA_POR_DEFECTO } from "@/dominio/tiempo";
+import { altaNegocio, type EntradaAltaNegocio } from "@/servidor/casos-uso/alta-negocio";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
+import * as miembros from "@/servidor/db/repositorios/miembros";
 import { listarPlanes } from "@/servidor/planes/acceso";
 import { PLAN_ILIMITADO } from "@/servidor/planes/semilla";
 
@@ -151,6 +156,40 @@ export function entradaDeAlta(cambios: Partial<EntradaAltaNegocio> = {}): Entrad
     telefonoSede: "+57 300 123 4567",
     ...cambios,
   };
+}
+
+/**
+ * Negocio dado de alta con `altaNegocio` (con la sede principal, el consultorio y la
+ * política v1) y la sesión de Clerk de su dueño, ya vinculado: desde aquí,
+ * `requireMiembro` y las Server Actions ven ese negocio (ARCH §7.4 y §7.5).
+ *
+ * Queda en prueba, al día por 30 días, salvo que `suscripcion` diga otra cosa (por
+ * ejemplo, `{ estadoSuscripcion: "suspendida" }`); esas columnas se fijan después
+ * del alta.
+ *
+ * El archivo de pruebas debe simular `@clerk/nextjs/server` con `auth: vi.fn()`.
+ * La invitación de Clerk no importa aquí: si el archivo no simula `clerkClient`,
+ * falla y el alta sigue igual (Q-08), así que se silencia su registro.
+ */
+export async function sesionDeDueno(suscripcion: Partial<DatosSuscripcion> = {}) {
+  const vencimiento = fechaLocal(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), ZONA_HORARIA_POR_DEFECTO);
+  const entrada = entradaDeAlta({ vencimiento });
+
+  const registro = vi.spyOn(console, "error").mockImplementation(() => {});
+  const alta = await altaNegocio(entrada, ADMIN_PRUEBA).finally(() => registro.mockRestore());
+  if (!alta.ok) throw new Error(`El alta de prueba falló: ${alta.error}`);
+  const { negocioId } = alta.valor;
+
+  if (Object.keys(suscripcion).length > 0) {
+    await db().update(esquema.negocio).set(suscripcion).where(eq(esquema.negocio.id, negocioId));
+  }
+
+  const clerkUserId = `user_${randomUUID().replaceAll("-", "")}`;
+  if (!(await miembros.vincular(entrada.correoDueno, clerkUserId))) {
+    throw new Error("El dueño del alta de prueba no quedó vinculado.");
+  }
+  vi.mocked(auth).mockResolvedValue({ userId: clerkUserId } as Awaited<ReturnType<typeof auth>>);
+  return { negocioId, clerkUserId };
 }
 
 /** Filas que dejó (o no) un alta: negocios con ese slug y miembros con ese correo. */

@@ -51,7 +51,7 @@
       * Después de un alta, `principal` devuelve la "Sede principal", y `consultorioPrincipal`, el "Consultorio" de esa sede con capacidad 1.
       * Con el `negocioId` de otro negocio, ambas devuelven `null` (ARCH §6).
 
-* [ ] T2.02: Ayudante de pruebas: sesión del dueño
+* [x] T2.02: Ayudante de pruebas: sesión del dueño
    * Objetivo: Llevar a `tests/integracion/fixtures.ts` el ayudante de T1.43 que simula la sesión de Clerk del dueño. Ahora crea el negocio con `altaNegocio`, para que traiga la sede principal, el consultorio y la política v1, y permite fijar el estado de la suscripción.
    * Archivos: `tests/integracion/fixtures.ts`, `tests/integracion/auth/suscripcion.test.ts`
    * Depende de: T1.43

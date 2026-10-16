@@ -1,0 +1,53 @@
+import { localAUtc, type FechaLocal, type HoraLocal } from "./tiempo";
+
+// Cómo se muestran las fechas y las horas (RN-03, RNF-02; ARCH §9, regla 3): con
+// `Intl.DateTimeFormat('es-CO')`, la hora en formato de 12 horas ("7:00 p. m.") y
+// siempre en la zona del negocio, nunca en la del servidor ni la del dispositivo.
+//
+// `Intl` separa algunas partes con espacios especiales (sin salto de línea), según la
+// versión de ICU: el texto es para mostrarlo, no para compararlo ni analizarlo.
+
+const LOCALE = "es-CO";
+
+type Estilo = Pick<Intl.DateTimeFormatOptions, "dateStyle" | "timeStyle">;
+
+function formatear(instante: Date, zona: string, estilo: Estilo): string {
+  return new Intl.DateTimeFormat(LOCALE, {
+    ...estilo,
+    // `hourCycle` asegura las 12 horas aunque cambien los datos del locale (RNF-02).
+    ...(estilo.timeStyle ? { hourCycle: "h12" } : {}),
+    timeZone: zona,
+  }).format(instante);
+}
+
+/** Fecha de un instante en la zona del negocio: "14 de octubre de 2026". */
+export function formatearFecha(instante: Date, zona: string): string {
+  return formatear(instante, zona, { dateStyle: "long" });
+}
+
+/** Hora de un instante en la zona del negocio: "7:00 p. m.". */
+export function formatearHora(instante: Date, zona: string): string {
+  return formatear(instante, zona, { timeStyle: "short" });
+}
+
+/** Fecha y hora de un instante en la zona del negocio: "14 de octubre de 2026 a las 7:00 p. m.". */
+export function formatearFechaHora(instante: Date, zona: string): string {
+  return formatear(instante, zona, { dateStyle: "long", timeStyle: "short" });
+}
+
+/**
+ * Fecha local `YYYY-MM-DD`, que ya está en la zona del negocio (un vencimiento o el
+ * día de un bloqueo): "14 de octubre de 2026". Se formatea en UTC para que ninguna
+ * zona la mueva de día. Lanza si la fecha no existe.
+ */
+export function formatearFechaLocal(fecha: FechaLocal): string {
+  return formatearFecha(localAUtc(fecha, "00:00", "UTC"), "UTC");
+}
+
+/**
+ * Hora local `HH:mm` o `HH:mm:ss`, como la guarda el horario semanal: "08:00" →
+ * "8:00 a. m.". Lanza si la hora no es válida.
+ */
+export function formatearHoraLocal(hora: HoraLocal): string {
+  return formatearHora(localAUtc("2000-01-01", hora, "UTC"), "UTC");
+}

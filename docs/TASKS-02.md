@@ -60,7 +60,7 @@
       * `tests/integracion/auth/suscripcion.test.ts` usa el ayudante compartido y sigue pasando.
       * El ayudante devuelve el `negocioId`, y las Server Actions que se llaman después ven ese negocio a través de `requireMiembro`.
 
-* [ ] T2.03: Formato de fechas y horas
+* [x] T2.03: Formato de fechas y horas
    * Objetivo: Crear en `dominio/formato.ts` las funciones que muestran fechas y horas con `Intl.DateTimeFormat('es-CO')`, siempre en la zona del negocio y con la hora en formato de 12 horas.
    * Archivos: `src/dominio/formato.ts`, `tests/unit/dominio/formato.test.ts`
    * Depende de: T1.03

@@ -246,7 +246,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
 
 ### 2.E Bloqueos (PAN-08)
 
-* [ ] T2.22: Intervalos de días locales
+* [x] T2.22: Intervalos de días locales
    * Objetivo: Añadir a `dominio/tiempo.ts` la función `intervaloDeDias(desde, hasta, zona)`, que va de las 00:00 locales de `desde` a las 00:00 locales del día siguiente a `hasta`. Un día completo es el caso `desde = hasta`.
    * Archivos: `src/dominio/tiempo.ts`, `tests/unit/dominio/tiempo.test.ts`
    * Depende de: T1.26

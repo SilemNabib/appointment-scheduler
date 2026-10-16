@@ -82,3 +82,20 @@ export function vencimientoAInstante(fecha: FechaLocal, zona: string): Date {
 export function instanteAVencimiento(vence: Date, zona: string): FechaLocal {
   return fechaLocal(new Date(vence.getTime() - 1), zona);
 }
+
+/**
+ * Días locales completos, de `desde` a `hasta` (inclusive), como intervalo UTC
+ * semiabierto `[inicio, fin)`: de las 00:00 locales de `desde` a las 00:00 locales
+ * del día siguiente a `hasta` (ARCH §9, reglas 1 y 2). Un día completo es
+ * `desde = hasta`. Lanza si alguna fecha no existe o si `hasta` es anterior a `desde`.
+ */
+export function intervaloDeDias(desde: FechaLocal, hasta: FechaLocal, zona: string): { inicio: Date; fin: Date } {
+  const [a, b] = [partesDeFecha(desde), partesDeFecha(hasta)];
+  if (Date.UTC(b.anio, b.mes - 1, b.dia) < Date.UTC(a.anio, a.mes - 1, a.dia)) {
+    throw new RangeError(`El intervalo termina (${hasta}) antes de empezar (${desde}).`);
+  }
+  return {
+    inicio: instante(new TZDate(a.anio, a.mes - 1, a.dia, 0, 0, 0, zona), zona),
+    fin: instante(new TZDate(b.anio, b.mes - 1, b.dia + 1, 0, 0, 0, zona), zona),
+  };
+}

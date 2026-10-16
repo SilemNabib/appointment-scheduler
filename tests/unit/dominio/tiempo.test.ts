@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import {
   fechaLocal,
   instanteAVencimiento,
+  intervaloDeDias,
   localAUtc,
   vencimientoAInstante,
 } from "@/dominio/tiempo";
@@ -92,6 +93,44 @@ describe.each(ZONAS_DEL_PROCESO)("dominio/tiempo con TZ=$tz", ({ tz, horaEnProce
 
     test("un vencimiento guardado con SQL directo fuera de las 00:00 locales da el último día que cubre", () => {
       expect(instanteAVencimiento(new Date("2026-10-10T17:00:00Z"), BOGOTA)).toBe("2026-10-10");
+    });
+  });
+
+  describe("intervaloDeDias (ARCH §9, reglas 1 y 2)", () => {
+    const iso = ({ inicio, fin }: { inicio: Date; fin: Date }) => [inicio.toISOString(), fin.toISOString()];
+
+    test("el 14-oct-2026 en Bogotá es [2026-10-14T05:00:00Z, 2026-10-15T05:00:00Z)", () => {
+      expect(iso(intervaloDeDias("2026-10-14", "2026-10-14", BOGOTA))).toEqual([
+        "2026-10-14T05:00:00.000Z",
+        "2026-10-15T05:00:00.000Z",
+      ]);
+    });
+
+    test("del 14 al 16 de octubre es [2026-10-14T05:00:00Z, 2026-10-17T05:00:00Z)", () => {
+      expect(iso(intervaloDeDias("2026-10-14", "2026-10-16", BOGOTA))).toEqual([
+        "2026-10-14T05:00:00.000Z",
+        "2026-10-17T05:00:00.000Z",
+      ]);
+    });
+
+    test("cruza el fin de mes y de año", () => {
+      expect(iso(intervaloDeDias("2026-12-31", "2027-01-01", BOGOTA))).toEqual([
+        "2026-12-31T05:00:00.000Z",
+        "2027-01-02T05:00:00.000Z",
+      ]);
+    });
+
+    test("en una zona con horario de verano, el día del cambio dura 23 horas", () => {
+      const { inicio, fin } = intervaloDeDias("2026-03-29", "2026-03-29", "Europe/Madrid");
+      expect(fin.getTime() - inicio.getTime()).toBe(23 * 60 * 60 * 1000);
+    });
+
+    test("si hasta es anterior a desde, lanza un error", () => {
+      expect(() => intervaloDeDias("2026-10-16", "2026-10-14", BOGOTA)).toThrow(RangeError);
+    });
+
+    test("una fecha que no existe lanza un error", () => {
+      expect(() => intervaloDeDias("2026-02-30", "2026-03-01", BOGOTA)).toThrow(RangeError);
     });
   });
 

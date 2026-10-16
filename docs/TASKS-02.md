@@ -69,7 +69,7 @@
       * `2026-10-15T00:00:00Z` en `America/Bogota` se muestra como el 14 de octubre de 2026 a las 7:00 p. m. (RN-03), aunque la suite corra con otra `TZ`. La comparación normaliza los espacios especiales que produce `Intl`.
       * Las horas usan "a. m." y "p. m." (RNF-02).
 
-* [ ] T2.04: Componentes base de formularios
+* [x] T2.04: Componentes base de formularios
    * Objetivo: Crear en `src/componentes/` los componentes que repiten los formularios del panel y del admin: un campo con etiqueta, ayuda y error; un botón con estado de envío; un aviso de error, advertencia, éxito o información; y una sección con título. Todos accesibles: etiqueta asociada, `aria-describedby`, foco visible y `role="alert"` o `role="status"` (RNF-03).
    * Archivos: `src/componentes/formulario.tsx`, `src/componentes/aviso.tsx`, `src/app/(admin)/admin/negocios/nuevo/formulario.tsx`
    * Depende de: T1.49

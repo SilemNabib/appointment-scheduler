@@ -354,7 +354,7 @@ Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponi
       * Sin servicios activos o sin franjas, la lista marca lo que falta, y el aviso dice que la página pública mostrará "Aún no hay horarios disponibles" (F-05, paso 4). Con ambos, el aviso desaparece. Se comprueba con una prueba de integración del caso de uso y con una revisión manual.
       * El enlace apunta a `{APP_URL}/{slug}`, la página que llega en la Fase 4.
 
-* [ ] T2.33: Pruebas de la configuración
+* [x] T2.33: Pruebas de la configuración
    * Objetivo: Probar las reglas de la configuración de reservas en los casos de uso del módulo.
    * Archivos: `tests/integracion/casos-uso/configuracion-reglas.test.ts`
    * Depende de: T2.02, T2.27

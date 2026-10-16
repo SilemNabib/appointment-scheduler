@@ -217,7 +217,7 @@ Ni ARCH §20 ni los criterios de las RN tienen casos para este módulo, así que
 
 Los casos de ARCH §20 y de RN-07 sobre el horario dependen del motor de disponibilidad y se prueban en la Fase 3. Este módulo no tiene tarea de pruebas de cierre: sus criterios quedan en cada tarea, y la solo lectura se prueba en T2.41.
 
-* [ ] T2.19: Validación de la semana
+* [x] T2.19: Validación de la semana
    * Objetivo: Crear `validarSemana(franjas)` en `dominio/horario.ts`. Acepta varias franjas por día y rechaza las que se solapan en el mismo día, con intervalos semiabiertos: dos franjas contiguas no se solapan (D-12, S-04).
    * Archivos: `src/dominio/horario.ts`, `tests/unit/dominio/horario.test.ts`
    * Depende de: T1.25

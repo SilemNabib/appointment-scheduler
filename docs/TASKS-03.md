@@ -275,7 +275,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Con 10 reservas simultáneas por el último cupo de un recurso de capacidad 1, entra exactamente una y las demás reciben `HORARIO_NO_DISPONIBLE` (RN-11).
       * Con capacidad 2, entran exactamente dos (RN-11).
 
-* [ ] T3.23: Pruebas de bloqueo y reserva simultáneos
+* [x] T3.23: Pruebas de bloqueo y reserva simultáneos
    * Objetivo: Probar el caso de ARCH §20 (Bloqueos) que quedó pendiente en la Fase 2: un bloqueo y una reserva simultáneos sobre el mismo rango.
    * Archivos: `tests/integracion/casos-uso/bloqueo-y-reserva.test.ts`
    * Depende de: T2.23, T3.20

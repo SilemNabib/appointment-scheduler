@@ -133,7 +133,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * "300 123 4567" y "+57 300-123-4567" dan `+573001234567`, y un número no válido se rechaza. " Ana@Mail.com " da `ana@mail.com` (RN-18; ARCH §20).
       * Todo teléfono normalizado cumple el `CHECK` de `cliente.telefono_e164` (`^\+[1-9][0-9]{6,14}$`).
 
-* [ ] T3.10: Decisión de identidad
+* [x] T3.10: Decisión de identidad
    * Objetivo: Implementar en `dominio/identidad-cliente.ts` la decisión de ARCH §12 como función pura. Recibe el cliente que coincide por teléfono y el que coincide por correo, y decide a cuál se asocia la cita, qué datos se actualizan o si se crea uno nuevo. Nombre y apellido siempre se actualizan; el correo o el teléfono, solo si estaban vacíos y nadie más los usa (S-15).
    * Archivos: `src/dominio/identidad-cliente.ts`, `tests/unit/dominio/identidad-cliente.test.ts`
    * Depende de: T3.09

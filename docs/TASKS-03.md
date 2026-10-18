@@ -91,7 +91,7 @@ Funciones puras con su prueba unitaria en la misma tarea. Las tareas de este mó
       * Un bloqueo de día completo deja ese día sin inicios y no afecta a los demás días del rango (ARCH §20: "bloqueos de día completo").
       * Con capacidad 2 y citas escalonadas de 9:00 a 9:30 y de 9:30 a 10:00, un servicio de 60 minutos se ofrece a las 9:00 (ARCH §10.2).
 
-* [ ] T3.06: `iniciosDisponibles`: dueño, zona horaria y coherencia
+* [x] T3.06: `iniciosDisponibles`: dueño, zona horaria y coherencia
    * Objetivo: Cubrir los casos de ARCH §20 que cruzan el motor con el actor y la zona horaria, y comprobar que la lista de inicios y la verificación de un inicio coinciden siempre.
    * Archivos: `tests/unit/dominio/disponibilidad-inicios.test.ts`, `src/dominio/disponibilidad.ts`
    * Depende de: T3.05

@@ -266,7 +266,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
 
 Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH §20 y los criterios de aceptación de las RN que esta fase hace posibles. Cada caso cita su origen.
 
-* [ ] T3.22: Pruebas de concurrencia
+* [x] T3.22: Pruebas de concurrencia
    * Objetivo: Probar RN-11 con reservas reales en paralelo. El caso "al reprogramar contra una reserva" de ARCH §20 va con `reprogramarCita`, en la Fase 6.
    * Archivos: `tests/integracion/casos-uso/reservar-cita-concurrencia.test.ts`
    * Depende de: T3.20

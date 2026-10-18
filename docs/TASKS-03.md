@@ -284,7 +284,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * En varias rondas en las que `crearBloqueo` y `reservarCita` se lanzan a la vez sobre el mismo rango, en cada ronda entra solo uno de los dos (ARCH §20).
       * Si gana la reserva, el bloqueo responde `BLOQUEO_CON_CITAS` con esa cita; si gana el bloqueo, la reserva responde `HORARIO_NO_DISPONIBLE` (D-15, RN-11).
 
-* [ ] T3.24: Pruebas de ocupación
+* [x] T3.24: Pruebas de ocupación
    * Objetivo: Probar con citas reales que todo estado, salvo `cancelada`, ocupa capacidad (D-06). Los cambios de estado se hacen por SQL, porque sus operaciones llegan en las Fases 5 y 6.
    * Archivos: `tests/integracion/casos-uso/ocupacion.test.ts`
    * Depende de: T3.20

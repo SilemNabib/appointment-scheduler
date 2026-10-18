@@ -140,8 +140,7 @@ export async function bloqueos(
  * Ocupación del recurso en el rango (ARCH §11.2): `[inicio, ocupado_hasta)` de cada
  * cita no cancelada que se solapa con él. Toda cita no cancelada ocupa, también las
  * `completada` y `no_asistio` (RN-10, D-06). `citaExcluida` deja fuera la propia cita
- * al reprogramarla o moverla (RN-14). El filtro `estado <> 'cancelada'` es el de
- * `cita_ocupacion_idx`.
+ * al reprogramarla o moverla (RN-14).
  */
 export async function ocupacion(
   negocioId: string,
@@ -150,6 +149,21 @@ export async function ocupacion(
   citaExcluida: string | null = null,
   conexion: Conexion = db(),
 ): Promise<Intervalo[]> {
+  return consultaDeOcupacion(negocioId, recursoId, rango, citaExcluida, conexion);
+}
+
+/**
+ * La consulta de `ocupacion`, sin ejecutar, para revisar su plan (ARCH §20): el filtro
+ * `estado <> 'cancelada'` y la búsqueda por recurso e inicio son los de
+ * `cita_ocupacion_idx`, que además trae `ocupado_hasta` en el propio índice.
+ */
+export function consultaDeOcupacion(
+  negocioId: string,
+  recursoId: string,
+  rango: Intervalo,
+  citaExcluida: string | null,
+  conexion: Conexion,
+) {
   return conexion
     .select({ inicio: cita.inicio, fin: cita.ocupadoHasta })
     .from(cita)

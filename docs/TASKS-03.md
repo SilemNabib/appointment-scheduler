@@ -101,7 +101,7 @@ Funciones puras con su prueba unitaria en la misma tarea. Las tareas de este mó
       * Con una franja el 14-oct-2026 hasta las 8:00 p. m. en Bogotá, el inicio de las 7:00 p. m. aparece en la fecha local 2026-10-14 como `2026-10-15T00:00:00Z` (ARCH §9: caso obligatorio).
       * Cada inicio que devuelve `iniciosDisponibles` pasa `evaluarInicio`, y cada inicio alineado del rango que no devuelve, falla (RN-09: la misma verificación al listar y al reservar).
 
-* [ ] T3.07: Pruebas del motor: RN-07
+* [x] T3.07: Pruebas del motor: RN-07
    * Objetivo: Probar con el motor los criterios de aceptación de RN-07.
    * Archivos: `tests/unit/dominio/disponibilidad-rn07.test.ts`
    * Depende de: T3.06

@@ -269,7 +269,11 @@ export async function negocioConAgenda(opciones: OpcionesAgenda = {}) {
 }
 
 /** Excepción de un límite del plan para el negocio (`negocio_limite`; `null` = ilimitado). */
-export async function fijarLimite(negocioId: string, limite: "max_services" | "max_resources", valor: number | null) {
+export async function fijarLimite(
+  negocioId: string,
+  limite: "max_services" | "max_resources" | "max_appointments_per_month",
+  valor: number | null,
+) {
   await db()
     .insert(esquema.negocioLimite)
     .values({ negocioId, limite, valor })

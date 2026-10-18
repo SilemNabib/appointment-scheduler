@@ -214,7 +214,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
 
 ### 3.D Reserva transaccional
 
-* [ ] T3.18: Entrada y precondiciones de `reservarCita`
+* [x] T3.18: Entrada y precondiciones de `reservarCita`
    * Objetivo: Implementar la parte de `reservarCita(entrada, ahora)` (ARCH §18.4) que va antes de la transacción:
       1. valida con Zod el cuerpo de ARCH §18.5: nombre, apellido, teléfono normalizable, correo, `aceptaPolitica` en `true` y `sitioWeb` vacío (la trampa para bots de ARCH §15);
       2. resuelve el negocio por el slug y rechaza uno suspendido;

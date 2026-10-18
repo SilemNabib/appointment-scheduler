@@ -1,5 +1,5 @@
 import "server-only";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db, type Transaccion } from "../cliente";
 import { politicaDatos } from "../esquema";
 
@@ -28,6 +28,18 @@ export async function listar(negocioId: string): Promise<VersionPolitica[]> {
     .from(politicaDatos)
     .where(eq(politicaDatos.negocioId, negocioId))
     .orderBy(desc(politicaDatos.version));
+}
+
+/**
+ * Si la versión es del negocio. Cualquier versión vale para una reserva, no solo la
+ * vigente: se guarda la que vio el cliente (F-01).
+ */
+export async function esDelNegocio(negocioId: string, id: string): Promise<boolean> {
+  const filas = await db()
+    .select({ id: politicaDatos.id })
+    .from(politicaDatos)
+    .where(and(eq(politicaDatos.negocioId, negocioId), eq(politicaDatos.id, id)));
+  return filas.length > 0;
 }
 
 /**

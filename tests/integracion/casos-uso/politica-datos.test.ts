@@ -55,7 +55,8 @@ describe("listarPoliticas y publicarPolitica", () => {
   });
 
   test("el repositorio no expone ninguna función de UPDATE ni de DELETE sobre politica_datos", () => {
-    expect(Object.keys(politicas).sort()).toEqual(["listar", "publicar"]);
+    // Solo lecturas e INSERT: esDelNegocio (la reserva, T3.18), listar y publicar.
+    expect(Object.keys(politicas).sort()).toEqual(["esDelNegocio", "listar", "publicar"]);
     const fuente = readFileSync("src/servidor/db/repositorios/politicas.ts", "utf8");
     expect(fuente).not.toMatch(/\.(update|delete)\(/);
   });

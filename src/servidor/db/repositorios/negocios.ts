@@ -28,6 +28,27 @@ export async function suscripcion(negocioId: string): Promise<DatosSuscripcion |
   return fila ?? null;
 }
 
+export type NegocioPublico = DatosSuscripcion & { id: string; zonaHoraria: string };
+
+/**
+ * El negocio de la página y la API públicas, por su slug (ARCH §6: el slug de la URL
+ * resuelve el `negocioId`), con lo necesario para su estado efectivo (ARCH §7.6). Es
+ * la puerta de entrada al negocio y por eso no recibe `negocioId`. `null` si no existe.
+ */
+export async function porSlug(slug: string): Promise<NegocioPublico | null> {
+  const [fila] = await db()
+    .select({
+      id: negocio.id,
+      zonaHoraria: negocio.zonaHoraria,
+      estadoSuscripcion: negocio.estadoSuscripcion,
+      finPrueba: negocio.finPrueba,
+      pagadoHasta: negocio.pagadoHasta,
+    })
+    .from(negocio)
+    .where(eq(negocio.slug, slug));
+  return fila ?? null;
+}
+
 /**
  * Toma la fila del negocio hasta el fin de la transacción, para que dos operaciones
  * que cuentan y luego crean (como el cupo de un límite del plan) no se crucen.

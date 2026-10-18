@@ -184,7 +184,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * Un negocio de prueba con horario, un bloqueo y una cita produce un contexto con esas franjas, ese bloqueo y esa ocupación, en la zona del negocio.
       * El contexto lleva el `actor` que recibe (`cliente` o `dueno`) y el `ahora` inyectado (ARCH §20).
 
-* [ ] T3.15: Caso de uso `consultarDisponibilidad`
+* [x] T3.15: Caso de uso `consultarDisponibilidad`
    * Objetivo: Implementar `consultarDisponibilidad(entrada, ahora)` (ARCH §18.5). Resuelve el negocio por el slug y rechaza uno suspendido; valida la sede y el servicio de la oferta y un rango de hasta 31 días; recorta el rango a hoy y a la anticipación máxima (Q-32); y devuelve `{ zonaHoraria, dias: [{ fecha, inicios }] }`.
    * Archivos: `src/servidor/casos-uso/disponibilidad.ts`, `src/servidor/db/repositorios/negocios.ts`, `tests/integracion/casos-uso/disponibilidad.test.ts`
    * Depende de: T3.14

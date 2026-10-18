@@ -210,16 +210,20 @@ export type OpcionesAgenda = {
   capacidad?: number;
   /** Reglas de reserva; por defecto, las de D-09 (granularidad 30, anticipación de 2 h a 60 días). */
   reglas?: Partial<typeof esquema.configuracionNegocio.$inferInsert>;
+  /** Columnas de la suscripción que se fijan después del alta, por ejemplo `{ estadoSuscripcion: "suspendida" }`. */
+  suscripcion?: Partial<DatosSuscripcion>;
 };
 
 /**
  * Negocio dado de alta con `altaNegocio` (sede principal, consultorio, política v1 y
  * la configuración de D-09), con un servicio ofrecido en la sede principal y atendido
  * por el consultorio (`guardarServicio`) y el horario de la sede (`guardarHorarioSemanal`).
- * Devuelve los identificadores que usan la consulta y la reserva públicas.
+ * Queda en prueba hasta el 31-dic-2099, así las pruebas con un `ahora` fijo no dependen
+ * de la fecha real, salvo que `opciones.suscripcion` diga otra cosa. Devuelve los
+ * identificadores que usan la consulta y la reserva públicas.
  */
 export async function negocioConAgenda(opciones: OpcionesAgenda = {}) {
-  const entrada = entradaDeAlta();
+  const entrada = entradaDeAlta({ vencimiento: "2099-12-31" });
   const registro = vi.spyOn(console, "error").mockImplementation(() => {});
   const alta = await altaNegocio(entrada, ADMIN_PRUEBA).finally(() => registro.mockRestore());
   if (!alta.ok) throw new Error(`El alta de prueba falló: ${alta.error}`);
@@ -238,6 +242,9 @@ export async function negocioConAgenda(opciones: OpcionesAgenda = {}) {
   const consultorio = await leerConsultorio(ctx);
   if (opciones.capacidad !== undefined) {
     await db().update(esquema.recurso).set({ capacidad: opciones.capacidad }).where(eq(esquema.recurso.id, consultorio.id));
+  }
+  if (opciones.suscripcion) {
+    await db().update(esquema.negocio).set(opciones.suscripcion).where(eq(esquema.negocio.id, negocioId));
   }
   if (opciones.reglas) {
     await db()

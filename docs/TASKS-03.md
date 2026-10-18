@@ -203,7 +203,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * Cada código de la tabla de ARCH §18.5 sale con su estado HTTP; por ejemplo, `HORARIO_NO_DISPONIBLE` con 409 y "Esa hora se acaba de ocupar.".
       * Las respuestas de error no incluyen datos del cliente ni detalles internos (ARCH §19.2).
 
-* [ ] T3.17: Ruta de disponibilidad
+* [x] T3.17: Ruta de disponibilidad
    * Objetivo: Crear `GET /api/publico/{slug}/disponibilidad` como adaptador delgado de `consultarDisponibilidad` (ARCH §18.5).
    * Archivos: `src/app/api/publico/[slug]/disponibilidad/route.ts`, `tests/integracion/app/api/publico/disponibilidad.test.ts`
    * Depende de: T3.15, T3.16

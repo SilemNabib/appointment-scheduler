@@ -53,7 +53,7 @@ Funciones puras con su prueba unitaria en la misma tarea. Las tareas de este mó
       * Recorrer del 2026-10-12 al 2026-10-18 da 7 fechas en orden, y un rango que termina antes de empezar lanza un error.
       * El 31-oct-2026 a las 8:00 p. m. en Bogotá (`2026-11-01T01:00:00Z`) cae en el mes local de octubre: `[2026-10-01T05:00:00Z, 2026-11-01T05:00:00Z)`.
 
-* [ ] T3.02: Tipos del motor y capacidad simultánea
+* [x] T3.02: Tipos del motor y capacidad simultánea
    * Objetivo: Crear `dominio/disponibilidad.ts` con los tipos de ARCH §10 (`Intervalo`, `ContextoAgenda` y `MotivoRechazo`) y con `maxSimultaneas`, el barrido de eventos de ARCH §10.2. Las franjas usan el tipo `FranjaValida` de `dominio/horario.ts`.
    * Archivos: `src/dominio/disponibilidad.ts`, `tests/unit/dominio/disponibilidad-capacidad.test.ts`
    * Depende de: T2.19

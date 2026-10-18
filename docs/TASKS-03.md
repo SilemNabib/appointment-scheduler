@@ -43,7 +43,7 @@
 
 Funciones puras con su prueba unitaria en la misma tarea. Las tareas de este módulo cubren la suite `dominio/disponibilidad` de ARCH §20, y las dos tareas de cierre prueban los criterios de aceptación de RN-07, RN-08 y RN-10.
 
-* [ ] T3.01: Calendario local en `dominio/tiempo.ts`
+* [x] T3.01: Calendario local en `dominio/tiempo.ts`
    * Objetivo: Añadir a `dominio/tiempo.ts` las operaciones de calendario que necesita el motor sobre fechas locales `YYYY-MM-DD`: el día de la semana ISO, sumar días, recorrer un rango de fechas (ambas inclusive) y el intervalo UTC del mes local que contiene un instante (ARCH §9, regla 5).
    * Archivos: `src/dominio/tiempo.ts`, `tests/unit/dominio/tiempo.test.ts`
    * Depende de: T2.22

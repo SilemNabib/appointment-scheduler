@@ -1,9 +1,14 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import {
+  diaSemana,
   fechaLocal,
+  fechasDelRango,
   instanteAVencimiento,
   intervaloDeDias,
   localAUtc,
+  mesLocal,
+  minutosLocales,
+  sumarDias,
   vencimientoAInstante,
 } from "@/dominio/tiempo";
 
@@ -131,6 +136,82 @@ describe.each(ZONAS_DEL_PROCESO)("dominio/tiempo con TZ=$tz", ({ tz, horaEnProce
 
     test("una fecha que no existe lanza un error", () => {
       expect(() => intervaloDeDias("2026-02-30", "2026-03-01", BOGOTA)).toThrow(RangeError);
+    });
+  });
+
+  describe("calendario local (ARCH §10.1)", () => {
+    test("el 2026-10-12 es lunes (1) y el 2026-10-18, domingo (7)", () => {
+      expect(diaSemana("2026-10-12")).toBe(1);
+      expect(diaSemana("2026-10-14")).toBe(3);
+      expect(diaSemana("2026-10-18")).toBe(7);
+    });
+
+    test.each([
+      ["2026-10-31", 1, "2026-11-01"],
+      ["2026-12-31", 1, "2027-01-01"],
+      ["2028-02-28", 1, "2028-02-29"],
+      ["2026-10-14", 0, "2026-10-14"],
+      ["2026-03-01", -1, "2026-02-28"],
+      ["2026-10-14", 60, "2026-12-13"],
+    ])("%s + %i días = %s", (fecha, dias, esperada) => {
+      expect(sumarDias(fecha, dias)).toBe(esperada);
+    });
+
+    test("recorrer del 2026-10-12 al 2026-10-18 da 7 fechas en orden", () => {
+      expect(fechasDelRango("2026-10-12", "2026-10-18")).toEqual([
+        "2026-10-12",
+        "2026-10-13",
+        "2026-10-14",
+        "2026-10-15",
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18",
+      ]);
+    });
+
+    test("un rango de un día da esa fecha, y uno que cruza el año sigue en orden", () => {
+      expect(fechasDelRango("2026-10-14", "2026-10-14")).toEqual(["2026-10-14"]);
+      expect(fechasDelRango("2026-12-30", "2027-01-02")).toEqual([
+        "2026-12-30",
+        "2026-12-31",
+        "2027-01-01",
+        "2027-01-02",
+      ]);
+    });
+
+    test("un rango que termina antes de empezar, o con una fecha que no existe, lanza un error", () => {
+      expect(() => fechasDelRango("2026-10-18", "2026-10-12")).toThrow(RangeError);
+      expect(() => fechasDelRango("2026-02-30", "2026-03-02")).toThrow(RangeError);
+      expect(() => fechasDelRango("2026-10-12", "2026-10-32")).toThrow(RangeError);
+    });
+
+    test("minutosLocales cuenta desde las 00:00 del reloj de la zona, con fracción si no cae en un minuto exacto", () => {
+      expect(minutosLocales(new Date("2026-10-14T13:30:00Z"), BOGOTA)).toBe(8 * 60 + 30);
+      // 7:00 p. m. del 14-oct en Bogotá, que en UTC ya es el 15 (ARCH §9).
+      expect(minutosLocales(new Date("2026-10-15T00:00:00Z"), BOGOTA)).toBe(19 * 60);
+      expect(minutosLocales(new Date("2026-10-14T05:00:00Z"), BOGOTA)).toBe(0);
+      expect(minutosLocales(new Date("2026-10-14T13:15:30Z"), BOGOTA)).toBe(8 * 60 + 15.5);
+    });
+
+    test("el 31-oct-2026 a las 8:00 p. m. en Bogotá cae en el mes local de octubre", () => {
+      const { inicio, fin } = mesLocal(new Date("2026-11-01T01:00:00Z"), BOGOTA);
+      expect([inicio.toISOString(), fin.toISOString()]).toEqual([
+        "2026-10-01T05:00:00.000Z",
+        "2026-11-01T05:00:00.000Z",
+      ]);
+    });
+
+    test("el mes de diciembre termina en las 00:00 locales del 1 de enero", () => {
+      const { inicio, fin } = mesLocal(new Date("2026-12-15T12:00:00Z"), BOGOTA);
+      expect([inicio.toISOString(), fin.toISOString()]).toEqual([
+        "2026-12-01T05:00:00.000Z",
+        "2027-01-01T05:00:00.000Z",
+      ]);
+    });
+
+    test("con una zona inexistente, minutosLocales y mesLocal lanzan un error", () => {
+      expect(() => minutosLocales(new Date("2026-10-14T13:30:00Z"), "America/No_Existe")).toThrow(RangeError);
+      expect(() => mesLocal(new Date("2026-10-14T13:30:00Z"), "America/No_Existe")).toThrow(RangeError);
     });
   });
 

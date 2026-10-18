@@ -1,5 +1,6 @@
 import { TZDate, tz } from "@date-fns/tz";
 import { format } from "date-fns";
+import type { DiaSemana } from "./horario";
 
 // Conversión entre hora local y UTC (RN-03, ARCH §9). Es el ÚNICO lugar donde se
 // convierte: siempre para una fecha concreta y con la zona del negocio, nunca con
@@ -97,5 +98,65 @@ export function intervaloDeDias(desde: FechaLocal, hasta: FechaLocal, zona: stri
   return {
     inicio: instante(new TZDate(a.anio, a.mes - 1, a.dia, 0, 0, 0, zona), zona),
     fin: instante(new TZDate(b.anio, b.mes - 1, b.dia + 1, 0, 0, 0, zona), zona),
+  };
+}
+
+// ─── Calendario local (ARCH §10.1) ────────────────────────────────────────────
+// Operaciones sobre fechas `YYYY-MM-DD` que no dependen de ninguna zona: un día del
+// calendario es el mismo en todas. Se calculan con `Date.UTC` solo como aritmética
+// de calendario, nunca como instantes.
+
+const comoFecha = (d: Date): FechaLocal => d.toISOString().slice(0, 10);
+
+/** Día de la semana ISO de una fecha local: 1 = lunes … 7 = domingo (`horario_semanal.dia_semana`). */
+export function diaSemana(fecha: FechaLocal): DiaSemana {
+  const { anio, mes, dia } = partesDeFecha(fecha);
+  const domingoEsCero = new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay();
+  return (domingoEsCero === 0 ? 7 : domingoEsCero) as DiaSemana;
+}
+
+/** La fecha local `dias` días después (o antes, si es negativo); cruza meses y años. */
+export function sumarDias(fecha: FechaLocal, dias: number): FechaLocal {
+  const { anio, mes, dia } = partesDeFecha(fecha);
+  return comoFecha(new Date(Date.UTC(anio, mes - 1, dia + dias)));
+}
+
+/**
+ * Fechas locales de `desde` a `hasta`, ambas inclusive y en orden. Lanza si alguna
+ * fecha no existe o si `hasta` es anterior a `desde`.
+ */
+export function fechasDelRango(desde: FechaLocal, hasta: FechaLocal): FechaLocal[] {
+  partesDeFecha(desde);
+  partesDeFecha(hasta);
+  if (hasta < desde) {
+    throw new RangeError(`El rango termina (${hasta}) antes de empezar (${desde}).`);
+  }
+  const fechas: FechaLocal[] = [];
+  // `YYYY-MM-DD` se ordena igual como texto que como fecha.
+  for (let fecha = desde; fecha <= hasta; fecha = sumarDias(fecha, 1)) fechas.push(fecha);
+  return fechas;
+}
+
+/**
+ * Minutos desde las 00:00 locales de un instante, según el reloj de la zona; con
+ * fracción si el instante no cae en un minuto exacto. Con él se alinean los inicios
+ * con la granularidad contada desde la medianoche local (S-02).
+ */
+export function minutosLocales(instanteUtc: Date, zona: string): number {
+  const d = new TZDate(instanteUtc.getTime(), zona);
+  if (Number.isNaN(d.getTime()) || Number.isNaN(d.getHours())) throw new RangeError(`Zona horaria inválida: "${zona}".`);
+  return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60 + d.getMilliseconds() / 60_000;
+}
+
+/**
+ * Mes calendario local que contiene el instante, como intervalo UTC semiabierto
+ * `[inicio, fin)`: de las 00:00 locales del día 1 a las 00:00 locales del día 1 del mes
+ * siguiente. Es el período de los límites mensuales (ARCH §9, regla 5; §16.3).
+ */
+export function mesLocal(instanteUtc: Date, zona: string): { inicio: Date; fin: Date } {
+  const { anio, mes } = partesDeFecha(fechaLocal(instanteUtc, zona));
+  return {
+    inicio: instante(new TZDate(anio, mes - 1, 1, 0, 0, 0, zona), zona),
+    fin: instante(new TZDate(anio, mes, 1, 0, 0, 0, zona), zona),
   };
 }

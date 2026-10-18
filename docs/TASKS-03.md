@@ -124,7 +124,7 @@ Funciones puras con su prueba unitaria en la misma tarea. Las tareas de este mó
 
 Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hacen a través de la reserva, en el módulo 3.E (T3.28 y T3.29).
 
-* [ ] T3.09: Normalización del teléfono y del correo
+* [x] T3.09: Normalización del teléfono y del correo
    * Objetivo: Crear `dominio/identidad-cliente.ts` con la normalización de ARCH §12: el teléfono pasa a E.164 con `libphonenumber-js` (país por defecto CO) y el correo se recorta y pasa a minúsculas. `libphonenumber-js` se instala con versión exacta.
    * Archivos: `src/dominio/identidad-cliente.ts`, `tests/unit/dominio/identidad-cliente.test.ts`, `package.json`
    * Depende de: T1.03

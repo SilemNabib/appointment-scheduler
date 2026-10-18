@@ -227,7 +227,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * Si falta un dato, el teléfono no se puede normalizar, la casilla no está marcada o `sitioWeb` llega lleno, devuelve `DATOS_INVALIDOS` sin tocar la base (RN-17; ARCH §18.5).
       * Una política de otro negocio devuelve `NO_ENCONTRADO` (ARCH §6). Cualquier versión de la política del negocio se acepta, porque se guarda la que vio el cliente (F-01).
 
-* [ ] T3.19: Transacción de la reserva
+* [x] T3.19: Transacción de la reserva
    * Objetivo: Completar `reservarCita` con la transacción de ARCH §11:
       1. toma el recurso con `FOR UPDATE`;
       2. después del bloqueo, arma el contexto (T3.14) y lo evalúa con `evaluarInicio`, con actor `cliente`;

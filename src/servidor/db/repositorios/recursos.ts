@@ -70,6 +70,21 @@ export async function actualizarConsultorioPrincipal(
 }
 
 /**
+ * Toma con `FOR UPDATE` el recurso activo del negocio hasta el fin de la transacción y
+ * devuelve su capacidad, o `null` si no existe, no está activo o es de otro negocio. Es
+ * el paso 1 de la reserva (ARCH §11.2): las demás escrituras de agenda de ESTE recurso
+ * esperan aquí; las de otros recursos, no.
+ */
+export async function bloquear(negocioId: string, recursoId: string, tx: Transaccion): Promise<number | null> {
+  const [fila] = await tx
+    .select({ capacidad: recurso.capacidad })
+    .from(recurso)
+    .where(and(eq(recurso.id, recursoId), eq(recurso.negocioId, negocioId), eq(recurso.activo, true)))
+    .for("update");
+  return fila?.capacidad ?? null;
+}
+
+/**
  * Toma con `FOR UPDATE`, ordenados por `id`, todos los recursos de la sede (activos o
  * no), hasta el fin de la transacción. Es el bloqueo que serializa las escrituras de
  * agenda (ARCH §11.3): ordenarlos evita que dos operaciones se esperen en orden

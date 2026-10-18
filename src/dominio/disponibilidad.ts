@@ -1,5 +1,5 @@
 import type { FranjaValida } from "./horario";
-import { diaSemana, fechaLocal, localAUtc, minutosLocales } from "./tiempo";
+import { diaSemana, fechaLocal, fechasDelRango, localAUtc, minutosLocales, type FechaLocal } from "./tiempo";
 
 // Motor de disponibilidad (RN-07 a RN-10; ARCH §10). Es puro: trabaja sobre UN
 // servicio en UNA sede, con los datos que recibe en el contexto y el `ahora` inyectado.
@@ -112,4 +112,37 @@ export function evaluarInicio(
   // RN-09.5: en TODO el intervalo, menos citas simultáneas que la capacidad (ARCH §10.2).
   if (maxSimultaneas(ctx.ocupacion, intervalo) >= ctx.capacidad) motivos.push("SIN_CAPACIDAD");
   return motivos.length === 0 ? { ok: true } : { ok: false, motivos };
+}
+
+/** Minutos desde las 00:00 de una hora local `HH:mm` (las franjas ya vienen validadas). */
+const aMinutos = (hora: string) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
+
+const aHora = (minutos: number) =>
+  `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
+
+/**
+ * Inicios reservables entre dos fechas locales, ambas inclusive, en orden (ARCH §10.1).
+ * Recorre cada fecha y cada franja de su día por separado (D-12): empieza en el primer
+ * múltiplo de la granularidad, contado desde las 00:00 locales, que no sea anterior al
+ * inicio de la franja (S-02), y avanza mientras el intervalo completo quepa en ella. De
+ * esos candidatos agrega los que pasan `evaluarInicio`: así la lista y la verificación
+ * de una reserva coinciden siempre (RN-09). Lanza si el rango termina antes de empezar.
+ */
+export function iniciosDisponibles(ctx: ContextoAgenda, desde: FechaLocal, hasta: FechaLocal): Date[] {
+  const granularidad = ctx.config.granularidadMin;
+  const ocupaMs = (ctx.servicio.duracionMin + ctx.servicio.bufferMin) * MS_POR_MINUTO;
+  const inicios = new Map<number, Date>();
+  for (const fecha of fechasDelRango(desde, hasta)) {
+    const dia = diaSemana(fecha);
+    for (const f of ctx.franjas) {
+      if (f.dia !== dia) continue;
+      const finFranja = localAUtc(fecha, f.fin, ctx.zonaHoraria).getTime();
+      for (let t = Math.ceil(aMinutos(f.inicio) / granularidad) * granularidad; t < 24 * 60; t += granularidad) {
+        const inicio = localAUtc(fecha, aHora(t), ctx.zonaHoraria);
+        if (inicio.getTime() + ocupaMs > finFranja) break; // RN-09.1: ya no cabe en ESTA franja
+        if (evaluarInicio(ctx, inicio).ok) inicios.set(inicio.getTime(), inicio);
+      }
+    }
+  }
+  return [...inicios.values()].sort((a, b) => a.getTime() - b.getTime());
 }

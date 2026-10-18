@@ -82,7 +82,7 @@ Funciones puras con su prueba unitaria en la misma tarea. Las tareas de este mó
       * Un bloqueo que empieza justo donde termina el intervalo no lo afecta (S-04), y uno que se solapa devuelve `BLOQUEADO`. Con la capacidad llena, el resultado es `SIN_CAPACIDAD`.
       * Un inicio desalineado, bloqueado y sin capacidad devuelve los tres motivos. Para el dueño, un inicio dentro de la anticipación mínima se acepta, y uno que ya pasó devuelve `ANTICIPACION` (D-11; Q-31).
 
-* [ ] T3.05: `iniciosDisponibles`
+* [x] T3.05: `iniciosDisponibles`
    * Objetivo: Implementar `iniciosDisponibles(ctx, desde, hasta)` con el algoritmo de ARCH §10.1. Recorre cada fecha local y cada franja por separado, empieza en el primer múltiplo de la granularidad y agrega los inicios que pasan las mismas condiciones que `evaluarInicio`.
    * Archivos: `src/dominio/disponibilidad.ts`, `tests/unit/dominio/disponibilidad-inicios.test.ts`
    * Depende de: T3.04

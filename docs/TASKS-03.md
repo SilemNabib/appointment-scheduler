@@ -294,7 +294,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Una cita cancelada libera su cupo de inmediato (RN-10).
       * Con `enable_seqscan = off` en la sesión de la prueba, el plan de la consulta de ocupación usa `cita_ocupacion_idx` (ARCH §20).
 
-* [ ] T3.25: Pruebas de las sedes en el motor
+* [x] T3.25: Pruebas de las sedes en el motor
    * Objetivo: Probar los casos de RN-32 y de ARCH §20 (Sedes) que dependen del motor, con una segunda sede creada por SQL.
    * Archivos: `tests/integracion/casos-uso/disponibilidad-sedes.test.ts`
    * Depende de: T3.15

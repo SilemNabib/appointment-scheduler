@@ -252,7 +252,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * Una reserva crea tres notificaciones pendientes, con las claves `confirmacion:{citaId}`, `recordatorio:{citaId}:v1` y `dueno_cita_nueva:{citaId}`.
       * Sin recordatorio configurado, o si `inicio − horas` ya pasó, no se crea el recordatorio (S-12).
 
-* [ ] T3.21: Ruta de reservas
+* [x] T3.21: Ruta de reservas
    * Objetivo: Crear `POST /api/publico/{slug}/reservas` como adaptador delgado de `reservarCita`. Solo acepta `application/json` (ARCH §19.2) y responde 201 con `{ citaId, inicio, fin }` o con el error de ARCH §18.5.
    * Archivos: `src/app/api/publico/[slug]/reservas/route.ts`, `tests/integracion/app/api/publico/reservas.test.ts`
    * Depende de: T3.16, T3.20

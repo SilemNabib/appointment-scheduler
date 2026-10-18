@@ -111,7 +111,7 @@ Funciones puras con su prueba unitaria en la misma tarea. Las tareas de este mó
       * Con franjas de 8:00 a 12:00 y de 12:00 a 14:00, un servicio de 60 minutos no se ofrece a las 11:30 (RN-07).
       * Un bloqueo de día completo elimina todas las horas de ese día (RN-07).
 
-* [ ] T3.08: Pruebas del motor: RN-08 y RN-10
+* [x] T3.08: Pruebas del motor: RN-08 y RN-10
    * Objetivo: Probar con el motor los criterios de aceptación de RN-08 y el primero de RN-10.
    * Archivos: `tests/unit/dominio/disponibilidad-rn08-rn10.test.ts`
    * Depende de: T3.07

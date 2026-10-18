@@ -142,7 +142,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * Si coincide por teléfono, se usa ese cliente, se actualizan nombre y apellido, y el correo solo se completa si estaba vacío (RN-18.1, RN-18.3, S-15). Si coincide solo por correo, se usa ese y el teléfono se completa si estaba vacío (RN-18.2). Si no coincide ninguno, se crea un cliente nuevo (RN-18.4).
       * Si el teléfono es de un cliente y el correo de otro, gana el del teléfono, el otro no cambia y no se crea nada más (RN-18.5, D-22; ARCH §20).
 
-* [ ] T3.11: Repositorio de clientes
+* [x] T3.11: Repositorio de clientes
    * Objetivo: Crear `clientes.resolver(negocioId, datos, tx)`, que busca por teléfono y por correo, aplica la decisión de T3.10 y crea o actualiza el cliente. El caso nuevo usa `INSERT … ON CONFLICT (negocio_id, telefono_e164)` (ARCH §12).
    * Archivos: `src/servidor/db/repositorios/clientes.ts`, `tests/integracion/repositorios/clientes.test.ts`
    * Depende de: T3.10

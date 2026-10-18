@@ -194,7 +194,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * Un slug, una sede o un servicio inexistentes, de otro negocio o no ofrecidos devuelven `NO_ENCONTRADO`, igual que un `recursoId` (Q-30). Un negocio suspendido devuelve `NEGOCIO_SUSPENDIDO`.
       * Un rango de más de 31 días, o que termina antes de empezar, devuelve `DATOS_INVALIDOS` (Q-33).
 
-* [ ] T3.16: Respuestas de la API pública
+* [x] T3.16: Respuestas de la API pública
    * Objetivo: Crear el ayudante que convierte el `Resultado` de un caso de uso público en una respuesta JSON con el formato y el código HTTP de ARCH §18.5 (`{ "error": { "codigo", "mensaje" } }`). Los mensajes van en español y se toman del PRD donde existen.
    * Archivos: `src/servidor/http/respuestas.ts`, `tests/unit/servidor/respuestas.test.ts`
    * Depende de: T1.25

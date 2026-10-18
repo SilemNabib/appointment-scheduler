@@ -49,6 +49,10 @@ export function maxSimultaneas(ocupacion: readonly Intervalo[], ventana: Interva
 }
 
 const MS_POR_MINUTO = 60_000;
+const MS_POR_DIA = 24 * 60 * MS_POR_MINUTO;
+
+/** Semiabiertos: uno que empieza justo donde termina el otro no se solapa (S-04). */
+const seSolapan = (a: Intervalo, b: Intervalo) => a.inicio < b.fin && b.inicio < a.fin;
 
 /** Lo que una cita que empieza en `inicio` ocupa del recurso: duración más buffer (RN-10). */
 function intervaloOcupado(ctx: ContextoAgenda, inicio: Date): Intervalo {
@@ -77,9 +81,23 @@ function estaAlineado(ctx: ContextoAgenda, inicio: Date): boolean {
 }
 
 /**
+ * RN-09.4. Para el cliente, `ahora + anticipación mínima ≤ inicio ≤ ahora + anticipación
+ * máxima`, ambos bordes incluidos. El dueño está exento (D-11), pero sin ella podría
+ * elegir una hora que ya pasó: para él, solo `inicio ≥ ahora` (ARCH §10; Q-31).
+ */
+function respetaAnticipacion(ctx: ContextoAgenda, inicio: Date): boolean {
+  const ahora = ctx.ahora.getTime();
+  if (ctx.actor === "dueno") return inicio.getTime() >= ahora;
+  const desde = ahora + ctx.config.anticipacionMinimaMin * MS_POR_MINUTO;
+  const hasta = ahora + ctx.config.anticipacionMaximaDias * MS_POR_DIA;
+  return desde <= inicio.getTime() && inicio.getTime() <= hasta;
+}
+
+/**
  * Verificación de un inicio concreto (RN-09). La usan la reserva y, en otras fases, la
  * reprogramación, la cita manual y el movimiento. Devuelve TODOS los motivos de
- * rechazo, para que la interfaz explique por qué una hora no está disponible.
+ * rechazo, en el orden de RN-09, para que la interfaz explique por qué una hora no
+ * está disponible.
  */
 export function evaluarInicio(
   ctx: ContextoAgenda,
@@ -87,7 +105,11 @@ export function evaluarInicio(
 ): { ok: true } | { ok: false; motivos: MotivoRechazo[] } {
   const intervalo = intervaloOcupado(ctx, inicio);
   const motivos: MotivoRechazo[] = [];
-  if (!cabeEnUnaFranja(ctx, intervalo)) motivos.push("FUERA_DE_HORARIO");
-  if (!estaAlineado(ctx, inicio)) motivos.push("NO_ALINEADO");
+  if (!cabeEnUnaFranja(ctx, intervalo)) motivos.push("FUERA_DE_HORARIO"); // RN-09.1
+  if (ctx.bloqueos.some((b) => seSolapan(b, intervalo))) motivos.push("BLOQUEADO"); // RN-09.2
+  if (!estaAlineado(ctx, inicio)) motivos.push("NO_ALINEADO"); // RN-09.3
+  if (!respetaAnticipacion(ctx, inicio)) motivos.push("ANTICIPACION"); // RN-09.4
+  // RN-09.5: en TODO el intervalo, menos citas simultáneas que la capacidad (ARCH §10.2).
+  if (maxSimultaneas(ctx.ocupacion, intervalo) >= ctx.capacidad) motivos.push("SIN_CAPACIDAD");
   return motivos.length === 0 ? { ok: true } : { ok: false, motivos };
 }

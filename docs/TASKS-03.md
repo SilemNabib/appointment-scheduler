@@ -72,7 +72,7 @@ Funciones puras con su prueba unitaria en la misma tarea. Las tareas de este mó
       * Con franjas contiguas de 8:00 a 12:00 y de 12:00 a 14:00, un servicio de 60 minutos a las 11:30 devuelve `FUERA_DE_HORARIO` (D-12).
       * Con una franja que empieza a las 8:15 y granularidad de 30 minutos, las 8:15 devuelven `NO_ALINEADO` y las 8:30 se aceptan (S-02).
 
-* [ ] T3.04: `evaluarInicio`: bloqueos, anticipación y capacidad
+* [x] T3.04: `evaluarInicio`: bloqueos, anticipación y capacidad
    * Objetivo: Completar `evaluarInicio` con las condiciones 2, 4 y 5 de RN-09: que no haya solape con bloqueos; la anticipación mínima y máxima para el cliente (para el dueño, solo `inicio ≥ ahora`, D-11); y la capacidad en todo el intervalo, con `maxSimultaneas`. Devuelve todos los motivos a la vez (ARCH §10).
    * Archivos: `src/dominio/disponibilidad.ts`, `tests/unit/dominio/disponibilidad-evaluar.test.ts`
    * Depende de: T3.03

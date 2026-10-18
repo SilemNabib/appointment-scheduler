@@ -270,3 +270,84 @@ describe("reservarCita: transacción (RN-09 a RN-12, RN-17; ARCH §11)", () => {
     expect(await clientesDe(n.negocioId)).toHaveLength(1);
   });
 });
+
+describe("reservarCita: notificaciones (C-01, C-02, C-05; ARCH §14.1; Q-28)", () => {
+  const notificacionesDe = (negocioId: string) =>
+    db()
+      .select({
+        citaId: esquema.notificacion.citaId,
+        tipo: esquema.notificacion.tipo,
+        canal: esquema.notificacion.canal,
+        destinatario: esquema.notificacion.destinatario,
+        clave: esquema.notificacion.claveIdempotencia,
+        programadaPara: esquema.notificacion.programadaPara,
+        estado: esquema.notificacion.estado,
+        datos: esquema.notificacion.datos,
+      })
+      .from(esquema.notificacion)
+      .where(eq(esquema.notificacion.negocioId, negocioId))
+      .orderBy(esquema.notificacion.claveIdempotencia);
+
+  test("una reserva crea tres notificaciones pendientes: confirmación y recordatorio al correo de la cita, y el aviso al dueño", async () => {
+    const n = await negocioConAgenda(); // recordatorio 24 horas antes (D-09)
+
+    const resultado = await reservarCita(reserva(n), AHORA);
+    if (!resultado.ok) throw new Error(resultado.error);
+    const { citaId } = resultado.valor;
+
+    expect(await notificacionesDe(n.negocioId)).toEqual([
+      {
+        citaId,
+        tipo: "confirmacion",
+        canal: "correo",
+        destinatario: "ana@mail.com",
+        clave: `confirmacion:${citaId}`,
+        programadaPara: AHORA,
+        estado: "pendiente",
+        datos: {},
+      },
+      {
+        citaId,
+        tipo: "dueno_cita_nueva",
+        canal: "correo",
+        destinatario: n.correoDueno,
+        clave: `dueno_cita_nueva:${citaId}`,
+        programadaPara: AHORA,
+        estado: "pendiente",
+        datos: {},
+      },
+      {
+        citaId,
+        tipo: "recordatorio",
+        canal: "correo",
+        destinatario: "ana@mail.com",
+        clave: `recordatorio:${citaId}:v1`,
+        programadaPara: new Date("2030-03-03T14:00:00Z"), // inicio − 24 h
+        estado: "pendiente",
+        datos: { version: 1 },
+      },
+    ]);
+  });
+
+  test("sin recordatorio configurado no se crea el recordatorio", async () => {
+    const n = await negocioConAgenda({ reglas: { recordatorioHorasAntes: null } });
+    expect((await reservarCita(reserva(n), AHORA)).ok).toBe(true);
+    expect((await notificacionesDe(n.negocioId)).map((x) => x.tipo).sort()).toEqual(["confirmacion", "dueno_cita_nueva"]);
+  });
+
+  test("si inicio − horas ya pasó, no se crea el recordatorio (S-12)", async () => {
+    // Recordatorio 72 h antes del lunes 4 a las 9:00 = viernes 1 a las 9:00, antes de ahora (10:00).
+    const n = await negocioConAgenda({ reglas: { recordatorioHorasAntes: 72 } });
+    expect((await reservarCita(reserva(n), AHORA)).ok).toBe(true);
+    expect((await notificacionesDe(n.negocioId)).map((x) => x.tipo).sort()).toEqual(["confirmacion", "dueno_cita_nueva"]);
+  });
+
+  test("una reserva rechazada no deja notificaciones", async () => {
+    const n = await negocioConAgenda();
+    expect(await reservarCita(reserva(n, { inicio: "2030-03-09T14:00:00.000Z" }), AHORA)).toEqual({
+      ok: false,
+      error: "HORARIO_NO_DISPONIBLE",
+    });
+    expect(await notificacionesDe(n.negocioId)).toEqual([]);
+  });
+});

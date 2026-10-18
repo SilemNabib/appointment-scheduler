@@ -10,6 +10,7 @@ import * as agenda from "@/servidor/db/repositorios/agenda";
 import * as citas from "@/servidor/db/repositorios/citas";
 import * as clientes from "@/servidor/db/repositorios/clientes";
 import * as negocios from "@/servidor/db/repositorios/negocios";
+import * as notificaciones from "@/servidor/db/repositorios/notificaciones";
 import * as politicas from "@/servidor/db/repositorios/politicas";
 import * as recursos from "@/servidor/db/repositorios/recursos";
 import { exigirCupo } from "@/servidor/planes/acceso";
@@ -143,7 +144,8 @@ const MS_POR_MINUTO = 60_000;
  *    pasa, `HORARIO_NO_DISPONIBLE` sin escribir nada (RN-09);
  * 3. resuelve el cliente (RN-18);
  * 4. inserta la cita `confirmada`, con su instantánea, el consentimiento
- *    (`politica_aceptada_en = ahora`), `fin` y `ocupado_hasta`, y el evento `creada`.
+ *    (`politica_aceptada_en = ahora`), `fin` y `ocupado_hasta`, y el evento `creada`;
+ * 5. encola sus notificaciones C-01, C-02 y C-05 (ARCH §14.1).
  *
  * Si el cliente choca con el correo de otro creado al mismo tiempo, reintenta la
  * transacción una vez: en el reintento ya lo encuentra por correo (ARCH §12).
@@ -215,7 +217,41 @@ async function reservarEnTransaccion(
     },
     tx,
   );
+
+  // 5. Las notificaciones, en la misma transacción (ARCH §14.1). Nadie las envía hasta la Fase 6 (Q-28).
+  await encolarNotificaciones(r, citaId, leida.reglas.recordatorioHorasAntes, ahora, tx);
   return exito({ citaId, inicio: r.inicio.toISOString(), fin: fin.toISOString() });
+}
+
+/**
+ * C-01 (`confirmacion`) y C-02 (`recordatorio`) al correo con que se reservó (S-15), y
+ * C-05 (`dueno_cita_nueva`) al dueño (RN-22; Q-28), con las claves de ARCH §14.1. El
+ * recordatorio es para `inicio − recordatorio_horas_antes`, y no se crea si no hay
+ * recordatorio configurado o si ese momento ya pasó (S-12).
+ */
+async function encolarNotificaciones(
+  r: ReservaPreparada,
+  citaId: string,
+  recordatorioHorasAntes: number | null,
+  ahora: Date,
+  tx: Transaccion,
+): Promise<void> {
+  const alCliente: notificaciones.NuevaNotificacion[] = [
+    { citaId, tipo: "confirmacion", claveIdempotencia: `confirmacion:${citaId}`, programadaPara: ahora },
+  ];
+  if (recordatorioHorasAntes !== null) {
+    const programadaPara = new Date(r.inicio.getTime() - recordatorioHorasAntes * 60 * MS_POR_MINUTO);
+    if (programadaPara >= ahora) {
+      // `version` 1: la de una cita nueva; reprogramar crea otro con la versión siguiente (ARCH §14.1).
+      alCliente.push({ citaId, tipo: "recordatorio", claveIdempotencia: `recordatorio:${citaId}:v1`, programadaPara, datos: { version: 1 } });
+    }
+  }
+  if (r.cliente.correo !== null) await notificaciones.encolar(r.negocio.id, r.cliente.correo, alCliente, tx);
+  await notificaciones.encolarAlDueno(
+    r.negocio.id,
+    { citaId, tipo: "dueno_cita_nueva", claveIdempotencia: `dueno_cita_nueva:${citaId}`, programadaPara: ahora },
+    tx,
+  );
 }
 
 /** Violación de `cliente_correo_uq`: otro cliente con ese correo se creó al mismo tiempo (ARCH §12). */

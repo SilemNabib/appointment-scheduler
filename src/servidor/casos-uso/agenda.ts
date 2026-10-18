@@ -26,15 +26,16 @@ export type PeticionAgenda = {
 };
 
 /**
- * La oferta del servicio en la sede y el `ContextoAgenda` con que se evalúa, o `null` si
- * el servicio no se ofrece ahí (inactivo, de otro negocio o sin recurso activo). Primero
+ * La oferta del servicio en la sede, las reglas del negocio y el `ContextoAgenda` con que
+ * se evalúa, o `null` si el servicio no se ofrece ahí (inactivo, de otro negocio o sin
+ * recurso activo). Primero
  * lee la oferta y las reglas de reserva; después, los bloqueos que aplican al recurso y
  * su ocupación en el rango (ARCH §11.2).
  */
 export async function leerAgenda(
   p: PeticionAgenda,
   conexion: Conexion = db(),
-): Promise<{ oferta: agenda.Oferta; contexto: ContextoAgenda } | null> {
+): Promise<{ oferta: agenda.Oferta; reglas: configuracion.Configuracion; contexto: ContextoAgenda } | null> {
   const [oferta, reglas] = await Promise.all([
     agenda.oferta(p.negocio.id, p.sedeId, p.servicioId, conexion),
     configuracion.leer(p.negocio.id, conexion),
@@ -50,6 +51,7 @@ export async function leerAgenda(
 
   return {
     oferta,
+    reglas,
     contexto: {
       zonaHoraria: p.negocio.zonaHoraria,
       ahora: p.ahora,

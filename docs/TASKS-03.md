@@ -243,7 +243,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * Una hora que no pasa `evaluarInicio` devuelve `HORARIO_NO_DISPONIBLE` y no deja ninguna fila, ni de cliente ni de cita.
       * La transacción usa `READ COMMITTED` y toma el bloqueo del recurso antes de leer los bloqueos y las citas (revisión del código; ARCH §11.3).
 
-* [ ] T3.20: Notificaciones de la reserva
+* [x] T3.20: Notificaciones de la reserva
    * Objetivo: Insertar, en la misma transacción, las filas de la bandeja de salida de una reserva (ARCH §14.1). C-01 (`confirmacion`) y C-02 (`recordatorio`, para `inicio − recordatorio_horas_antes`) van al correo de la cita; el recordatorio solo se crea si ese momento no pasó (S-12). C-05 (`dueno_cita_nueva`) va al dueño (Q-28). Nadie las envía hasta la Fase 6.
    * Archivos: `src/servidor/db/repositorios/notificaciones.ts`, `src/servidor/casos-uso/reservar-cita.ts`, `tests/integracion/casos-uso/reservar-cita.test.ts`
    * Depende de: T3.19

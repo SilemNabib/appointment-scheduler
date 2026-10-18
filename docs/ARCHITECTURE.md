@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Versión** | 0.9 (borrador) |
-| **Fecha** | 2026-10-16 |
+| **Versión** | 0.10 (borrador) |
+| **Fecha** | 2026-10-18 |
 | **Fuentes** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 · [PRD.md](PRD.md) v0.7 |
 
 > Este documento describe **cómo** se construye el producto del [PRD](PRD.md). Las referencias `RN-xx`, `D-xx`, `S-xx` y `P-xx` remiten a ese documento. Lo marcado como **propuesto** es una decisión de este documento que la fuente dejó abierta y que aún no se ha aceptado. Lo **aceptado** quedó confirmado en el PRD (D-06 a D-23).
@@ -21,6 +21,7 @@
 | 0.7 | 2026-10-08 | Cuatro cambios:<br>• **RN-34:** `max_reprogramaciones_cliente` en la configuración y `cita.reprogramaciones_cliente`.<br>• **D-21:** `asistencia_por_defecto` y nueva tarea del cron `aplicarAsistenciaPorDefecto`.<br>• **D-22:** se elimina `revision_cliente`; prevalece el teléfono (§12).<br>• **RN-35:** invitaciones iCalendar (§14.6), enlace de calendario del dueño (§14.7, tabla `enlace_calendario`, ruta `/api/calendario/…`, `RL_CALENDARIO`, `CALENDARIO_SECRET`), `recurso.correo` y tipos `empleado_cita_nueva` y `empleado_cambio`.<br>Nuevo ADR-17. |
 | 0.8 | 2026-10-14 | **Ramas de Neon:** se llaman `development` (antes `dev`) y `production` (antes `main`), como quedaron en el proyecto creado (§20, §21.1). |
 | 0.9 | 2026-10-16 | **Hallazgos de la Fase 1:**<br>• El middleware es `src/proxy.ts`, sin `createRouteMatcher`, y los `<ClerkProvider>` llevan `afterSignOutUrl="/login"` (§4, §7.3).<br>• El `Request` de `scheduled` lleva el encabezado `host` (§14.5).<br>• Dónde vive cada valor (§21.3).<br>• `npm run deploy` migra `production`, compila, quita los `.env` del bundle y despliega; scripts contra `production` (§21.4).<br>• Riesgos nuevos: el proxy en Workers y Clerk en `http://localhost`; tamaño medido del Worker (§21.4, §23). |
+| 0.10 | 2026-10-18 | Dos cambios:<br>• **Workers Paid desde la Fase 3** (Q-17 de TASKS-01): qué ocupa el Worker y el nuevo límite de 10 MiB (§21.4, §23).<br>• **Operaciones de la Fase 2** en §18.4: datos del negocio y logo, consultorio, servicios, bloqueos, configuración, política y acciones del admin (Q-19 de TASKS-02). |
 
 ---
 
@@ -1738,6 +1739,18 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 | `altaNegocio` | Admin | No | Slug válido y no reservado; plan existente; `fin_prueba` si el estado es `prueba`, o `pagado_hasta` si es `activa` | Negocio, configuración con los valores de D-09, "Sede principal" con su dirección y teléfono, recurso "Consultorio" (capacidad 1) en esa sede, política v1 y miembro pendiente; invitación de Clerk **después** del `COMMIT` | `SLUG_NO_DISPONIBLE`, `DATOS_INVALIDOS` |
 | `suspenderNegocio` | Admin | No | Negocio no suspendido | `estado_suscripcion = 'suspendida'` y C-08, en la misma transacción, auditada con el admin como autor | `ESTADO_INVALIDO` |
 | `registrarPago` | Admin | No | `pagado_hasta` nuevo, mayor que el actual | `estado_suscripcion = 'activa'` y `pagado_hasta` en una sola sentencia, auditada con el admin como autor (RN-30, RN-31) | `DATOS_INVALIDOS` |
+| `cambiarFinPrueba` | Admin | No | Negocio en `prueba` (Q-25 de TASKS-02) | Nuevo `fin_prueba`, auditado con el admin como autor (ADM-03, RN-30) | `ESTADO_INVALIDO`, `DATOS_INVALIDOS`, `NO_ENCONTRADO` |
+| `detalleNegocioAdmin` | Admin | No | — | Datos y estado efectivo de la suscripción de un negocio (ADM-01, ADM-03) | — |
+| `guardarNegocio` | Dueño | No | Nombre no vacío; colores `#rrggbb` | Nombre y colores del negocio, y dirección y teléfono de la sede principal, en una transacción (PAN-11) | `DATOS_INVALIDOS` |
+| `subirLogo` y `quitarLogo` | Dueño | No | PNG, JPEG o WebP de hasta 512 KB (§19.2) | Guarda el logo en R2 con nombre aleatorio y actualiza `negocio.logo_url`; el anterior se borra (PAN-11; Q-21 de TASKS-02) | `DATOS_INVALIDOS` |
+| `guardarConsultorio` | Dueño | No | Capacidad entera ≥ 1 (RN-06) | Nombre y capacidad del consultorio de la sede principal (PAN-13) | `DATOS_INVALIDOS` |
+| `activarServicio` y `desactivarServicio` | Dueño | No | Servicio del negocio; `max_services` al activar (RN-28) | Cambia `servicio.activo`; desactivar no toca las citas (PAN-12, RN-05) | `NO_ENCONTRADO`, `LIMITE_PLAN` |
+| `listarBloqueos` y `eliminarBloqueo` | Dueño | No | Al eliminar, un bloqueo del negocio | Lista los bloqueos vigentes y futuros de la sede principal; elimina uno (PAN-08) | `NO_ENCONTRADO` |
+| `guardarReglasReserva` y `guardarRecordatorio` | Dueño | No | Valores dentro de los `CHECK` de `configuracion_negocio` (§18.2) | Actualiza la configuración (PAN-15, PAN-16). El recálculo de los recordatorios pendientes va con las notificaciones (Q-23 de TASKS-02). | `DATOS_INVALIDOS` |
+| `publicarPolitica` | Dueño | No | Texto no vacío | Crea la versión siguiente de `politica_datos`; las anteriores no cambian (PAN-17) | `DATOS_INVALIDOS` |
+| `leerConfiguracion`, `leerHorarioSemanal`, `listarPoliticas` y `estadoConfiguracion` | Dueño | No | — | Solo leen. Funcionan con el negocio suspendido (D-14). | — |
+
+Las operaciones de las filas de `cambiarFinPrueba` en adelante se agregaron al implementar la Fase 2 (Q-19 de [TASKS-02](TASKS-02.md)). Las del dueño en el MVP actúan sobre la sede principal y su consultorio (Q-20).
 
 Las transiciones de estado se escriben como `UPDATE cita SET estado = $nuevo … WHERE id = $id AND negocio_id = $n AND estado = $esperado`. Si no afecta ninguna fila, la operación devuelve `ESTADO_INVALIDO`. Esto hace idempotentes los dobles clics y los reintentos.
 
@@ -1944,8 +1957,8 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 - **Scripts contra `production`:** `npm run db:migrate:prod` y `npm run db:semilla:prod` cargan `.env.production.local` con `node --env-file=.env.production.local` (fallan si el archivo no existe) y usan su `DATABASE_URL_DIRECTA` (Q-07). `drizzle.config.ts` y `scripts/semilla.ts` cargan después los `.env` con `@next/env` en modo desarrollo, que lee `.env.local` y nunca `.env.production.local`, y no reemplaza lo que ya está en `process.env`. Así, `db:migrate` y `db:semilla` nunca apuntan a `production` por accidente. La semilla muestra el host al que se conecta.
 - **Copias de seguridad:** restauración a un punto en el tiempo de Neon, con la ventana que dé el plan. Además, un `pg_dump` cifrado semanal (recomendado, porque hay datos de salud).
 - **Observabilidad:** Workers Logs. El panel de `/admin` (ADM-05) muestra las notificaciones `fallida` y las `pendiente` con más de 15 minutos de atraso. Esta última es la señal de que el cron no está corriendo.
-- **Costo:** si el bundle de OpenNext supera el límite de tamaño del plan gratuito de Workers, se usa Workers Paid (≈ USD 5/mes). Neon, Clerk y Resend caben en sus planes gratuitos con este volumen. Los límites vigentes se verifican al contratar.
-- **Tamaño del Worker:** el despliegue de T1.56 informó 12.646 KiB, 2880 KiB comprimidos, cerca del límite de 3 MiB comprimidos del plan gratuito (quedan unos 190 KiB), y las fases siguientes suman dependencias (Resend, React Email…). Mientras no se decida Q-17 de [TASKS-01](TASKS-01.md), cada despliegue anota en su commit el tamaño que informa `wrangler` (§23).
+- **Costo:** Workers Paid (≈ USD 5/mes) desde la Fase 3 (Q-17 de [TASKS-01](TASKS-01.md)). Neon, Clerk y Resend caben en sus planes gratuitos con este volumen. Los límites vigentes se verifican al contratar.
+- **Tamaño del Worker:** el despliegue de T2.42 informó 13.211 KiB, 2978,61 KiB comprimidos, a unos 93 KiB del límite de 3 MiB del plan gratuito. Casi todo es el runtime de Next.js y de React: el servidor pesa unos 1460 KiB comprimidos, y el proxy (§7.3), que se empaqueta aparte con su propia copia del runtime y de Clerk, unos 675 KiB. Zod v4 suma unos 89 KiB, y el código propio es una parte mínima. Por eso la cuenta pasa a Workers Paid, que sube el límite a 10 MiB comprimidos y el de CPU por solicitud de 10 ms a 30 s. Cada despliegue sigue anotando en su commit el tamaño que informa `wrangler` (§23).
 
 ## 22. Decisiones de diseño (ADR)
 
@@ -1975,7 +1988,7 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 |---|---|---|
 | Incompatibilidades entre Next.js, OpenNext y Clerk | Bloqueo en los días 1 y 2 | Desplegar el día 1 un esqueleto con Clerk y Neon funcionando (ya está en el plan). Fijar las versiones. |
 | `src/proxy.ts` en Workers: Next.js 16 lo ejecuta siempre en Node.js, y `@opennextjs/cloudflare` 1.20.9 lo empaqueta para Workers solo como función experimental ("Node.js middleware support is experimental") | Si deja de funcionar al actualizar Next u OpenNext, `/panel` y `/admin` pierden la redirección a `/login` y Clerk puede dejar de leer la sesión en el servidor | Funciona desplegado (T1.57). Versiones fijadas; después de actualizar, comprobar con `npm run preview` que `/panel` y `/admin` redirigen sin sesión. Si falla, la alternativa es `middleware.ts` (obsoleto en Next.js 16) con runtime Edge (§7.3). |
-| El Worker supera el límite de tamaño del plan gratuito (3 MiB comprimidos) | No se puede desplegar en el plan gratuito | El despliegue de T1.56 midió 2880 KiB comprimidos, cerca del límite (§21.4). Se anota el tamaño de cada despliegue y se pasa a Workers Paid si hace falta (Q-17 de [TASKS-01](TASKS-01.md)). |
+| El Worker supera el límite de tamaño del plan (3 MiB comprimidos en el gratuito, 10 MiB en Paid) | No se puede desplegar | T2.42 midió 2978,61 KiB comprimidos (§21.4). La cuenta pasa a Workers Paid en la Fase 3 (Q-17 de [TASKS-01](TASKS-01.md)), y cada despliegue sigue anotando su tamaño. |
 | Clerk en `http://localhost`: las cookies del *handshake* llegan con `SameSite=None` sin `Secure`, Chrome las descarta y Clerk registra "Refreshing the session token resulted in an infinite redirect loop" | Solo en desarrollo: el servidor trata la solicitud como sin sesión y el Clerk del navegador devuelve al usuario pasando por `/login`. En https (`*.workers.dev`) no ocurre. | Si aparece, probar los flujos con sesión en el Worker desplegado. Solución posible: `next dev --experimental-https`, que sirve la app local en https con un certificado autofirmado. |
 | Errores de zona horaria | Citas en la hora o el día equivocados | §9; pruebas obligatorias del caso de las 7:00 p. m.; formato siempre con la zona del negocio |
 | Arranque en frío de Neon (escala a cero) | La primera consulta tarda cientos de milisegundos | Aceptable con este volumen. En producción se puede desactivar la suspensión automática. |

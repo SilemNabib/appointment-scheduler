@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Versión** | 0.7 (borrador) |
-| **Fecha** | 2026-10-08 |
+| **Versión** | 0.8 (borrador) |
+| **Fecha** | 2026-10-18 |
 | **Fuente** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 (RN-10 actualizada por D-06) |
 | **Documento técnico** | [ARCHITECTURE.md](ARCHITECTURE.md) |
 
@@ -21,6 +21,7 @@
 | 0.5 | 2026-10-08 | **Sedes (D-16, nueva RN-32):** el modelo admite varias sedes por negocio desde el MVP, cada una con su dirección, horario, bloqueos y recursos. El catálogo de servicios es del negocio y cada sede define cuáles ofrece. Todo negocio nace con una "Sede principal". La interfaz para gestionar varias sedes queda para después. Nuevo límite de plan `max_locations`. Se precisan RN-05, RN-06, RN-07 y RN-09. |
 | 0.6 | 2026-10-08 | **Quién atiende (nueva RN-33):** dos formas de atender un servicio, por capacidad anónima o por empleados con nombre y foto. Con empleados, el cliente puede elegir quién lo atiende o tomar "Sin preferencia" (D-18), y cada empleado puede tener horario propio (D-19). En el MVP solo entra el modelo (D-17). Cambian O-2, RN-06 y C-01; nuevo flujo F-13. |
 | 0.7 | 2026-10-08 | Se agregan cuatro cambios:<br>• **Límite de reprogramaciones** del cliente (nueva **RN-34**, D-20).<br>• **Asistencia por defecto:** la cita se marca sola al terminar, según la configuración del negocio (D-21, precisa RN-16).<br>• **Identidad:** prevalece el teléfono y desaparece la revisión de conflictos (D-22; cambia RN-18.5 y se eliminan F-10 y PAN-10).<br>• **Calendarios:** invitaciones en los correos al cliente, enlace de suscripción para el dueño y, con el módulo de empleados, correo e invitaciones para cada empleado (nueva **RN-35**, D-23). |
+| 0.8 | 2026-10-18 | El criterio de aceptación de RN-26 dice "los 6 límites" (decía 5): `max_locations` se sumó en la v0.5 (Q-03 de TASKS-01). |
 
 ---
 
@@ -517,7 +518,7 @@ Los planes aún no se definen comercialmente (D-04), pero el producto ya decide 
 - *Aceptación:* solo el módulo de acceso lee las tablas de planes y excepciones. Lo verifica una regla de lint o una búsqueda en la integración continua. Con un límite alcanzado, una solicitud directa al servidor (sin pasar por la interfaz) se rechaza con "límite del plan".
 
 **RN-26.** Al crear un negocio se le asigna un plan. Mientras no haya planes comerciales, existe un único plan interno `ilimitado`, con todas las funcionalidades habilitadas y todos los límites en `NULL`.
-- *Aceptación:* no se puede crear un negocio sin plan. Después de la semilla existe el plan `ilimitado`, con las 6 funcionalidades habilitadas y los 5 límites en `NULL`.
+- *Aceptación:* no se puede crear un negocio sin plan. Después de la semilla existe el plan `ilimitado`, con las 6 funcionalidades habilitadas y los 6 límites en `NULL`.
 
 **RN-27.** **Primer cliente (MVP):** acceso ilimitado a todas las funciones. Se logra con el plan `ilimitado`, sin filas de excepción en `negocio_funcionalidad` ni `negocio_limite`.
 - *Aceptación:* el primer cliente tiene el plan `ilimitado` y ninguna excepción. La función de acceso responde "habilitada" para cada funcionalidad e "ilimitado" para cada límite.

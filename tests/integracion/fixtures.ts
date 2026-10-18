@@ -5,6 +5,9 @@ import { vi } from "vitest";
 import type { DatosSuscripcion } from "@/dominio/suscripcion";
 import { fechaLocal, ZONA_HORARIA_POR_DEFECTO } from "@/dominio/tiempo";
 import { altaNegocio, type EntradaAltaNegocio } from "@/servidor/casos-uso/alta-negocio";
+import { leerConsultorio } from "@/servidor/casos-uso/consultorio";
+import { guardarHorarioSemanal } from "@/servidor/casos-uso/horario";
+import { guardarServicio } from "@/servidor/casos-uso/servicios";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
 import * as miembros from "@/servidor/db/repositorios/miembros";
@@ -190,6 +193,72 @@ export async function sesionDeDueno(suscripcion: Partial<DatosSuscripcion> = {})
   }
   vi.mocked(auth).mockResolvedValue({ userId: clerkUserId } as Awaited<ReturnType<typeof auth>>);
   return { negocioId, clerkUserId };
+}
+
+/** Franjas de lunes a viernes, de 8:00 a 12:00 y de 14:00 a 18:00 (hora local). */
+export const HORARIO_LABORAL = [1, 2, 3, 4, 5].flatMap((dia) => [
+  { dia, inicio: "08:00", fin: "12:00" },
+  { dia, inicio: "14:00", fin: "18:00" },
+]);
+
+export type OpcionesAgenda = {
+  /** Duración y buffer del servicio; por defecto, 30 minutos sin buffer. */
+  servicio?: { duracionMinutos?: number; bufferMinutos?: number };
+  /** Por defecto, `HORARIO_LABORAL`. */
+  franjas?: { dia: number; inicio: string; fin: string }[];
+  /** Capacidad del consultorio; por defecto, 1. */
+  capacidad?: number;
+  /** Reglas de reserva; por defecto, las de D-09 (granularidad 30, anticipación de 2 h a 60 días). */
+  reglas?: Partial<typeof esquema.configuracionNegocio.$inferInsert>;
+};
+
+/**
+ * Negocio dado de alta con `altaNegocio` (sede principal, consultorio, política v1 y
+ * la configuración de D-09), con un servicio ofrecido en la sede principal y atendido
+ * por el consultorio (`guardarServicio`) y el horario de la sede (`guardarHorarioSemanal`).
+ * Devuelve los identificadores que usan la consulta y la reserva públicas.
+ */
+export async function negocioConAgenda(opciones: OpcionesAgenda = {}) {
+  const entrada = entradaDeAlta();
+  const registro = vi.spyOn(console, "error").mockImplementation(() => {});
+  const alta = await altaNegocio(entrada, ADMIN_PRUEBA).finally(() => registro.mockRestore());
+  if (!alta.ok) throw new Error(`El alta de prueba falló: ${alta.error}`);
+  const { negocioId } = alta.valor;
+  const ctx = { negocioId };
+
+  const servicio = await guardarServicio(ctx, {
+    nombre: "Examen visual",
+    duracionMinutos: opciones.servicio?.duracionMinutos ?? 30,
+    bufferMinutos: opciones.servicio?.bufferMinutos ?? 0,
+  });
+  if (!servicio.ok) throw new Error(`El servicio de prueba falló: ${servicio.error}`);
+  const horario = await guardarHorarioSemanal(ctx, { franjas: opciones.franjas ?? HORARIO_LABORAL });
+  if (!horario.ok) throw new Error(`El horario de prueba falló: ${horario.error}`);
+
+  const consultorio = await leerConsultorio(ctx);
+  if (opciones.capacidad !== undefined) {
+    await db().update(esquema.recurso).set({ capacidad: opciones.capacidad }).where(eq(esquema.recurso.id, consultorio.id));
+  }
+  if (opciones.reglas) {
+    await db()
+      .update(esquema.configuracionNegocio)
+      .set(opciones.reglas)
+      .where(eq(esquema.configuracionNegocio.negocioId, negocioId));
+  }
+  const [politica] = await db()
+    .select({ id: esquema.politicaDatos.id })
+    .from(esquema.politicaDatos)
+    .where(eq(esquema.politicaDatos.negocioId, negocioId));
+
+  return {
+    negocioId,
+    slug: entrada.slug,
+    correoDueno: entrada.correoDueno,
+    sedeId: consultorio.sedeId,
+    recursoId: consultorio.id,
+    servicioId: servicio.valor.id,
+    politicaId: politica.id,
+  };
 }
 
 /** Excepción de un límite del plan para el negocio (`negocio_limite`; `null` = ilimitado). */

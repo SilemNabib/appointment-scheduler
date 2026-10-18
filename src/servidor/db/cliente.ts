@@ -2,6 +2,7 @@ import "server-only";
 import { neon, Pool } from "@neondatabase/serverless";
 import { sql } from "drizzle-orm";
 import { drizzle as drizzleHttp } from "drizzle-orm/neon-http";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import {
   drizzle as drizzleWs,
   type NeonDatabase,
@@ -13,6 +14,13 @@ import * as esquema from "./esquema";
 export type Transaccion = Parameters<
   Parameters<NeonDatabase<typeof esquema>["transaction"]>[0]
 >[0];
+
+/**
+ * Lo que tienen en común la conexión HTTP (`db()`) y una transacción: para las lecturas
+ * que se hacen con cualquiera de las dos, como la agenda, que la consulta de
+ * disponibilidad lee por HTTP y la reserva, dentro de su transacción (ARCH §10).
+ */
+export type Conexion = PgDatabase<PgQueryResultHKT, typeof esquema>;
 
 function urlBaseDeDatos(): string {
   const url = process.env.DATABASE_URL;

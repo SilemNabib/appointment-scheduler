@@ -153,7 +153,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
 
 ### 3.C Consulta de disponibilidad
 
-* [ ] T3.12: Repositorio de la agenda: oferta y franjas
+* [x] T3.12: Repositorio de la agenda: oferta y franjas
    * Objetivo: Crear en `repositorios/agenda.ts` la lectura de la oferta de un servicio en una sede, que funciona con la conexión HTTP y dentro de una transacción. Devuelve:
       * el servicio y la sede, si están activos;
       * el `servicio_sede` activo, con su duración y su buffer (los de la sede, si los sobrescribe, o los del servicio);

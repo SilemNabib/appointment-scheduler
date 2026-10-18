@@ -166,7 +166,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * Si `servicio_sede` sobrescribe la duración, la oferta usa la de la sede; si no, la del servicio (RN-32).
       * Un servicio, una sede o una oferta inactivos, o de otro negocio, no devuelven oferta (RN-05; ARCH §6).
 
-* [ ] T3.13: Repositorio de la agenda: bloqueos y ocupación
+* [x] T3.13: Repositorio de la agenda: bloqueos y ocupación
    * Objetivo: Agregar las dos lecturas de ARCH §11.2 para un rango. La primera trae los bloqueos que aplican al recurso: los del negocio, los de su sede y los suyos. La segunda trae la ocupación del recurso (citas no canceladas, `[inicio, ocupado_hasta)`), con una cita opcional que se excluye (RN-14).
    * Archivos: `src/servidor/db/repositorios/agenda.ts`, `tests/integracion/repositorios/agenda.test.ts`
    * Depende de: T3.12

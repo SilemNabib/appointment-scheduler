@@ -1,6 +1,6 @@
 import "server-only";
 import { eq } from "drizzle-orm";
-import { db } from "../cliente";
+import { db, type Conexion } from "../cliente";
 import { configuracionNegocio } from "../esquema";
 
 // Configuración de reservas y de operación del negocio (PAN-15, PAN-16; ARCH §18.2).
@@ -23,8 +23,9 @@ export type Configuracion = ReglasReserva & {
   recordatorioHorasAntes: number | null;
 };
 
-export async function leer(negocioId: string): Promise<Configuracion | null> {
-  const [fila] = await db()
+/** La configuración del negocio, por HTTP o dentro de una transacción (la reserva la lee después del bloqueo, ARCH §11.2). */
+export async function leer(negocioId: string, conexion: Conexion = db()): Promise<Configuracion | null> {
+  const [fila] = await conexion
     .select({
       granularidadMinutos: configuracionNegocio.granularidadMinutos,
       anticipacionMinimaMinutos: configuracionNegocio.anticipacionMinimaMinutos,

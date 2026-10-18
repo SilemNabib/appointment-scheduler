@@ -175,7 +175,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
       * Un bloqueo de otra sede o de otro recurso no aparece, y uno sin sede sí (ARCH §11.2).
       * La ocupación no incluye las citas canceladas ni la cita excluida, y sí incluye las `completada` y `no_asistio` (D-06).
 
-* [ ] T3.14: Contexto de la agenda
+* [x] T3.14: Contexto de la agenda
    * Objetivo: Crear en `casos-uso/agenda.ts` la función que arma el `ContextoAgenda` (ARCH §10) a partir del repositorio, la configuración y la zona del negocio. La usan la consulta de disponibilidad y la reserva, con la conexión HTTP o con la transacción, para que lo que no se ofrece tampoco se pueda reservar (RN-09).
    * Archivos: `src/servidor/casos-uso/agenda.ts`, `tests/integracion/casos-uso/agenda.test.ts`
    * Depende de: T3.05, T3.13

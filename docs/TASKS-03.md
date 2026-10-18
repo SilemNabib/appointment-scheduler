@@ -62,7 +62,7 @@ Funciones puras con su prueba unitaria en la misma tarea. Las tareas de este mó
       * Con una ventana de 9:00 a 10:00 y citas de 9:00 a 9:30 y de 9:30 a 10:00, `maxSimultaneas` da 1 (ARCH §20: "capacidad 2 con citas escalonadas").
       * Dos citas que se solapan dentro de la ventana dan 2. Una cita que termina justo cuando empieza la ventana no cuenta (S-04).
 
-* [ ] T3.03: `evaluarInicio`: horario y alineación
+* [x] T3.03: `evaluarInicio`: horario y alineación
    * Objetivo: Implementar en `evaluarInicio` las condiciones 1 y 3 de RN-09: el intervalo completo (duración más buffer) cabe en una sola franja del día local (D-12), y el inicio está alineado con la granularidad contada desde las 00:00 locales (S-02). Los motivos de rechazo son `FUERA_DE_HORARIO` y `NO_ALINEADO`.
    * Archivos: `src/dominio/disponibilidad.ts`, `tests/unit/dominio/disponibilidad-evaluar.test.ts`
    * Depende de: T3.01, T3.02

@@ -1,4 +1,5 @@
 import type { FranjaValida } from "./horario";
+import { diaSemana, fechaLocal, localAUtc, minutosLocales } from "./tiempo";
 
 // Motor de disponibilidad (RN-07 a RN-10; ARCH §10). Es puro: trabaja sobre UN
 // servicio en UNA sede, con los datos que recibe en el contexto y el `ahora` inyectado.
@@ -45,4 +46,48 @@ export function maxSimultaneas(ocupacion: readonly Intervalo[], ventana: Interva
   let maximo = 0;
   for (const [, delta] of eventos) maximo = Math.max(maximo, (actual += delta));
   return maximo;
+}
+
+const MS_POR_MINUTO = 60_000;
+
+/** Lo que una cita que empieza en `inicio` ocupa del recurso: duración más buffer (RN-10). */
+function intervaloOcupado(ctx: ContextoAgenda, inicio: Date): Intervalo {
+  const minutos = ctx.servicio.duracionMin + ctx.servicio.bufferMin;
+  return { inicio, fin: new Date(inicio.getTime() + minutos * MS_POR_MINUTO) };
+}
+
+/**
+ * RN-09.1: el intervalo completo cabe en UNA franja del día local en que empieza. Dos
+ * franjas contiguas no se unen (D-12).
+ */
+function cabeEnUnaFranja(ctx: ContextoAgenda, intervalo: Intervalo): boolean {
+  const fecha = fechaLocal(intervalo.inicio, ctx.zonaHoraria);
+  const dia = diaSemana(fecha);
+  return ctx.franjas.some(
+    (f) =>
+      f.dia === dia &&
+      localAUtc(fecha, f.inicio, ctx.zonaHoraria) <= intervalo.inicio &&
+      intervalo.fin <= localAUtc(fecha, f.fin, ctx.zonaHoraria),
+  );
+}
+
+/** RN-09.3: el inicio cae en un múltiplo de la granularidad contado desde las 00:00 locales (S-02). */
+function estaAlineado(ctx: ContextoAgenda, inicio: Date): boolean {
+  return minutosLocales(inicio, ctx.zonaHoraria) % ctx.config.granularidadMin === 0;
+}
+
+/**
+ * Verificación de un inicio concreto (RN-09). La usan la reserva y, en otras fases, la
+ * reprogramación, la cita manual y el movimiento. Devuelve TODOS los motivos de
+ * rechazo, para que la interfaz explique por qué una hora no está disponible.
+ */
+export function evaluarInicio(
+  ctx: ContextoAgenda,
+  inicio: Date,
+): { ok: true } | { ok: false; motivos: MotivoRechazo[] } {
+  const intervalo = intervaloOcupado(ctx, inicio);
+  const motivos: MotivoRechazo[] = [];
+  if (!cabeEnUnaFranja(ctx, intervalo)) motivos.push("FUERA_DE_HORARIO");
+  if (!estaAlineado(ctx, inicio)) motivos.push("NO_ALINEADO");
+  return motivos.length === 0 ? { ok: true } : { ok: false, motivos };
 }

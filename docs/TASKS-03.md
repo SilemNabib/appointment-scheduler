@@ -373,7 +373,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * En una zona con horario de verano, el día del cambio da los mismos inicios que `evaluarInicio` hora por hora (ARCH §9, regla 1: el código no da por hecho que no hay horario de verano).
       * En local, el CPU de una consulta de 31 días (horario laboral, un bloqueo de un día y 30 citas) baja de unos 21 ms a menos de 5 ms. La medida queda anotada en el commit.
 
-* [ ] T3.33: Despliegue y verificación de la fase
+* [x] T3.33: Despliegue y verificación de la fase
    * Objetivo: Desplegar la fase en el plan gratuito de Workers (Q-36) y comprobar en `*.workers.dev`, con `curl`, la consulta y la reserva sobre el negocio de prueba que se configuró en la Fase 2.
    * Archivos: — (el commit anota el tamaño del Worker y el CPU medido)
    * Depende de: T3.08, T3.22–T3.31, T3.32

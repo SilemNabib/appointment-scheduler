@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Versión** | 0.1 (borrador) |
-| **Fecha** | 2026-10-16 |
-| **Fuentes** | [PRD.md](PRD.md) v0.7 · [ARCHITECTURE.md](ARCHITECTURE.md) v0.9 · [TASKS-02.md](TASKS-02.md) |
+| **Versión** | 0.2 (borrador) |
+| **Fecha** | 2026-10-18 |
+| **Fuentes** | [PRD.md](PRD.md) v0.7 · [ARCHITECTURE.md](ARCHITECTURE.md) v0.11 · [TASKS-02.md](TASKS-02.md) |
 
 > El PRD manda en el **qué** y ARCHITECTURE en el **cómo**. Si una tarea contradice a alguno de los dos, se corrige la tarea. El formato de las tareas, sus marcas y la definición de terminado están en [TASKS-00](TASKS-00.md). Lo que los documentos no definen está en [Preguntas](#preguntas): las nuevas siguen la numeración de TASKS-02 (desde Q-27), y las anteriores se citan con su documento, como "Q-17 (TASKS-01)".
 
@@ -27,6 +27,7 @@
 - El envío de correos y el procesador de la bandeja de salida (Fase 6).
 - El límite de frecuencia de la API pública (RN-23), que PRD §12 deja para la Fase 8 (Q-35).
 - El motor con varios recursos y la asignación de empleados (ARCH §10.3, D-17).
+- Contratar Workers Paid, que se decide antes del primer cliente (Q-36).
 
 **Criterio de salida:** T3.33, el despliegue y la verificación de la fase en el Worker.
 
@@ -36,7 +37,7 @@
 - Los casos de uso públicos resuelven el negocio por el slug (ARCH §6), comprueban el estado efectivo de la suscripción antes de hacer nada (ARCH §7.6) y reciben `ahora` como parámetro (ARCH §20).
 - En el MVP, cada oferta (un servicio en una sede) tiene un solo recurso activo, el consultorio (ARCH §10.3).
 - Las rutas `/api/publico/…` son adaptadores delgados: JSON de entrada y de salida, y los errores con el formato y los códigos HTTP de ARCH §18.5.
-- El Worker quedó en 2978,61 KiB comprimidos en T2.42, a unos 93 KiB del límite del plan gratuito, y esta fase suma `libphonenumber-js`. Por Q-17 (TASKS-01), resuelta, la cuenta pasa a Workers Paid (T3.32) antes del despliegue de la fase (T3.33).
+- La fase se despliega en el plan gratuito de Workers (Q-36): su límite de tamaño, 64 MiB sin comprimir, queda lejos (T3.21 midió 15.629 KiB). El que importa es el de CPU, 10 ms por solicitud: T3.32 optimiza el motor y T3.33 mide el CPU real.
 - Las rutas y los archivos nuevos que ARCH §4 no ubica están en Q-34.
 
 ### 3.A Motor de disponibilidad (dominio)
@@ -256,7 +257,7 @@ Entra en esta fase por Q-27. Las pruebas de sus criterios de aceptación se hace
    * Objetivo: Crear `POST /api/publico/{slug}/reservas` como adaptador delgado de `reservarCita`. Solo acepta `application/json` (ARCH §19.2) y responde 201 con `{ citaId, inicio, fin }` o con el error de ARCH §18.5.
    * Archivos: `src/app/api/publico/[slug]/reservas/route.ts`, `tests/integracion/app/api/publico/reservas.test.ts`
    * Depende de: T3.16, T3.20
-   * Refs: PUB-05, PUB-06, ARCH §18.5, §19.2, §21.4; Q-17 (TASKS-01), Q-33
+   * Refs: PUB-05, PUB-06, ARCH §18.5, §19.2, §21.4; Q-17 (TASKS-01), Q-33, Q-36
    * Aceptación:
       * Una reserva válida responde 201, y la misma hora pedida otra vez responde 409 `HORARIO_NO_DISPONIBLE`.
       * Un cuerpo que no es `application/json` responde 422 `DATOS_INVALIDOS` (Q-33).
@@ -362,30 +363,32 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
 
 ### 3.F Cierre de la fase
 
-* [ ] T3.32: [manual] Plan Workers Paid
-   * Objetivo: Pasar la cuenta de Cloudflare a Workers Paid (≈ USD 5/mes) antes del despliegue de la fase, porque el Worker está a unos 93 KiB del límite de 3 MiB del plan gratuito (Q-17, TASKS-01). El plan Paid sube el límite a 10 MiB comprimidos y el de CPU por solicitud, de 10 ms a 30 s.
-   * Archivos: —
-   * Depende de: T1.05
-   * Refs: RNF-08, ARCH §21.4, §23; Q-17 (TASKS-01)
+* [ ] T3.32: CPU del motor de disponibilidad
+   * Objetivo: Bajar el CPU de `iniciosDisponibles`, que en el plan gratuito de Workers cuenta contra el límite de 10 ms por solicitud (Q-36). Hoy convierte horas locales a UTC en cada hora candidata. Con el cambio, las conversiones se hacen una vez por franja y día, y cada candidato solo pasa las condiciones que no dependen de la zona: bloqueos, anticipación y capacidad. Ningún resultado cambia.
+   * Archivos: `src/dominio/disponibilidad.ts`, `tests/unit/dominio/disponibilidad-inicios.test.ts`
+   * Depende de: T3.06
+   * Refs: RN-09, RNF-07, ARCH §9 (regla 1), §10.1, §21.4, §23; Q-36
    * Aceptación:
-      * El Dashboard de Cloudflare (Workers & Pages → Plans) muestra la cuenta en Workers Paid.
-      * La facturación de la cuenta muestra el cargo mensual del plan.
+      * Pasan sin cambios todas las pruebas del motor, incluida la de coherencia entre `iniciosDisponibles` y `evaluarInicio` con contextos al azar (RN-09).
+      * En una zona con horario de verano, el día del cambio da los mismos inicios que `evaluarInicio` hora por hora (ARCH §9, regla 1: el código no da por hecho que no hay horario de verano).
+      * En local, el CPU de una consulta de 31 días (horario laboral, un bloqueo de un día y 30 citas) baja de unos 21 ms a menos de 5 ms. La medida queda anotada en el commit.
 
 * [ ] T3.33: Despliegue y verificación de la fase
-   * Objetivo: Desplegar la fase y comprobar en `*.workers.dev`, con `curl`, la consulta y la reserva sobre el negocio de prueba que se configuró en la Fase 2.
-   * Archivos: — (el commit anota el tamaño del Worker)
+   * Objetivo: Desplegar la fase en el plan gratuito de Workers (Q-36) y comprobar en `*.workers.dev`, con `curl`, la consulta y la reserva sobre el negocio de prueba que se configuró en la Fase 2.
+   * Archivos: — (el commit anota el tamaño del Worker y el CPU medido)
    * Depende de: T3.08, T3.22–T3.31, T3.32
-   * Refs: RNF-07, RNF-09, ARCH §21.4, §23
+   * Refs: RNF-07, RNF-09, ARCH §21.4, §23; Q-36
    * Aceptación:
-      * `npm run deploy` termina sin errores en el plan Paid, y el tamaño del Worker queda anotado en el commit.
+      * `npm run deploy` termina sin errores en el plan gratuito, y el tamaño del Worker queda anotado en el commit.
       * En el Worker, la consulta de una semana y una reserva funcionan: la cita aparece en `production` y su hora deja de ofrecerse.
       * El tiempo de respuesta de la disponibilidad de una semana, con la base ya despierta, queda medido y anotado frente al objetivo de 500 ms (RNF-07).
+      * El CPU real de la consulta de una semana, de una de 31 días y de una reserva queda medido con `wrangler tail` y anotado frente al límite de 10 ms del plan gratuito (Q-36).
 
 ---
 
 ## Preguntas
 
-Puntos que el PRD y ARCHITECTURE no definían. Todas las preguntas de esta fase quedaron resueltas el 2026-10-18, junto con Q-11 y Q-17 de [TASKS-01](TASKS-01.md#preguntas). Siguen abiertas, y aplican a esta fase, Q-04 de TASKS-01, y Q-20 y Q-24 de [TASKS-02](TASKS-02.md#preguntas).
+Puntos que el PRD y ARCHITECTURE no definían. Todas las preguntas de esta fase quedaron resueltas el 2026-10-18, junto con Q-11 y Q-17 de [TASKS-01](TASKS-01.md#preguntas); Q-36 revisó después la decisión de Q-17. Siguen abiertas, y aplican a esta fase, Q-04 de TASKS-01, y Q-20 y Q-24 de [TASKS-02](TASKS-02.md#preguntas).
 
 | ID | Pregunta | Decisión | Afecta a |
 |---|---|---|---|
@@ -398,3 +401,4 @@ Puntos que el PRD y ARCHITECTURE no definían. Todas las preguntas de esta fase 
 | Q-33 | ARCH §18.5 no da un código propio para un cuerpo que no es `application/json` (ARCH §19.2) ni para un rango de fechas inválido, y solo define el mensaje de `HORARIO_NO_DISPONIBLE`. | **Resuelta (2026-10-18):** `DATOS_INVALIDOS` (422) en ambos casos. Los demás mensajes se toman de los textos del PRD cuando existen ("Reservas no disponibles", "intenta en un minuto"…). | T3.15, T3.16, T3.21 |
 | Q-34 | ARCH §4 no ubica algunos archivos nuevos: los repositorios `agenda`, `clientes`, `citas` y `notificaciones`; `src/servidor/casos-uso/agenda.ts`, `disponibilidad.ts` y `reservar-cita.ts`; y `src/servidor/http/respuestas.ts`. Las rutas `/api/publico/[slug]/…` sí siguen ARCH §4. | **Resuelta (2026-10-18):** las rutas indicadas. | T3.11–T3.21 |
 | Q-35 | PRD §12 deja el límite de frecuencia (RN-23) para la Fase 8, pero desde esta fase la API de reservas queda expuesta en `*.workers.dev`. | **Resuelta (2026-10-18):** llega en la Fase 8, antes del primer cliente en producción (día 18). Hasta entonces, el Worker solo tiene negocios de prueba. | Alcance, T3.17, T3.21 |
+| Q-36 | Q-17 (TASKS-01) decidió pasar a Workers Paid en esta fase por el límite de 3 MiB comprimidos del plan gratuito. Después de T3.21 (15.629 KiB; 3429 KiB comprimidos), la documentación vigente de Cloudflare ya no tiene límite comprimido: el tamaño se mide sin comprimir, con 64 MiB en los dos planes. ¿Se contrata igual? | **Resuelta (2026-10-18):** no por ahora: la fase se despliega en el plan gratuito. Su límite que importa es el de CPU, 10 ms por solicitud: en local, el motor tardaba unos 5,6 ms en una consulta de una semana y 21 ms en una de 31 días. Por eso T3.32 deja de ser el paso a Paid y pasa a ser la optimización del motor, y T3.33 mide el CPU real. Workers Paid (≈ USD 5/mes, 30 s de CPU) se decide antes del primer cliente real (Fase 9), o antes si el CPU medido se acerca al límite. | Alcance, convenciones, T3.32, T3.33, Fase 9 |

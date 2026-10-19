@@ -313,7 +313,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Un servicio inactivo no aparece en la disponibilidad ni admite reservas nuevas, y sus citas existentes se conservan (RN-05).
       * Toda cita creada queda `confirmada` (RN-12).
 
-* [ ] T3.27: Pruebas del consentimiento y de la hora
+* [x] T3.27: Pruebas del consentimiento y de la hora
    * Objetivo: Probar los criterios de RN-17 y RN-03 en la reserva.
    * Archivos: `tests/integracion/casos-uso/reservar-cita-consentimiento.test.ts`
    * Depende de: T3.20

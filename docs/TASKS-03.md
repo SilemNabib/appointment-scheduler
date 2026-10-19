@@ -351,7 +351,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * En el período de gracia, la reserva funciona (RN-31: "todo funciona").
       * Con `max_appointments_per_month` alcanzado, una reserva directa devuelve `LIMITE_PLAN` (RN-25).
 
-* [ ] T3.31: Pruebas multi-negocio
+* [x] T3.31: Pruebas multi-negocio
    * Objetivo: Probar que la consulta y la reserva no alcanzan datos de otro negocio cuando se manipulan los identificadores.
    * Archivos: `tests/integracion/app/api/publico/multi-negocio.test.ts`
    * Depende de: T3.17, T3.21

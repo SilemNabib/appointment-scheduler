@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { evaluarInicio, iniciosDisponibles, type ContextoAgenda } from "@/dominio/disponibilidad";
-import { intervaloDeDias } from "@/dominio/tiempo";
+import { diaSemana, intervaloDeDias, localAUtc, sumarDias } from "@/dominio/tiempo";
 import { BOGOTA, contexto, franja, intervalo, local } from "./ayudantes-disponibilidad";
 
 // iniciosDisponibles (RN-07 a RN-10; ARCH §10.1 y §20, suite `dominio/disponibilidad`).
@@ -289,4 +289,53 @@ describe("iniciosDisponibles y evaluarInicio coinciden (RN-09)", () => {
       expect(alineados).toBe((7 * 24 * 60) / ctx.config.granularidadMin);
     },
   );
+});
+
+describe("iniciosDisponibles en un día con cambio de horario (ARCH §9, regla 1)", () => {
+  /**
+   * La versión hora por hora de ARCH §10.1, sin atajos: convierte cada hora candidata
+   * de la franja a UTC y la pasa por evaluarInicio.
+   */
+  function horaPorHora(ctx: ContextoAgenda, desde: string, hasta: string): number[] {
+    const minutos = (h: string) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5));
+    const hora = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    const ocupa = (ctx.servicio.duracionMin + ctx.servicio.bufferMin) * 60_000;
+    const inicios = new Set<number>();
+    for (let fecha = desde; fecha <= hasta; fecha = sumarDias(fecha, 1)) {
+      for (const f of ctx.franjas.filter((x) => x.dia === diaSemana(fecha))) {
+        const fin = localAUtc(fecha, f.fin, ctx.zonaHoraria).getTime();
+        const g = ctx.config.granularidadMin;
+        for (let t = Math.ceil(minutos(f.inicio) / g) * g; t < 24 * 60; t += g) {
+          const inicio = localAUtc(fecha, hora(t), ctx.zonaHoraria);
+          if (inicio.getTime() + ocupa > fin) break;
+          if (evaluarInicio(ctx, inicio).ok) inicios.add(inicio.getTime());
+        }
+      }
+    }
+    return [...inicios].sort((a, b) => a - b);
+  }
+
+  // Domingos con cambio de hora y el sábado anterior, que no lo tiene. Las franjas
+  // cruzan la hora del cambio (2:00 o 3:00 de la madrugada).
+  test.each([
+    ["Europe/Madrid", "2026-03-28", "2026-03-29"], // 2:00 → 3:00
+    ["Europe/Madrid", "2026-10-24", "2026-10-25"], // 3:00 → 2:00
+    ["America/New_York", "2026-03-07", "2026-03-08"], // 2:00 → 3:00
+    ["America/New_York", "2026-10-31", "2026-11-01"], // 2:00 → 1:00
+  ])("en %s, del %s al %s da los mismos inicios que la versión hora por hora", (zonaHoraria, desde, hasta) => {
+    for (const granularidadMin of [15, 30, 60] as const) {
+      const ctx = contexto({
+        zonaHoraria,
+        ahora: localAUtc("2026-01-01", "00:00", zonaHoraria),
+        servicio: { duracionMin: 45, bufferMin: 15 },
+        config: { granularidadMin, anticipacionMinimaMin: 0, anticipacionMaximaDias: 365 },
+        franjas: [franja(6, "00:30", "06:00"), franja(7, "00:30", "06:00"), franja(7, "08:00", "12:00")],
+        bloqueos: [{ inicio: localAUtc(hasta, "09:00", zonaHoraria), fin: localAUtc(hasta, "10:00", zonaHoraria) }],
+        ocupacion: [{ inicio: localAUtc(desde, "01:00", zonaHoraria), fin: localAUtc(desde, "02:00", zonaHoraria) }],
+      });
+      const lista = iniciosDisponibles(ctx, desde, hasta);
+      expect(lista.length, `granularidad ${granularidadMin}`).toBeGreaterThan(0);
+      expect(lista.map((d) => d.getTime()), `granularidad ${granularidadMin}`).toEqual(horaPorHora(ctx, desde, hasta));
+    }
+  });
 });

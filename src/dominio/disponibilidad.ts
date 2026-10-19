@@ -93,6 +93,19 @@ function respetaAnticipacion(ctx: ContextoAgenda, inicio: Date): boolean {
   return desde <= inicio.getTime() && inicio.getTime() <= hasta;
 }
 
+/** RN-09.2: el intervalo no se solapa con ningún bloqueo. */
+const estaBloqueado = (ctx: ContextoAgenda, intervalo: Intervalo) => ctx.bloqueos.some((b) => seSolapan(b, intervalo));
+
+/** RN-09.5: en TODO el intervalo, menos citas simultáneas que la capacidad (ARCH §10.2). */
+const tieneCupo = (ctx: ContextoAgenda, intervalo: Intervalo) => maxSimultaneas(ctx.ocupacion, intervalo) < ctx.capacidad;
+
+/**
+ * Las condiciones de RN-09 que no dependen de la zona horaria: 2, 4 y 5. Las otras dos
+ * (horario y alineación) convierten horas locales, que es lo que más CPU gasta.
+ */
+const cumpleSinZona = (ctx: ContextoAgenda, intervalo: Intervalo) =>
+  !estaBloqueado(ctx, intervalo) && respetaAnticipacion(ctx, intervalo.inicio) && tieneCupo(ctx, intervalo);
+
 /**
  * Verificación de un inicio concreto (RN-09). La usan la reserva y, en otras fases, la
  * reprogramación, la cita manual y el movimiento. Devuelve TODOS los motivos de
@@ -106,11 +119,10 @@ export function evaluarInicio(
   const intervalo = intervaloOcupado(ctx, inicio);
   const motivos: MotivoRechazo[] = [];
   if (!cabeEnUnaFranja(ctx, intervalo)) motivos.push("FUERA_DE_HORARIO"); // RN-09.1
-  if (ctx.bloqueos.some((b) => seSolapan(b, intervalo))) motivos.push("BLOQUEADO"); // RN-09.2
+  if (estaBloqueado(ctx, intervalo)) motivos.push("BLOQUEADO"); // RN-09.2
   if (!estaAlineado(ctx, inicio)) motivos.push("NO_ALINEADO"); // RN-09.3
   if (!respetaAnticipacion(ctx, inicio)) motivos.push("ANTICIPACION"); // RN-09.4
-  // RN-09.5: en TODO el intervalo, menos citas simultáneas que la capacidad (ARCH §10.2).
-  if (maxSimultaneas(ctx.ocupacion, intervalo) >= ctx.capacidad) motivos.push("SIN_CAPACIDAD");
+  if (!tieneCupo(ctx, intervalo)) motivos.push("SIN_CAPACIDAD"); // RN-09.5
   return motivos.length === 0 ? { ok: true } : { ok: false, motivos };
 }
 
@@ -127,8 +139,17 @@ const aHora = (minutos: number) =>
  * inicio de la franja (S-02), y avanza mientras el intervalo completo quepa en ella. De
  * esos candidatos agrega los que pasan `evaluarInicio`: así la lista y la verificación
  * de una reserva coinciden siempre (RN-09). Lanza si el rango termina antes de empezar.
+ *
+ * CPU (ARCH §21.4; Q-36): convertir horas locales es lo que más gasta, así que se
+ * convierten solo el inicio y el fin de cada franja. Si entre los dos la hora local
+ * avanza igual que la UTC (no hay un cambio de horario dentro de la franja), cada
+ * candidato sale de sumar minutos al inicio, y como por construcción ya cabe en la
+ * franja y está alineado, solo le faltan las condiciones que no dependen de la zona. Si
+ * hay un cambio de horario, se convierte y se evalúa cada candidato completo. Las dos
+ * formas dan el mismo resultado; la primera, sin convertir cada hora.
  */
 export function iniciosDisponibles(ctx: ContextoAgenda, desde: FechaLocal, hasta: FechaLocal): Date[] {
+  const zona = ctx.zonaHoraria;
   const granularidad = ctx.config.granularidadMin;
   const ocupaMs = (ctx.servicio.duracionMin + ctx.servicio.bufferMin) * MS_POR_MINUTO;
   const inicios = new Map<number, Date>();
@@ -136,11 +157,19 @@ export function iniciosDisponibles(ctx: ContextoAgenda, desde: FechaLocal, hasta
     const dia = diaSemana(fecha);
     for (const f of ctx.franjas) {
       if (f.dia !== dia) continue;
-      const finFranja = localAUtc(fecha, f.fin, ctx.zonaHoraria).getTime();
-      for (let t = Math.ceil(aMinutos(f.inicio) / granularidad) * granularidad; t < 24 * 60; t += granularidad) {
-        const inicio = localAUtc(fecha, aHora(t), ctx.zonaHoraria);
+      const [desdeMin, hastaMin] = [aMinutos(f.inicio), aMinutos(f.fin)];
+      const inicioFranja = localAUtc(fecha, f.inicio, zona).getTime();
+      const finFranja = localAUtc(fecha, f.fin, zona).getTime();
+      const sinCambioDeHora = finFranja - inicioFranja === (hastaMin - desdeMin) * MS_POR_MINUTO;
+      for (let t = Math.ceil(desdeMin / granularidad) * granularidad; t < 24 * 60; t += granularidad) {
+        const inicio = sinCambioDeHora
+          ? new Date(inicioFranja + (t - desdeMin) * MS_POR_MINUTO)
+          : localAUtc(fecha, aHora(t), zona);
         if (inicio.getTime() + ocupaMs > finFranja) break; // RN-09.1: ya no cabe en ESTA franja
-        if (evaluarInicio(ctx, inicio).ok) inicios.set(inicio.getTime(), inicio);
+        const reservable = sinCambioDeHora
+          ? cumpleSinZona(ctx, intervaloOcupado(ctx, inicio))
+          : evaluarInicio(ctx, inicio).ok;
+        if (reservable) inicios.set(inicio.getTime(), inicio);
       }
     }
   }

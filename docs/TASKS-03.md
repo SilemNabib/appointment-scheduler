@@ -363,7 +363,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
 
 ### 3.F Cierre de la fase
 
-* [ ] T3.32: CPU del motor de disponibilidad
+* [x] T3.32: CPU del motor de disponibilidad
    * Objetivo: Bajar el CPU de `iniciosDisponibles`, que en el plan gratuito de Workers cuenta contra el límite de 10 ms por solicitud (Q-36). Hoy convierte horas locales a UTC en cada hora candidata. Con el cambio, las conversiones se hacen una vez por franja y día, y cada candidato solo pasa las condiciones que no dependen de la zona: bloqueos, anticipación y capacidad. Ningún resultado cambia.
    * Archivos: `src/dominio/disponibilidad.ts`, `tests/unit/dominio/disponibilidad-inicios.test.ts`
    * Depende de: T3.06

@@ -332,7 +332,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Reservas con "300 123 4567" y con "+57 300-123-4567" quedan en el mismo cliente, y lo mismo con `Ana@Mail.com` y `ana@mail.com` (RN-18).
       * Una cita vieja sigue mostrando el nombre con el que se reservó, aunque el cliente reserve después con otro (RN-18).
 
-* [ ] T3.29: Pruebas de identidad: teléfono que prevalece y teléfono compartido
+* [x] T3.29: Pruebas de identidad: teléfono que prevalece y teléfono compartido
    * Objetivo: Probar a través de la reserva el caso 5 de RN-18 y el criterio de RN-19.
    * Archivos: `tests/integracion/casos-uso/identidad-cliente.test.ts`
    * Depende de: T3.28

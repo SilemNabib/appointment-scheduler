@@ -102,3 +102,40 @@ describe("identidad del cliente en la reserva: normalización y nombre (RN-18)",
     ]);
   });
 });
+
+describe("identidad del cliente en la reserva: teléfono que prevalece y teléfono compartido (RN-18.5, RN-19)", () => {
+  test("si el teléfono coincide con un cliente y el correo con otro, la cita queda en el cliente del teléfono y no se crea ninguna revisión (RN-18, caso 5)", async () => {
+    const n = await negocioConAgenda();
+    await reservar(n, 0, { nombre: "Ana", apellido: "Pérez", telefono: "300 123 4567", correo: "ana@mail.com" });
+    await reservar(n, 1, { nombre: "Luis", apellido: "Gómez", telefono: "310 765 4321", correo: "luis@mail.com" });
+    const [ana, luis] = await clientesDe(n.negocioId);
+
+    // El teléfono es el de Ana y el correo, el de Luis.
+    const cita = await reservar(n, 2, { nombre: "Ana", apellido: "Pérez", telefono: "300 123 4567", correo: "luis@mail.com" });
+
+    expect((await citasDe(n.negocioId)).find((c) => c.id === cita)).toMatchObject({
+      clienteId: ana.id,
+      clienteCorreo: "luis@mail.com", // la cita guarda el correo con que se reservó (S-15)
+    });
+    // No se crea ningún cliente ni se fusionan: Ana conserva su correo y Luis no cambia (D-22).
+    expect(await clientesDe(n.negocioId)).toEqual([ana, luis]);
+    // Tampoco hay dónde marcar una revisión: la tabla se eliminó en la v0.7 (D-22).
+    expect(Object.keys(esquema)).not.toContain("revisionCliente");
+  });
+
+  test("dos reservas con el mismo teléfono y distinto nombre quedan en el mismo cliente, cuyo nombre es el de la última; cada cita muestra el suyo (RN-19)", async () => {
+    const n = await negocioConAgenda();
+    const deAna = await reservar(n, 0, { nombre: "Ana", apellido: "Pérez", telefono: "300 123 4567", correo: "ana@mail.com" });
+    const deLuis = await reservar(n, 1, { nombre: "Luis", apellido: "Pérez", telefono: "300 123 4567", correo: "luis@mail.com" });
+
+    const clientes = await clientesDe(n.negocioId);
+    expect(clientes).toEqual([
+      // El nombre es el de la última reserva; el correo guardado no se sobrescribe (S-15).
+      expect.objectContaining({ nombre: "Luis", apellido: "Pérez", telefonoE164: "+573001234567", correo: "ana@mail.com" }),
+    ]);
+    expect(await citasDe(n.negocioId)).toEqual([
+      expect.objectContaining({ id: deAna, clienteId: clientes[0].id, clienteNombre: "Ana", clienteCorreo: "ana@mail.com" }),
+      expect.objectContaining({ id: deLuis, clienteId: clientes[0].id, clienteNombre: "Luis", clienteCorreo: "luis@mail.com" }),
+    ]);
+  });
+});

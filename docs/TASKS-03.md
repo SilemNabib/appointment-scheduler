@@ -323,7 +323,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Cada cita pública guarda la versión de la política y la fecha y hora de aceptación (RN-17).
       * Una cita reservada a las 7:00 p. m. hora de Colombia se guarda como las 00:00 UTC del día siguiente (RN-03).
 
-* [ ] T3.28: Pruebas de identidad: normalización y nombre
+* [x] T3.28: Pruebas de identidad: normalización y nombre
    * Objetivo: Probar a través de la reserva los criterios de RN-18 sobre la normalización y el nombre de cada cita.
    * Archivos: `tests/integracion/casos-uso/identidad-cliente.test.ts`
    * Depende de: T3.20

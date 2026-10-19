@@ -341,7 +341,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Si el teléfono coincide con un cliente y el correo con otro, la cita queda en el cliente del teléfono y no se crea ninguna revisión (RN-18, caso 5).
       * Dos reservas con el mismo teléfono y distinto nombre quedan en el mismo cliente, cuyo nombre es el de la última; cada cita muestra el suyo (RN-19).
 
-* [ ] T3.30: Pruebas de suscripción y límites
+* [x] T3.30: Pruebas de suscripción y límites
    * Objetivo: Probar la reserva frente al estado de la suscripción y a los límites del plan.
    * Archivos: `tests/integracion/casos-uso/reservar-cita-suscripcion.test.ts`
    * Depende de: T3.20

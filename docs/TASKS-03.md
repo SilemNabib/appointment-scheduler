@@ -303,7 +303,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Un bloqueo de la sede A no afecta a la sede B, y uno sin sede afecta a las dos (RN-32).
       * El mismo servicio con 30 minutos en la sede A y 45 en la sede B ofrece en cada sede las horas que corresponden a su duración (RN-32; ARCH §20: "las sobrescrituras de duración cambian las horas ofrecidas").
 
-* [ ] T3.26: Pruebas de las reglas de la reserva
+* [x] T3.26: Pruebas de las reglas de la reserva
    * Objetivo: Probar que la reserva aplica las mismas reglas que la consulta y crea la cita como pide el PRD.
    * Archivos: `tests/integracion/casos-uso/reservar-cita-reglas.test.ts`
    * Depende de: T3.20

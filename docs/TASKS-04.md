@@ -47,7 +47,7 @@
 
 Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-de-datos-esquema-y-migraciones) y depende de la anterior para mantener lineal la cadena de migraciones. El SQL debe coincidir con ARCH §18.2 (v0.12), que recoge el modelo de Q-38 a Q-41.
 
-* [ ] T4.01: Esquema: marca ampliada y categoría de servicio
+* [x] T4.01: Esquema: marca ampliada y categoría de servicio
    * Objetivo: Agregar a `negocio` el rubro, el eslogan, la frase del banner y la descripción (D-27), y a `servicio` la categoría (D-26), según Q-38 y Q-39. Cambiar el valor por defecto de `negocio.color_primario` a `#2b3fd6` (Q-42).
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
    * Depende de: T3.33

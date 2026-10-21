@@ -92,6 +92,13 @@
       "when": 1792006892949,
       "tag": "0012_auditoria_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792543737708,
+      "tag": "0013_marca_y_categoria",
+      "breakpoints": true
     }
   ]
 }

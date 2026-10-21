@@ -132,9 +132,13 @@ export const negocio = pgTable(
     slug: text("slug").notNull().unique("negocio_slug_key"), // RN-02
     nombre: text("nombre").notNull(),
     logoUrl: text("logo_url"),
-    colorPrimario: text("color_primario").notNull().default("#0f766e"),
+    colorPrimario: text("color_primario").notNull().default("#2b3fd6"), // acento de DESIGN.md (Q-42)
     colorSecundario: text("color_secundario"),
-    correoContacto: text("correo_contacto"), // dirección y teléfono van en sede (RN-32)
+    correoContacto: text("correo_contacto"), // dirección y contactos van en la sede (RN-32, D-29)
+    rubro: text("rubro"), // D-27: línea corta junto al nombre
+    eslogan: text("eslogan"), // D-27
+    fraseBanner: text("frase_banner"), // D-27: título del banner (si falta, el nombre)
+    descripcion: text("descripcion"), // D-27
     zonaHoraria: text("zona_horaria").notNull().default("America/Bogota"), // validada en código contra la base IANA
     planId: uuid("plan_id").notNull(), // RN-26: sin valor por defecto
     estadoSuscripcion: estadoSuscripcion("estado_suscripcion").notNull().default("prueba"),
@@ -153,6 +157,10 @@ export const negocio = pgTable(
     ),
     check("negocio_color_primario_check", sql`${t.colorPrimario} ~ '^#[0-9a-f]{6}$'`),
     check("negocio_color_secundario_check", sql`${t.colorSecundario} ~ '^#[0-9a-f]{6}$'`),
+    check("negocio_rubro_check", sql`char_length(${t.rubro}) <= 60`),
+    check("negocio_eslogan_check", sql`char_length(${t.eslogan}) <= 120`),
+    check("negocio_frase_banner_check", sql`char_length(${t.fraseBanner}) <= 120`),
+    check("negocio_descripcion_check", sql`char_length(${t.descripcion}) <= 600`),
     foreignKey({ name: "negocio_plan_id_fkey", columns: [t.planId], foreignColumns: [plan.id] }),
     // 'prueba' exige fin_prueba (RN-31).
     check("negocio_check", sql`${t.estadoSuscripcion} <> 'prueba' OR ${t.finPrueba} IS NOT NULL`),
@@ -352,6 +360,7 @@ export const servicio = pgTable(
     negocioId: uuid("negocio_id").notNull(),
     nombre: text("nombre").notNull(),
     descripcion: text("descripcion"),
+    categoria: text("categoria"), // D-26; NULL = sin categoría
     duracionMinutos: smallint("duracion_minutos").notNull(), // RN-05
     bufferMinutos: smallint("buffer_minutos").notNull().default(0), // D-02
     activo: boolean("activo").notNull().default(true),
@@ -368,6 +377,7 @@ export const servicio = pgTable(
       columns: [t.negocioId],
       foreignColumns: [negocio.id],
     }).onDelete("cascade"),
+    check("servicio_categoria_check", sql`char_length(${t.categoria}) BETWEEN 1 AND 40`),
     check("servicio_duracion_minutos_check", sql`${t.duracionMinutos} BETWEEN 5 AND 720`),
     check("servicio_buffer_minutos_check", sql`${t.bufferMinutos} BETWEEN 0 AND 240`),
     unique("servicio_id_negocio_id_key").on(t.id, t.negocioId),

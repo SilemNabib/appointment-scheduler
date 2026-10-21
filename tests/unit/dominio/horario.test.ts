@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { validarSemana, type Franja } from "@/dominio/horario";
+import { resumirSemana, validarSemana, type Franja, type FranjaValida } from "@/dominio/horario";
 
 // Validación del horario semanal (RN-07, D-12, S-04).
 
@@ -65,5 +65,44 @@ describe("validarSemana", () => {
       ok: true,
       valor: [franja("08:00", "12:30")],
     });
+  });
+});
+
+describe("resumirSemana (PUB-01; RNF-02)", () => {
+  /** Los espacios de Intl (U+00A0, U+202F) como espacios normales, para comparar. */
+  const plano = (lineas: ReturnType<typeof resumirSemana>) =>
+    lineas.map((l) => ({ dias: l.dias, horas: l.horas?.map((h) => h.replace(/\s/g, " ")) ?? null }));
+
+  const laboral: FranjaValida[] = [1, 2, 3, 4, 5].flatMap((dia) => [
+    { dia: dia as FranjaValida["dia"], inicio: "08:00", fin: "12:00" },
+    { dia: dia as FranjaValida["dia"], inicio: "14:00", fin: "18:00" },
+  ]);
+
+  test("lunes a viernes de 8 a 12 y de 14 a 18, más el sábado de 8 a 12, dan dos líneas con horas de 12 horas; el domingo, cerrado", () => {
+    const resumen = plano(resumirSemana([...laboral, { dia: 6, inicio: "08:00", fin: "12:00" }]));
+    expect(resumen).toEqual([
+      { dias: "Lunes a viernes", horas: ["8:00 a. m. – 12:00 p. m.", "2:00 p. m. – 6:00 p. m."] },
+      { dias: "Sábado", horas: ["8:00 a. m. – 12:00 p. m."] },
+      { dias: "Domingo", horas: null },
+    ]);
+    expect(resumen.filter((l) => l.horas !== null)).toHaveLength(2);
+  });
+
+  test("un día sin franjas en medio de la semana aparece como cerrado y corta el grupo", () => {
+    const sinMiercoles = laboral.filter((f) => f.dia !== 3);
+    expect(plano(resumirSemana(sinMiercoles)).map((l) => [l.dias, l.horas === null])).toEqual([
+      ["Lunes y martes", false],
+      ["Miércoles", true],
+      ["Jueves y viernes", false],
+      ["Sábado y domingo", true],
+    ]);
+  });
+
+  test("las franjas de un día salen ordenadas aunque lleguen desordenadas, y sin franjas toda la semana es una línea cerrada", () => {
+    expect(plano(resumirSemana([{ dia: 1, inicio: "14:00", fin: "15:30" }, { dia: 1, inicio: "07:30", fin: "09:00" }]))[0]).toEqual({
+      dias: "Lunes",
+      horas: ["7:30 a. m. – 9:00 a. m.", "2:00 p. m. – 3:30 p. m."],
+    });
+    expect(resumirSemana([])).toEqual([{ dias: "Lunes a domingo", horas: null }]);
   });
 });

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache, type CSSProperties } from "react";
+import { Encabezado } from "@/componentes/publico/encabezado";
 import { EstadoPagina } from "@/componentes/publico/estado-pagina";
 import { coloresMarca } from "@/dominio/color";
 import { leerPaginaPublica } from "@/servidor/casos-uso/pagina-publica";
@@ -43,8 +44,7 @@ export default async function PaginaNegocio({ params }: Props) {
   return (
     <div style={variables} className="flex flex-1 flex-col">
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-6 pb-16">
-        {/* El encabezado completo de PUB-01 llega en T4.18. */}
-        <h1 className="text-[clamp(28px,3.4vw,42px)] leading-tight font-bold">{marca.nombre}</h1>
+        <Encabezado marca={marca} sede={sede} />
 
         {pagina.valor.estado === "abierta" ? (
           // El flujo de reserva (módulo 4.E) va aquí.

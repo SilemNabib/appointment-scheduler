@@ -219,7 +219,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * La página no carga scripts de Clerk (pestaña Red; ARCH §7.2).
       * Con el negocio suspendido en `development`, se ve "Reservas no disponibles" con sus contactos. En gracia, la página funciona normal (RN-31).
 
-* [ ] T4.18: Encabezado del negocio
+* [x] T4.18: Encabezado del negocio
    * Objetivo: Construir el encabezado de PUB-01 según DESIGN §4.1: mosaico de logo, nombre, rubro, frase del banner, eslogan y descripción (Q-38); dirección con el enlace "Cómo llegar" a Google Maps en una pestaña nueva (D-30); el horario de la semana, resumido por días con las mismas franjas; y la tarjeta de contactos. Agrega a `dominio/horario.ts` el resumen del horario (por ejemplo, "Lunes a viernes").
    * Archivos: `src/componentes/publico/encabezado.tsx`, `src/dominio/horario.ts`, `tests/unit/dominio/horario.test.ts`, `src/app/(publico)/[slug]/page.tsx`
    * Depende de: T4.17

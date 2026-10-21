@@ -1,3 +1,4 @@
+import { formatearHoraLocal } from "./formato";
 import { exito, fallo, type Resultado } from "./resultado";
 import type { HoraLocal } from "./tiempo";
 
@@ -58,4 +59,50 @@ export function validarSemana(franjas: readonly Franja[]): Resultado<FranjaValid
   if (solapados.size > 0) return fallo({ codigo: "FRANJAS_SOLAPADAS", dias: [...solapados] });
 
   return exito(validas.map(({ dia, inicio, fin }) => ({ dia, inicio, fin })));
+}
+
+/** Nombres de los días, para los resúmenes del horario. */
+const NOMBRES_DIA: Record<DiaSemana, string> = {
+  1: "lunes",
+  2: "martes",
+  3: "miércoles",
+  4: "jueves",
+  5: "viernes",
+  6: "sábado",
+  7: "domingo",
+};
+
+/** Una línea del horario resumido: los días y sus horas, o `null` si están cerrados. */
+export type LineaHorario = { dias: string; horas: string[] | null };
+
+const mayuscula = (texto: string) => texto.charAt(0).toLocaleUpperCase("es-CO") + texto.slice(1);
+
+/** "Lunes", "Lunes y martes" o "Lunes a viernes". */
+function nombreDeDias(desde: DiaSemana, hasta: DiaSemana): string {
+  if (desde === hasta) return mayuscula(NOMBRES_DIA[desde]);
+  const union = hasta === desde + 1 ? "y" : "a";
+  return mayuscula(`${NOMBRES_DIA[desde]} ${union} ${NOMBRES_DIA[hasta]}`);
+}
+
+/**
+ * El horario de la semana resumido para la página pública (PUB-01; Q-43): los días
+ * seguidos con las mismas franjas van en una sola línea ("Lunes a viernes"), con las
+ * horas en formato de 12 horas (RNF-02), de lunes a domingo. Un día sin franjas aparece
+ * como cerrado (`horas: null`).
+ */
+export function resumirSemana(franjas: readonly FranjaValida[]): LineaHorario[] {
+  const horasDe = (dia: DiaSemana) =>
+    franjas
+      .filter((f) => f.dia === dia)
+      .sort((a, b) => a.inicio.localeCompare(b.inicio))
+      .map((f) => `${formatearHoraLocal(f.inicio)} – ${formatearHoraLocal(f.fin)}`);
+
+  const lineas: { desde: DiaSemana; hasta: DiaSemana; horas: string[] }[] = [];
+  for (const dia of DIAS_SEMANA) {
+    const horas = horasDe(dia);
+    const ultima = lineas.at(-1);
+    if (ultima && ultima.horas.join("|") === horas.join("|")) ultima.hasta = dia;
+    else lineas.push({ desde: dia, hasta: dia, horas });
+  }
+  return lineas.map((l) => ({ dias: nombreDeDias(l.desde, l.hasta), horas: l.horas.length > 0 ? l.horas : null }));
 }

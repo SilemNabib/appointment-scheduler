@@ -44,6 +44,25 @@ export function formatearFechaLocal(fecha: FechaLocal): string {
   return formatearFecha(localAUtc(fecha, "00:00", "UTC"), "UTC");
 }
 
+/** Fecha local con el día de la semana y sin el año: "jueves, 22 de octubre" (PUB-03, PUB-06). */
+export function formatearDiaLocal(fecha: FechaLocal, conAnio = false): string {
+  return new Intl.DateTimeFormat(LOCALE, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    ...(conAnio ? { year: "numeric" } : {}),
+    timeZone: "UTC",
+  }).format(localAUtc(fecha, "00:00", "UTC"));
+}
+
+/** El mes de una fecha local, con mayúscula inicial: "Octubre de 2026" (el calendario de PUB-03). */
+export function formatearMesLocal(fecha: FechaLocal): string {
+  const texto = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric", timeZone: "UTC" }).format(
+    localAUtc(fecha, "00:00", "UTC"),
+  );
+  return texto.charAt(0).toLocaleUpperCase(LOCALE) + texto.slice(1);
+}
+
 /**
  * Hora local `HH:mm` o `HH:mm:ss`, como la guarda el horario semanal: "08:00" →
  * "8:00 a. m.". Lanza si la hora no es válida.

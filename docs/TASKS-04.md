@@ -288,7 +288,7 @@ El flujo vive en un solo componente de cliente con cuatro pasos: servicio, día 
       * Con servicios de dos categorías, cada chip filtra la lista y "Todos" la restablece. Sin categorías, no aparecen chips.
       * Un servicio desactivado en el panel desaparece de la lista al recargar (RN-05). Todo el paso se usa con el teclado.
 
-* [ ] T4.25: Paso "Día y hora"
+* [x] T4.25: Paso "Día y hora"
    * Objetivo: Construir PUB-03 y PUB-04: el calendario del mes con T4.21, que consulta la disponibilidad del mes visible en una sola solicitud y deshabilita los días sin inicios ("Sin cupos"); y las horas libres del día elegido, en la zona del negocio. Si el día elegido queda sin horas, muestra "No quedan horas libres este día." y ofrece el siguiente día con cupo (F-01).
    * Archivos: `src/componentes/publico/paso-horario.tsx`, `src/componentes/publico/calendario.tsx`, `src/componentes/publico/horas-libres.tsx`
    * Depende de: T4.21, T4.23, T4.24

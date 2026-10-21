@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  formatearDiaLocal,
   formatearFecha,
   formatearFechaHora,
   formatearFechaLocal,
   formatearHora,
   formatearHoraLocal,
   formatearIntervalo,
+  formatearMesLocal,
 } from "@/dominio/formato";
 
 // Formato de fechas y horas (RN-03, RNF-02; ARCH §9, regla 3).
@@ -106,5 +108,20 @@ describe("formatearIntervalo", () => {
     expect(intervalo("2026-10-15T03:00:00Z", "2026-10-15T07:00:00Z")).toBe(
       "Del 14 de octubre de 2026 a las 10:00 p. m. al 15 de octubre de 2026 a las 2:00 a. m.",
     );
+  });
+});
+
+describe("formatearDiaLocal y formatearMesLocal", () => {
+  const plano = (t: string) => t.replace(/\s/g, " ");
+
+  test("el día con su día de la semana, con y sin año, sin depender de la zona", () => {
+    expect(plano(formatearDiaLocal("2026-10-22"))).toBe("jueves, 22 de octubre");
+    expect(plano(formatearDiaLocal("2026-10-22", true))).toBe("jueves, 22 de octubre de 2026");
+    expect(plano(formatearDiaLocal("2027-01-01"))).toBe("viernes, 1 de enero");
+  });
+
+  test("el mes con mayúscula inicial", () => {
+    expect(plano(formatearMesLocal("2026-10-20"))).toBe("Octubre de 2026");
+    expect(plano(formatearMesLocal("2027-02-01"))).toBe("Febrero de 2027");
   });
 });

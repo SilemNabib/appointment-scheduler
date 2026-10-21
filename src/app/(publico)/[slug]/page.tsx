@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache, type CSSProperties } from "react";
 import { Encabezado } from "@/componentes/publico/encabezado";
 import { EstadoPagina } from "@/componentes/publico/estado-pagina";
+import { Reserva } from "@/componentes/publico/reserva";
 import { coloresMarca } from "@/dominio/color";
 import { leerPaginaPublica } from "@/servidor/casos-uso/pagina-publica";
 
@@ -47,8 +48,16 @@ export default async function PaginaNegocio({ params }: Props) {
         <Encabezado marca={marca} sede={sede} />
 
         {pagina.valor.estado === "abierta" ? (
-          // El flujo de reserva (módulo 4.E) va aquí.
-          <section aria-label="Reserva" />
+          <Reserva
+            slug={marca.slug}
+            nombreNegocio={marca.nombre}
+            zonaHoraria={marca.zonaHoraria}
+            sede={{ id: sede.id, direccion: sede.direccion, contactos: sede.contactos }}
+            servicios={pagina.valor.servicios}
+            politica={pagina.valor.politica}
+            hoy={pagina.valor.hoy}
+            ultimoDia={pagina.valor.ultimoDia}
+          />
         ) : (
           <EstadoPagina estado={pagina.valor.estado} nombre={marca.nombre} contactos={sede.contactos} />
         )}

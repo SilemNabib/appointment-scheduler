@@ -279,7 +279,7 @@ El flujo vive en un solo componente de cliente con cuatro pasos: servicio, día 
       * Las respuestas 200, 201, 403, 404, 409, 422 (con campos) y 429 dan el resultado correspondiente.
       * Una falla de red y una página de error en HTML dan el error de conexión, sin lanzar excepciones.
 
-* [ ] T4.24: Paso "Servicio"
+* [x] T4.24: Paso "Servicio"
    * Objetivo: Crear el componente del flujo con su barra de pasos y su resumen (vacío: "Elige día y hora"), y el primer paso (PUB-02): chips de categoría con "Todos" (Q-39) y tarjetas con categoría, nombre, descripción y duración, sin precio (D-25). Elegir una tarjeta lleva al paso siguiente.
    * Archivos: `src/componentes/publico/reserva.tsx`, `src/componentes/publico/paso-servicio.tsx`, `src/componentes/publico/resumen.tsx`, `src/app/(publico)/[slug]/page.tsx`
    * Depende de: T4.15, T4.17

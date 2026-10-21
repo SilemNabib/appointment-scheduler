@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Aviso } from "@/componentes/aviso";
-import { BotonEnviar, Entrada, Opcion, Seccion, useEnvio } from "@/componentes/formulario";
+import { AreaTexto, BotonEnviar, Entrada, Opcion, Seccion, useEnvio } from "@/componentes/formulario";
 import { mensajeDeError } from "@/componentes/mensajes";
 import { TAMANO_MAXIMO_IMAGEN } from "@/dominio/imagen";
 import type { DatosNegocio } from "@/servidor/casos-uso/guardar-negocio";
@@ -102,7 +102,8 @@ export function FormularioNegocio({ datos, soloLectura }: { datos: DatosNegocio;
     if (resultado.ok) return { exito: "Guardaste los datos del negocio." };
     return {
       error: mensajeDeError(resultado.error, {
-        DATOS_INVALIDOS: "Revisa los datos: el nombre no puede quedar vacío y los colores deben ser válidos.",
+        DATOS_INVALIDOS:
+          "Revisa los datos: el nombre no puede quedar vacío, los colores deben ser válidos y cada texto debe caber en su máximo.",
       }),
     };
   }, {});
@@ -122,6 +123,39 @@ export function FormularioNegocio({ datos, soloLectura }: { datos: DatosNegocio;
             required
             maxLength={120}
             defaultValue={datos.nombre}
+          />
+          <Entrada
+            id="rubro"
+            name="rubro"
+            etiqueta="Rubro"
+            ayuda="Una línea corta que va junto al nombre, como “Óptica y optometría”. Opcional."
+            maxLength={60}
+            defaultValue={datos.rubro ?? ""}
+          />
+          <Entrada
+            id="fraseBanner"
+            name="fraseBanner"
+            etiqueta="Frase principal"
+            ayuda="El título grande de tu página de reservas. Si la dejas vacía, se usa el nombre."
+            maxLength={120}
+            defaultValue={datos.fraseBanner ?? ""}
+          />
+          <Entrada
+            id="eslogan"
+            name="eslogan"
+            etiqueta="Eslogan"
+            ayuda="Va debajo del título. Opcional."
+            maxLength={120}
+            defaultValue={datos.eslogan ?? ""}
+          />
+          <AreaTexto
+            id="descripcion"
+            name="descripcion"
+            etiqueta="Descripción"
+            ayuda="Cuéntales a tus clientes qué hacen y qué los distingue. Hasta 600 caracteres. Opcional."
+            maxLength={600}
+            rows={4}
+            defaultValue={datos.descripcion ?? ""}
           />
           <div className="flex flex-wrap items-start gap-6">
             <Entrada

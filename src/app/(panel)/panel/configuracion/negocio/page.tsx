@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
+import { Seccion } from "@/componentes/formulario";
 import { requireMiembro } from "@/servidor/auth/sesion";
+import { listarContactos } from "@/servidor/casos-uso/contactos";
 import { leerNegocio } from "@/servidor/casos-uso/guardar-negocio";
+import { FormularioContactos } from "./contactos";
 import { FormularioLogo, FormularioNegocio } from "./formulario";
 
 export const metadata: Metadata = { title: "Negocio" };
 
-// Configuración del negocio y su marca (PAN-11). La dirección y el teléfono son los de
+// Configuración del negocio y su marca (PAN-11). La dirección y los contactos son los de
 // la sede principal, pero el panel no habla de sedes (RN-32, D-16). Con el negocio
 // suspendido se ve todo y no se puede cambiar nada (D-14).
 export default async function PaginaNegocio() {
   const ctx = await requireMiembro();
-  const datos = await leerNegocio(ctx);
+  const [datos, contactos] = await Promise.all([leerNegocio(ctx), listarContactos(ctx)]);
   const soloLectura = ctx.suscripcion.estado === "suspendida";
 
   return (
@@ -23,6 +26,12 @@ export default async function PaginaNegocio() {
       </div>
       <FormularioLogo logoUrl={datos.logoUrl} soloLectura={soloLectura} />
       <FormularioNegocio datos={datos} soloLectura={soloLectura} />
+      <Seccion
+        titulo="Contactos"
+        descripcion="Tus clientes los ven en tu página de reservas, en este orden, con un botón para escribirte o llamarte."
+      >
+        <FormularioContactos contactos={contactos} soloLectura={soloLectura} />
+      </Seccion>
     </div>
   );
 }

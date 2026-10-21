@@ -134,7 +134,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * Crear y editar un servicio guarda su categoría. " Lentes " queda como "Lentes", y una categoría vacía queda en `NULL`.
       * `listarCategorias` devuelve cada categoría una vez, sin las de otros negocios (ARCH §6).
 
-* [ ] T4.10: Página "Negocio": marca y contactos
+* [x] T4.10: Página "Negocio": marca y contactos
    * Objetivo: Agregar a `/panel/configuracion/negocio` el rubro, el eslogan, la frase del banner y la descripción, y reemplazar el campo de teléfono por la lista de contactos: agregar, quitar, ordenar y elegir el tipo de cada uno. Cada parte tiene su Server Action.
    * Archivos: `src/app/(panel)/panel/configuracion/negocio/page.tsx`, `src/app/(panel)/panel/configuracion/negocio/formulario.tsx`, `src/app/(panel)/panel/configuracion/negocio/contactos.tsx`, `src/app/(panel)/panel/configuracion/negocio/acciones.ts`
    * Depende de: T4.07, T4.08

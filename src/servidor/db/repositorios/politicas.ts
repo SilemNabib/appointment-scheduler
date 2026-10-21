@@ -30,6 +30,17 @@ export async function listar(negocioId: string): Promise<VersionPolitica[]> {
     .orderBy(desc(politicaDatos.version));
 }
 
+/** La versión vigente (la de mayor número), sin su texto, o `null` si el negocio no tiene política. */
+export async function vigente(negocioId: string): Promise<{ id: string; version: number } | null> {
+  const [fila] = await db()
+    .select({ id: politicaDatos.id, version: politicaDatos.version })
+    .from(politicaDatos)
+    .where(eq(politicaDatos.negocioId, negocioId))
+    .orderBy(desc(politicaDatos.version))
+    .limit(1);
+  return fila ?? null;
+}
+
 /**
  * Si la versión es del negocio. Cualquier versión vale para una reserva, no solo la
  * vigente: se guarda la que vio el cliente (F-01).

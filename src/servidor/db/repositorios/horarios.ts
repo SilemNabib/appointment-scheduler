@@ -23,6 +23,16 @@ export async function semanaPrincipal(negocioId: string): Promise<FranjaValida[]
   return filas.map((f) => ({ dia: f.dia as FranjaValida["dia"], inicio: f.inicio.slice(0, 5), fin: f.fin.slice(0, 5) }));
 }
 
+/** Franjas de una sede, por día e inicio, con las horas en `HH:mm`. */
+export async function semanaDe(negocioId: string, sedeId: string): Promise<FranjaValida[]> {
+  const filas = await db()
+    .select({ dia: horarioSemanal.diaSemana, inicio: horarioSemanal.horaInicio, fin: horarioSemanal.horaFin })
+    .from(horarioSemanal)
+    .where(deLaSede(negocioId, sedeId))
+    .orderBy(asc(horarioSemanal.diaSemana), asc(horarioSemanal.horaInicio));
+  return filas.map((f) => ({ dia: f.dia as FranjaValida["dia"], inicio: f.inicio.slice(0, 5), fin: f.fin.slice(0, 5) }));
+}
+
 /**
  * Reemplaza todas las franjas de la sede (no las de los empleados) por las de la
  * semana nueva, ya validada (ARCH §17.3). Va dentro de la transacción que tomó la

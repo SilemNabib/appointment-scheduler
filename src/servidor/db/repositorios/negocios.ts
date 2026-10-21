@@ -68,6 +68,42 @@ export async function bloquear(negocioId: string, tx: Transaccion): Promise<bool
   return filas.length > 0;
 }
 
+export type MarcaPublica = DatosSuscripcion &
+  MarcaNegocio & {
+    id: string;
+    slug: string;
+    logoUrl: string | null;
+    zonaHoraria: string;
+  };
+
+/**
+ * El negocio de la página pública (PUB-01), por su slug: su marca, su zona horaria y lo
+ * necesario para su estado efectivo (ARCH §7.6). Nunca trae datos del dueño. `null` si
+ * el slug no existe.
+ */
+export async function paginaPorSlug(slug: string): Promise<MarcaPublica | null> {
+  const [fila] = await db()
+    .select({
+      id: negocio.id,
+      slug: negocio.slug,
+      nombre: negocio.nombre,
+      logoUrl: negocio.logoUrl,
+      colorPrimario: negocio.colorPrimario,
+      colorSecundario: negocio.colorSecundario,
+      rubro: negocio.rubro,
+      eslogan: negocio.eslogan,
+      fraseBanner: negocio.fraseBanner,
+      descripcion: negocio.descripcion,
+      zonaHoraria: negocio.zonaHoraria,
+      estadoSuscripcion: negocio.estadoSuscripcion,
+      finPrueba: negocio.finPrueba,
+      pagadoHasta: negocio.pagadoHasta,
+    })
+    .from(negocio)
+    .where(eq(negocio.slug, slug));
+  return fila ?? null;
+}
+
 export type ResumenNegocio = { nombre: string; slug: string; zonaHoraria: string };
 
 /** Nombre, slug y zona horaria, para el encabezado y los avisos del panel. */

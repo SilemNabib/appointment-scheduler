@@ -192,7 +192,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
 
 ### 4.D Página pública: datos y estructura
 
-* [ ] T4.16: Caso de uso `leerPaginaPublica`
+* [x] T4.16: Caso de uso `leerPaginaPublica`
    * Objetivo: Implementar `leerPaginaPublica(slug, ahora)`, que arma en una lectura lo que la página necesita:
       * la marca del negocio y su zona horaria;
       * la sede principal, con su dirección, sus contactos y sus franjas;

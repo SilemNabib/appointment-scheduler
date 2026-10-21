@@ -67,30 +67,31 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * Dentro de `BEGIN … ROLLBACK`, un contacto con la sede de otro negocio falla por la FK compuesta, y borrar el negocio borra sus contactos (ARCH §18.1).
 
 * [ ] T4.03: Esquema: código de reserva
-   * Objetivo: Agregar `cita.codigo` con `UNIQUE (negocio_id, codigo)` y el `CHECK` de formato de Q-41 (D-28). La migración generada se edita para agregar la columna sin `NOT NULL`, rellenar las citas existentes y después fijar `NOT NULL`.
-   * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`
-   * Depende de: T4.02
-   * Refs: PUB-06, D-28, ARCH §8, §18.2 (`cita`); Q-41
+   * Objetivo: Agregar `cita.codigo` con `UNIQUE (negocio_id, codigo)` y el `CHECK` de formato de Q-41 (D-28). La migración generada se edita para agregar la columna sin `NOT NULL`, rellenar las citas existentes y después fijar `NOT NULL`. Como la columna es obligatoria, `crearPublica` recibe el código y `reservarCita` lo genera con T4.04, todavía sin los reintentos (Q-50), y las pruebas que insertan citas directamente le ponen uno.
+   * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`, `src/servidor/db/repositorios/citas.ts`, `src/servidor/casos-uso/reservar-cita.ts`, las pruebas de `tests/integracion/` que insertan en `cita`
+   * Depende de: T4.04
+   * Refs: PUB-06, D-28, ARCH §8, §18.2 (`cita`); Q-41, Q-50
    * Aceptación:
       * E1 y E2. La migración se aplica sin errores sobre una rama con citas.
       * En `development`, toda cita tiene un código con el formato de Q-41, sin repetidos dentro de su negocio.
+      * Una reserva nueva queda con un código con el prefijo del nombre de su negocio.
 
 ### 4.B Casos de uso del modelo nuevo
 
-* [ ] T4.04: Dominio: código de reserva
+* [x] T4.04: Dominio: código de reserva
    * Objetivo: Crear en `dominio/codigo-reserva.ts` el prefijo que sale del nombre del negocio y la generación del código con el formato de Q-41. El azar llega como parámetro, para que el dominio siga siendo puro (ARCH §4).
    * Archivos: `src/dominio/codigo-reserva.ts`, `tests/unit/dominio/codigo-reserva.test.ts`
-   * Depende de: T4.03
+   * Depende de: T4.02 (va antes de T4.03; Q-50)
    * Refs: D-28, ARCH §4; Q-41
    * Aceptación:
       * "Óptica Visión Clara" da el prefijo `OV`, y "Ébano" da `EB`: sin tildes y en mayúsculas. Un nombre sin letras da `XX`.
-      * Con un azar fijo, el código es `OV-0042`. Con 6 dígitos, `OV-000042`. Todo código cumple el `CHECK` de T4.03.
+      * Con un azar fijo, el código es `OV-0042`. Con 6 dígitos, `OV-000042`. Todo código cumple el `CHECK` de Q-41 (T4.03).
 
 * [ ] T4.05: La reserva genera el código
-   * Objetivo: Hacer que `reservarCita` asigne el código dentro de su transacción (T3.19), con los reintentos de Q-41, y que lo devuelva. `POST /api/publico/{slug}/reservas` responde `{ citaId, codigo, inicio, fin }` (cambio aditivo del contrato de ARCH §18.5).
+   * Objetivo: Completar el código de la reserva de T4.03: comprobar dentro de la transacción (T3.19) que el código esté libre, con los reintentos de Q-41, y devolverlo. `POST /api/publico/{slug}/reservas` responde `{ citaId, codigo, inicio, fin }` (cambio aditivo del contrato de ARCH §18.5).
    * Archivos: `src/servidor/casos-uso/reservar-cita.ts`, `src/servidor/db/repositorios/citas.ts`, `src/app/api/publico/[slug]/reservas/route.ts`, `tests/integracion/casos-uso/reservar-cita.test.ts`
-   * Depende de: T4.04
-   * Refs: PUB-06, D-28, RN-11, ARCH §11, §18.4, §18.5; Q-41
+   * Depende de: T4.03
+   * Refs: PUB-06, D-28, RN-11, ARCH §11, §18.4, §18.5; Q-41, Q-50
    * Aceptación:
       * Una reserva válida responde 201 con un `codigo` igual al que quedó en la cita, con el prefijo del nombre del negocio.
       * Con el azar simulado para que el primer código choque con una cita existente, la reserva sale con otro código y no falla (Q-41).
@@ -392,3 +393,4 @@ Puntos que el PRD, ARCHITECTURE y DESIGN no definían. Todas quedaron resueltas 
 | Q-47 | ARCH §19.2 pide HSTS, `nosniff`, `Referrer-Policy` y "una CSP básica", sin decir dónde. Clerk carga scripts de su propio dominio en el panel. | **Resuelta (2026-10-20):** Los tres primeros, en todas las respuestas. La CSP, solo en las páginas públicas: `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`. La CSP del panel y del admin, con los dominios de Clerk, va en la Fase 8. El `no-referrer` de la gestión llega en la Fase 6 (ARCH §13). | T4.20 |
 | Q-48 | ¿Qué rango de disponibilidad consulta el calendario, y cómo se ofrece "el siguiente día con cupo" (F-01) si cae en otro mes? | **Resuelta (2026-10-20):** Una consulta por mes visible, del primer día del mes (o hoy) al último (o el último día reservable), que no pasa de los 31 días de ARCH §18.5. Al entrar, se elige el primer día con cupo. Si el siguiente día con cupo no está en el mes cargado, se consulta el mes siguiente, hasta el último día reservable. | T4.21, T4.25 |
 | Q-49 | ARCH §4 solo ubica `/{slug}` y `/{slug}/cita/…`. ¿Dónde van las rutas y los archivos nuevos? | **Resuelta (2026-10-20):** Rutas: `/{slug}` y `/{slug}/politica/{version}` en el grupo `(publico)`. Archivos: `src/dominio/{codigo-reserva, contactos, color, calendario}.ts`; `src/servidor/casos-uso/{contactos, pagina-publica}.ts`; `src/servidor/db/repositorios/contactos.ts`; `src/app/fuentes.ts`; los componentes compartidos en `src/componentes/` y los de la página en `src/componentes/publico/`. | Casi todas las tareas |
+| Q-50 | T4.03 hace obligatorio `cita.codigo` sin valor por defecto, pero la reserva no lo genera hasta T4.05: después de T4.03 no compilarían `crearPublica` ni las pruebas que insertan citas, y E2 no pasaría. | **Resuelta (2026-10-20):** T4.04 (dominio, sin dependencias del esquema) va antes de T4.03. T4.03 agrega la generación mínima: `reservarCita` arma el código con T4.04 y `crearPublica` lo recibe, y las pruebas que insertan citas le ponen uno. T4.05 se queda con la comprobación de código libre, los reintentos de Q-41 y el cambio del contrato HTTP. | T4.03–T4.05 |

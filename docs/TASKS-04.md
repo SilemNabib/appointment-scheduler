@@ -308,7 +308,7 @@ El flujo vive en un solo componente de cliente con cuatro pasos: servicio, día 
       * El enlace de la casilla abre, en una pestaña nueva, la versión de la política que se cargó con la página.
       * Con el teclado no se llega al campo `sitioWeb`.
 
-* [ ] T4.27: Confirmación y errores de la reserva
+* [x] T4.27: Confirmación y errores de la reserva
    * Objetivo: Enviar la reserva y resolver cada respuesta:
       * 201: la pantalla de PUB-06 con el código de reserva, el servicio, la fecha y la hora locales, la dirección, el correo al que llega la confirmación (con el link de gestión y la invitación de calendario; Q-43) y "Reservar otra cita".
       * 409: vuelve a las horas con el aviso "Esa hora se acaba de ocupar. Elige otra; tus datos se conservan.", con la disponibilidad recargada (F-01, G1).

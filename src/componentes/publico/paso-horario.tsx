@@ -103,6 +103,11 @@ export function PasoHorario({
   alVolver: () => void;
 }) {
   const { cargar, estadoMes } = disponibilidad;
+  // El aviso del flujo (la hora ocupada) recibe el foco al aparecer (RNF-03).
+  const refAviso = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (aviso) refAviso.current?.focus();
+  }, [aviso]);
   const navegables = mesesNavegables(hoy, ultimoDia);
   const [mes, setMes] = useState<Mes>(() => mesDe(fecha ?? hoy));
   const indice = navegables.findIndex((m) => mismoMes(m, mes));
@@ -182,7 +187,11 @@ export function PasoHorario({
 
   return (
     <div className="flex flex-col gap-[18px]">
-      {aviso && <Aviso tipo="advertencia">{aviso}</Aviso>}
+      {aviso && (
+        <div ref={refAviso} tabIndex={-1} className="outline-none">
+          <Aviso tipo="advertencia">{aviso}</Aviso>
+        </div>
+      )}
       {errorVisible && errorVisible !== "NEGOCIO_SUSPENDIDO" && (
         <Aviso tipo="error">
           <span className="flex flex-wrap items-center gap-3">

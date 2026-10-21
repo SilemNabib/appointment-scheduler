@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { generarCodigo, prefijoCodigo, type Azar } from "@/dominio/codigo-reserva";
 import { evaluarInicio } from "@/dominio/disponibilidad";
 import { normalizarCorreo, normalizarTelefono, type DatosIdentidad } from "@/dominio/identidad-cliente";
 import { ErrorNegocio, exito, fallo, type Resultado } from "@/dominio/resultado";
@@ -143,8 +144,9 @@ const MS_POR_MINUTO = 60_000;
  *    con lo confirmado hasta ese momento, y evalúa el inicio con actor `cliente`. Si no
  *    pasa, `HORARIO_NO_DISPONIBLE` sin escribir nada (RN-09);
  * 3. resuelve el cliente (RN-18);
- * 4. inserta la cita `confirmada`, con su instantánea, el consentimiento
- *    (`politica_aceptada_en = ahora`), `fin` y `ocupado_hasta`, y el evento `creada`;
+ * 4. inserta la cita `confirmada`, con su código de reserva (D-28), su instantánea, el
+ *    consentimiento (`politica_aceptada_en = ahora`), `fin` y `ocupado_hasta`, y el
+ *    evento `creada`;
  * 5. encola sus notificaciones C-01, C-02 y C-05 (ARCH §14.1).
  *
  * Si el cliente choca con el correo de otro creado al mismo tiempo, reintenta la
@@ -194,9 +196,13 @@ async function reservarEnTransaccion(
   const { servicio } = leida.oferta;
   const fin = new Date(r.inicio.getTime() + servicio.duracionMinutos * MS_POR_MINUTO);
   const ocupadoHasta = new Date(fin.getTime() + servicio.bufferMinutos * MS_POR_MINUTO);
+  // El prefijo sale del nombre actual: cambiarlo después no cambia el código (ARCH §11.4).
+  // La comprobación de código libre y los reintentos de Q-41 llegan con T4.05 (Q-50).
+  const codigo = generarCodigo(prefijoCodigo(r.negocio.nombre), azarSeguro);
   const citaId = await citas.crearPublica(
     r.negocio.id,
     {
+      codigo,
       sedeId: r.sedeId,
       servicioId: r.servicioId,
       recursoId: r.recursoId,
@@ -253,6 +259,9 @@ async function encolarNotificaciones(
     tx,
   );
 }
+
+/** El azar del código de reserva (ARCH §11.4), con el generador criptográfico del runtime. */
+const azarSeguro: Azar = (maximo) => crypto.getRandomValues(new Uint32Array(1))[0] % maximo;
 
 /** Violación de `cliente_correo_uq`: otro cliente con ese correo se creó al mismo tiempo (ARCH §12). */
 function esChoquePorCorreo(error: unknown): boolean {

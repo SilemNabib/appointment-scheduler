@@ -28,7 +28,12 @@ export async function suscripcion(negocioId: string): Promise<DatosSuscripcion |
   return fila ?? null;
 }
 
-export type NegocioPublico = DatosSuscripcion & { id: string; zonaHoraria: string };
+export type NegocioPublico = DatosSuscripcion & {
+  id: string;
+  /** Para el prefijo del código de reserva (D-28). */
+  nombre: string;
+  zonaHoraria: string;
+};
 
 /**
  * El negocio de la página y la API públicas, por su slug (ARCH §6: el slug de la URL
@@ -39,6 +44,7 @@ export async function porSlug(slug: string): Promise<NegocioPublico | null> {
   const [fila] = await db()
     .select({
       id: negocio.id,
+      nombre: negocio.nombre,
       zonaHoraria: negocio.zonaHoraria,
       estadoSuscripcion: negocio.estadoSuscripcion,
       finPrueba: negocio.finPrueba,

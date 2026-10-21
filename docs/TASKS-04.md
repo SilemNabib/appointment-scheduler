@@ -66,7 +66,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * En `development`, cada sede que tenía teléfono tiene un contacto `telefono` con ese valor, y `sede.telefono` no cambió.
       * Dentro de `BEGIN … ROLLBACK`, un contacto con la sede de otro negocio falla por la FK compuesta, y borrar el negocio borra sus contactos (ARCH §18.1).
 
-* [ ] T4.03: Esquema: código de reserva
+* [x] T4.03: Esquema: código de reserva
    * Objetivo: Agregar `cita.codigo` con `UNIQUE (negocio_id, codigo)` y el `CHECK` de formato de Q-41 (D-28). La migración generada se edita para agregar la columna sin `NOT NULL`, rellenar las citas existentes y después fijar `NOT NULL`. Como la columna es obligatoria, `crearPublica` recibe el código y `reservarCita` lo genera con T4.04, todavía sin los reintentos (Q-50), y las pruebas que insertan citas directamente le ponen uno.
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración en `drizzle/`, `src/servidor/db/repositorios/citas.ts`, `src/servidor/casos-uso/reservar-cita.ts`, las pruebas de `tests/integracion/` que insertan en `cita`
    * Depende de: T4.04

@@ -110,6 +110,9 @@ export async function crearCliente(negocioId: string) {
   return fila.id;
 }
 
+/** Correlativo de los códigos de `datosDeCita`: cada prueba crea su propio negocio, así que no se repiten en él (D-28). */
+let ultimoCodigo = 0;
+
 /** Valores de una cita creada desde el panel (sin consentimiento, RN-17), de 30 minutos. */
 export function datosDeCita(
   ids: Pick<typeof esquema.cita.$inferInsert, "negocioId" | "sedeId" | "servicioId" | "recursoId" | "clienteId">,
@@ -118,6 +121,7 @@ export function datosDeCita(
   const fin = new Date(inicio.getTime() + 30 * 60 * 1000);
   return {
     ...ids,
+    codigo: `PR-${String(++ultimoCodigo).padStart(6, "0")}`,
     inicio,
     fin,
     ocupadoHasta: fin,

@@ -199,6 +199,16 @@ describe("reservarCita: transacción (RN-09 a RN-12, RN-17; ARCH §11)", () => {
     expect(eventos).toEqual([expect.objectContaining({ tipo: "creada", actor: "cliente", actorId: null, datos: {} })]);
   });
 
+  test("la cita queda con un código de reserva con el prefijo del nombre de su negocio (D-28; Q-41)", async () => {
+    const n = await negocioConAgenda();
+    await db().update(esquema.negocio).set({ nombre: "Óptica Visión Clara" }).where(eq(esquema.negocio.id, n.negocioId));
+
+    expect((await reservarCita(reserva(n), AHORA)).ok).toBe(true);
+
+    const [cita] = await citasDe(n.negocioId);
+    expect(cita.codigo).toMatch(/^OV-[0-9]{4}$/);
+  });
+
   test("la duración y el buffer salen de la oferta: con la sobrescritura de la sede, los de la sede (RN-32)", async () => {
     const n = await negocioConAgenda({ servicio: { duracionMinutos: 30, bufferMinutos: 10 } });
     await db()

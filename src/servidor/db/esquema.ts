@@ -604,6 +604,7 @@ export const cita = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     negocioId: uuid("negocio_id").notNull(),
+    codigo: text("codigo").notNull(), // código de reserva (D-28, ARCH §11.4)
     sedeId: uuid("sede_id").notNull(), // RN-32
     servicioId: uuid("servicio_id").notNull(),
     recursoId: uuid("recurso_id").notNull(), // asignado: elegido por el cliente o por el sistema (RN-33)
@@ -641,8 +642,10 @@ export const cita = pgTable(
       columns: [t.negocioId],
       foreignColumns: [negocio.id],
     }).onDelete("cascade"),
+    check("cita_codigo_check", sql`${t.codigo} ~ '^[A-Z]{2}-[0-9]{4,6}$'`),
     check("cita_reprogramaciones_cliente_check", sql`${t.reprogramacionesCliente} >= 0`),
     unique("cita_id_negocio_id_key").on(t.id, t.negocioId),
+    unique("cita_negocio_id_codigo_key").on(t.negocioId, t.codigo), // D-28
     check("cita_check", sql`${t.inicio} < ${t.fin} AND ${t.fin} <= ${t.ocupadoHasta}`),
     check("cita_check1", sql`(${t.estado} = 'cancelada') = (${t.canceladaEn} IS NOT NULL)`),
     check("cita_check2", sql`(${t.estado} = 'cancelada') = (${t.canceladaPor} IS NOT NULL)`),

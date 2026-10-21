@@ -21,6 +21,8 @@ export async function contarCreadas(negocioId: string, periodo: Intervalo, conex
 }
 
 export type NuevaCita = {
+  /** Código de reserva (D-28; ARCH §11.4). */
+  codigo: string;
   sedeId: string;
   servicioId: string;
   recursoId: string;
@@ -50,6 +52,7 @@ export async function crearPublica(negocioId: string, datos: NuevaCita, tx: Tran
     .insert(cita)
     .values({
       negocioId,
+      codigo: datos.codigo,
       sedeId: datos.sedeId,
       servicioId: datos.servicioId,
       recursoId: datos.recursoId,

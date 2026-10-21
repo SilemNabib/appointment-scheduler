@@ -39,7 +39,7 @@ export function BarraPasos({
                     ? "bg-acento text-sobre-acento"
                     : estado === "completado"
                       ? "bg-exito-fondo text-exito-texto"
-                      : "bg-fondo-suave text-deshabilitado-texto"
+                      : "bg-fondo-suave text-texto-muted"
                 }`}
               >
                 {estado === "completado" ? <Marca /> : indice + 1}

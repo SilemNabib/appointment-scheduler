@@ -58,12 +58,13 @@ export function Calendario({
           {flecha("M9 6l6 6-6 6")}
         </button>
       </div>
-      <div aria-hidden="true" className="grid grid-cols-7 gap-1.5 text-center text-xs font-bold text-texto-muted uppercase">
+      {/* En móvil, la grilla ocupa también el padding de la tarjeta: así cada día mide 44 px de ancho (DESIGN §6). */}
+      <div aria-hidden="true" className="-mx-[18px] grid grid-cols-7 gap-[3px] text-center text-xs font-bold text-texto-muted uppercase sm:mx-0 sm:gap-1.5">
         {DIAS.map((d) => (
           <span key={d}>{d}</span>
         ))}
       </div>
-      <div role="group" aria-label={`Días de ${etiquetaMes}`} aria-busy={cargando} className="grid grid-cols-7 gap-1.5">
+      <div role="group" aria-label={`Días de ${etiquetaMes}`} aria-busy={cargando} className="-mx-[18px] grid grid-cols-7 gap-[3px] sm:mx-0 sm:gap-1.5">
         {semanas.flat().map((fecha, i) => {
           if (!fecha) return <span key={`vacio-${i}`} aria-hidden="true" />;
           const estado = cargando ? "fuera" : estadoDe(fecha);

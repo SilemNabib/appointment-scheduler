@@ -351,7 +351,7 @@ Pruebas de integración contra la rama efímera de Neon, con los criterios de ac
       * Con el negocio suspendido, `guardarContactos` y la Server Action de la marca ampliada devuelven `NEGOCIO_SUSPENDIDO` y no cambian nada (RN-04, D-14).
       * Desde la sesión de A, guardar contactos no cambia los contactos de B (RN-01).
 
-* [ ] T4.30: Revisión de accesibilidad y móvil
+* [x] T4.30: Revisión de accesibilidad y móvil
    * Objetivo: Recorrer la página pública completa en móvil y con el teclado, y corregir lo que falle. Los arreglos van en el commit de esta tarea.
    * Archivos: los que haya que corregir en `src/componentes/publico/` y `src/app/(publico)/`
    * Depende de: T4.27
@@ -360,6 +360,7 @@ Pruebas de integración contra la rama efímera de Neon, con los criterios de ac
       * A 360 px no hay desplazamiento horizontal en ningún paso ni estado, y las áreas táctiles miden al menos 44 px (RNF-01; DESIGN §6).
       * Una reserva completa se hace solo con el teclado, con el foco visible en cada control. El panel de accesibilidad de Lighthouse no informa errores de etiquetas, contraste ni nombres de botones (RNF-03).
       * Con un color de marca claro (`#f5d90a`), los textos y botones de marca cumplen 4.5:1 (RNF-03; Q-42).
+      * Pendiente (2026-10-21): el panel de accesibilidad de Lighthouse, que no estaba instalado. En su lugar se corrió en la página una auditoría propia de etiquetas, nombres de controles, contraste (WCAG 2.1), áreas táctiles y desborde, en cada paso y estado; ver el commit de T4.30.
 
 * [ ] T4.31: Despliegue y verificación de la fase
    * Objetivo: Desplegar la fase en el plan gratuito de Workers (Q-36, TASKS-03) y recorrer la página pública en `*.workers.dev` con el negocio de prueba.

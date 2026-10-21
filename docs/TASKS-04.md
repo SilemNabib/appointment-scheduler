@@ -143,7 +143,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * El dueño llena los cuatro textos, agrega un WhatsApp, un teléfono y un correo, cambia su orden y quita uno. Al volver, ve lo que guardó. Un teléfono no válido muestra el error junto a ese contacto.
       * La página no menciona sedes (RN-32). Con el negocio suspendido, el formulario aparece deshabilitado (D-14).
 
-* [ ] T4.11: Página de servicios: categoría
+* [x] T4.11: Página de servicios: categoría
    * Objetivo: Agregar la categoría al formulario de `/panel/configuracion/servicios`, con las categorías existentes como sugerencias (`<datalist>`), y mostrarla en la lista.
    * Archivos: `src/app/(panel)/panel/configuracion/servicios/page.tsx`, `src/app/(panel)/panel/configuracion/servicios/formulario.tsx`, `src/app/(panel)/panel/configuracion/servicios/acciones.ts`
    * Depende de: T4.09

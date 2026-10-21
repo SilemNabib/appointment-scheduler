@@ -8,7 +8,8 @@ import type { Servicio } from "@/servidor/casos-uso/servicios";
 import { activarServicioPanel, desactivarServicioPanel, guardarServicioPanel } from "./acciones";
 
 // Lista y formulario de servicios (PAN-12). Validan en el servidor (Q-02). Un servicio
-// inactivo se distingue por su etiqueta, no solo por el color (RNF-03).
+// inactivo se distingue por su etiqueta, no solo por el color (RNF-03). La categoría
+// (D-26) sugiere las que ya existen con un `<datalist>`, para evitar variantes (Q-39).
 
 const LIMITE = "Llegaste al límite del plan de servicios activos. Desactiva otro servicio para activar este.";
 const LIMITE_AL_CREAR = "Llegaste al límite del plan de servicios activos: desactiva uno para crear otro.";
@@ -22,7 +23,16 @@ const textos = (formulario: FormData) =>
 const duracion = (s: Servicio) =>
   `${s.duracionMinutos} min${s.bufferMinutos > 0 ? ` · ${s.bufferMinutos} min de buffer` : ""}`;
 
-export function Servicios({ servicios, soloLectura }: { servicios: Servicio[]; soloLectura: boolean }) {
+export function Servicios({
+  servicios,
+  categorias,
+  soloLectura,
+}: {
+  servicios: Servicio[];
+  /** Las categorías que ya usa el negocio (`listarCategorias`). */
+  categorias: string[];
+  soloLectura: boolean;
+}) {
   const [editando, setEditando] = useState<Servicio | null>(null);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const [cambiando, setCambiando] = useState<string | null>(null);
@@ -49,6 +59,7 @@ export function Servicios({ servicios, soloLectura }: { servicios: Servicio[]; s
       <FormularioServicio
         key={editando?.id ?? "nuevo"}
         servicio={editando}
+        categorias={categorias}
         soloLectura={soloLectura}
         alGuardar={(texto) => {
           setMensaje({ tipo: "exito", texto });
@@ -86,7 +97,15 @@ export function Servicios({ servicios, soloLectura }: { servicios: Servicio[]; s
                       {s.activo ? "Activo" : "Inactivo"}
                     </span>
                   </p>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">{duracion(s)}</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {s.categoria && (
+                      <>
+                        <span className="sr-only">Categoría: </span>
+                        {s.categoria} ·{" "}
+                      </>
+                    )}
+                    {duracion(s)}
+                  </p>
                   {s.descripcion && <p className="text-sm text-zinc-600 dark:text-zinc-400">{s.descripcion}</p>}
                 </div>
                 <div className="flex shrink-0 gap-2">
@@ -122,11 +141,13 @@ export function Servicios({ servicios, soloLectura }: { servicios: Servicio[]; s
 
 function FormularioServicio({
   servicio,
+  categorias,
   soloLectura,
   alGuardar,
   alCancelar,
 }: {
   servicio: Servicio | null;
+  categorias: string[];
   soloLectura: boolean;
   alGuardar: (texto: string) => void;
   alCancelar: () => void;
@@ -140,7 +161,7 @@ function FormularioServicio({
     return {
       error: mensajeDeError(resultado.error, {
         DATOS_INVALIDOS:
-          "Revisa los datos: el nombre no puede quedar vacío, la duración va de 5 a 720 minutos y el buffer, de 0 a 240.",
+          "Revisa los datos: el nombre no puede quedar vacío, la categoría tiene hasta 40 caracteres, la duración va de 5 a 720 minutos y el buffer, de 0 a 240.",
         LIMITE_PLAN: LIMITE_AL_CREAR,
       }),
       valores: textos(formulario),
@@ -163,6 +184,21 @@ function FormularioServicio({
             autoFocus={servicio !== null}
             defaultValue={v?.nombre ?? servicio?.nombre ?? ""}
           />
+          <Entrada
+            id="categoria"
+            name="categoria"
+            etiqueta="Categoría"
+            ayuda="Opcional. Agrupa tus servicios en tu página de reservas, por ejemplo “Exámenes” o “Lentes”."
+            maxLength={40}
+            list="categorias-existentes"
+            autoComplete="off"
+            defaultValue={v?.categoria ?? servicio?.categoria ?? ""}
+          />
+          <datalist id="categorias-existentes">
+            {categorias.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
           <AreaTexto
             id="descripcion"
             name="descripcion"

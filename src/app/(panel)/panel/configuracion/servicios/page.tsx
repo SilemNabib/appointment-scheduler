@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireMiembro } from "@/servidor/auth/sesion";
-import { listarServicios } from "@/servidor/casos-uso/servicios";
+import { listarCategorias, listarServicios } from "@/servidor/casos-uso/servicios";
 import { Servicios } from "./formulario";
 
 export const metadata: Metadata = { title: "Servicios" };
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Servicios" };
 // negocio suspendido se ve todo y no se puede cambiar nada (D-14).
 export default async function PaginaServicios() {
   const ctx = await requireMiembro();
-  const servicios = await listarServicios(ctx);
+  const [servicios, categorias] = await Promise.all([listarServicios(ctx), listarCategorias(ctx)]);
 
   return (
     <div className="flex max-w-2xl flex-col gap-8">
@@ -21,7 +21,7 @@ export default async function PaginaServicios() {
           citas se conservan.
         </p>
       </div>
-      <Servicios servicios={servicios} soloLectura={ctx.suscripcion.estado === "suspendida"} />
+      <Servicios servicios={servicios} categorias={categorias} soloLectura={ctx.suscripcion.estado === "suspendida"} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import {
   enlaceMapa,
   MAXIMO_CONTACTOS,
   validarContactos,
+  valorVisible,
   type ContactoEntrada,
 } from "@/dominio/contactos";
 
@@ -78,5 +79,14 @@ describe("enlaces (PUB-01; D-30)", () => {
     const enlace = enlaceMapa("Cra. 7 # 12-34, Bogotá");
     expect(enlace).toBe("https://www.google.com/maps/search/?api=1&query=Cra.%207%20%23%2012-34%2C%20Bogot%C3%A1");
     expect(new URL(enlace).searchParams.get("query")).toBe("Cra. 7 # 12-34, Bogotá");
+  });
+});
+
+describe("valorVisible", () => {
+  test("un número colombiano de 10 dígitos va en grupos y sin indicativo; los demás, en E.164", () => {
+    expect(valorVisible({ tipo: "whatsapp", valor: "+573001234567" })).toBe("300 123 4567");
+    expect(valorVisible({ tipo: "telefono", valor: "+576012345678" })).toBe("601 234 5678");
+    expect(valorVisible({ tipo: "telefono", valor: "+12025550143" })).toBe("+12025550143");
+    expect(valorVisible({ tipo: "correo", valor: "hola@optica.com" })).toBe("hola@optica.com");
   });
 });

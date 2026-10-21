@@ -181,7 +181,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * El alta de `/admin` y las páginas de configuración del panel funcionan igual con el estilo nuevo. El slug `admin` sigue mostrando "slug no disponible".
       * Con el teclado, cada control muestra el anillo de foco de DESIGN §2.1, y los botones miden al menos 48 px de alto.
 
-* [ ] T4.15: Componentes de la página pública
+* [x] T4.15: Componentes de la página pública
    * Objetivo: Crear los componentes de DESIGN §3 que usa la página pública: chip de selección (`aria-pressed`), badge de estado, tarjeta, mosaico de logo (logo o inicial, en 42, 48, 72 y 116 px), barra de pasos (`nav` con `aria-label` y el paso actual con `aria-current`) y tarjeta de contacto (con los enlaces de T4.06).
    * Archivos: `src/componentes/chip.tsx`, `src/componentes/badge.tsx`, `src/componentes/tarjeta.tsx`, `src/componentes/mosaico-logo.tsx`, `src/componentes/publico/barra-pasos.tsx`, `src/componentes/publico/tarjeta-contacto.tsx`
    * Depende de: T4.06, T4.14

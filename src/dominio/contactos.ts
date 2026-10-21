@@ -76,3 +76,14 @@ export function enlaceContacto(contacto: Pick<Contacto, "tipo" | "valor">): stri
 export function enlaceMapa(direccion: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion.trim())}`;
 }
+
+/**
+ * El número o el correo como se muestra. Un número de Colombia de 10 dígitos va sin el
+ * indicativo y en grupos ("300 123 4567"); los demás, en E.164. No usa
+ * libphonenumber-js, para poder mostrarse en el navegador sin cargarla (RNF-01; Q-46).
+ */
+export function valorVisible(contacto: Pick<Contacto, "tipo" | "valor">): string {
+  if (contacto.tipo === "correo") return contacto.valor;
+  const colombiano = /^\+57(\d{3})(\d{3})(\d{4})$/.exec(contacto.valor);
+  return colombiano ? `${colombiano[1]} ${colombiano[2]} ${colombiano[3]}` : contacto.valor;
+}

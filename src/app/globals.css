@@ -3,7 +3,7 @@
 /*
  * Tokens de DESIGN §2 (Q-44): solo el tema claro. Los colores son clases de Tailwind
  * (`bg-fondo`, `text-tinta`, `border-borde`…). El acento es el color de marca de cada
- * negocio: la página pública fija `--acento`, `--sobre-acento` y `--acento-texto` con
+ * negocio: la página pública fija `--acento`, `--sobre-acento`, `--acento-texto` y `--destaque` con
  * las decisiones de contraste de dominio/color.ts (Q-42); sin ellas, el del diseño.
  */
 @theme {
@@ -65,6 +65,7 @@
   --color-acento: var(--acento, #2b3fd6);
   --color-sobre-acento: var(--sobre-acento, #ffffff);
   --color-acento-texto: var(--acento-texto, var(--acento, #2b3fd6));
+  --color-destaque: var(--destaque, #d9f36b);
 }
 
 /*

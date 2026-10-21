@@ -372,6 +372,7 @@ Pruebas de integración contra la rama efímera de Neon, con los criterios de ac
       * En el Worker, con un celular o el viewport de 360 px, una reserva completa termina en la confirmación con su código, y la cita aparece en `production`. El admin suspende el negocio, la página muestra "Reservas no disponibles", y después registra el pago.
       * El LCP de `/{slug}` en Lighthouse móvil (4G simulado) queda anotado frente a los 2,5 s de RNF-01, y el CPU de su render con `wrangler tail`, frente a los 10 ms del plan gratuito (Q-36).
       * `curl -I` muestra los encabezados de T4.20 en el Worker.
+   * Avance (2026-10-21): desplegado (versión `c56714f9`, Total Upload 16471.82 KiB / gzip 3612.22 KiB); migraciones de T4.01 a T4.03 aplicadas en `production`; reserva completa a 360 px con su código (`NO-8969`) y la cita en `production`; encabezados verificados con `curl -I`. CPU medido con `wrangler tail`: de 35 a 875 ms por render de `/{slug}`, muy por encima de los 10 ms del plan gratuito, aunque todas las solicitudes respondieron (Q-36). Falta: la suspensión y el registro del pago desde `/admin` (sesión de superadmin) y el LCP con Lighthouse.
 
 ---
 

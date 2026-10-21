@@ -251,13 +251,13 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
 
 El flujo vive en un solo componente de cliente con cuatro pasos: servicio, día y hora, datos y confirmación (DESIGN §3, barra de pasos). Sin el paso "Profesional" (D-24).
 
-* [ ] T4.21: Dominio: calendario del mes
+* [x] T4.21: Dominio: calendario del mes
    * Objetivo: Crear en `dominio/calendario.ts` lo que necesita el calendario de PUB-03: las semanas de un mes local, con lunes primero; los meses a los que se puede ir entre hoy y el último día reservable; el rango que se consulta para un mes, recortado a esos días (Q-48); y el siguiente día con cupo a partir de una fecha (F-01).
    * Archivos: `src/dominio/calendario.ts`, `tests/unit/dominio/calendario.test.ts`
    * Depende de: T3.01
    * Refs: PUB-03, F-01, RN-09, ARCH §9, §18.5; Q-48
    * Aceptación:
-      * Octubre de 2026 empieza en jueves: su primera semana tiene tres días vacíos. Febrero de 2027 tiene 28 días en cinco semanas.
+      * Octubre de 2026 empieza en jueves: su primera semana tiene tres días vacíos. Febrero de 2027 tiene 28 días en cuatro semanas completas: empieza en lunes y termina en domingo.
       * Con hoy el 2026-10-20 y el último día el 2026-12-19, se puede ir de octubre a diciembre; el rango de octubre va del 20 al 31 y el de diciembre, del 1 al 19.
       * El siguiente día con cupo salta los días con `inicios: []` y devuelve `null` si no hay ninguno en lo consultado.
 

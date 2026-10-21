@@ -172,7 +172,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * El contraste entre `#ffffff` y `#000000` es 21, y el de un color consigo mismo es 1.
       * Con el acento `#2b3fd6`, el texto sobre el acento es blanco y el acento sirve como texto. Con `#f5d90a`, el texto sobre el acento es `tinta` y el acento no sirve como texto. Cada resultado cumple al menos 4.5:1.
 
-* [ ] T4.14: Componentes compartidos con los tokens
+* [x] T4.14: Componentes compartidos con los tokens
    * Objetivo: Llevar los componentes de T2.04 (campo, botón, aviso y sección) a los tokens, radios y alturas de DESIGN §2.3 y §3: botón primario, secundario y destructivo con "Procesando…"; campo de 48 px con su error; aviso informativo, de advertencia, de error y de éxito; y el anillo de foco `foco`. Se quitan sus variantes `dark:` (Q-44).
    * Archivos: `src/componentes/formulario.tsx`, `src/componentes/aviso.tsx`
    * Depende de: T4.12

@@ -3,23 +3,30 @@
 import { startTransition, useActionState, useId, type ComponentProps, type FormEvent, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
-// Piezas que repiten los formularios del panel y del admin (RNF-03; Q-26: estilo de la
-// Fase 1, Tailwind con `teal` y `zinc`, hasta que exista docs/DESIGN.md). Cada campo
-// asocia su etiqueta con `htmlFor`, y su ayuda y su error con `aria-describedby`; el
-// foco siempre se ve. La validación vive en el servidor (Q-02): los atributos de HTML
-// solo ayudan a escribir bien.
+// Piezas que repiten los formularios del panel y del admin (RNF-03), con los tokens, los
+// radios y las alturas de DESIGN §2.3 y §3 (Q-44): campos de 48 px, botones de al menos
+// 48 px y el anillo de foco `foco`. Solo tema claro. Cada campo asocia su etiqueta con
+// `htmlFor`, y su ayuda y su error con `aria-describedby`; el foco siempre se ve. La
+// validación vive en el servidor (Q-02): los atributos de HTML solo ayudan a escribir bien.
 
-/** Foco visible, igual en todos los controles. */
-export const ANILLO_FOCO =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:focus-visible:outline-teal-400";
+/** Foco visible, igual en todos los controles (DESIGN §2.1: `foco`, 3 px, desfase 2 px). */
+export const ANILLO_FOCO = "focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-foco";
 
+/** Campo de texto y selector (DESIGN §3): 48 px de alto, radio de 12 px. */
 const CLASE_CONTROL =
-  "rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm disabled:opacity-60 " +
-  "aria-[invalid=true]:border-red-600 dark:border-zinc-700 dark:bg-zinc-900 dark:aria-[invalid=true]:border-red-400 " +
+  "min-h-12 rounded-control border border-borde-control bg-superficie px-3.5 text-[15px] text-tinta " +
+  "aria-[invalid=true]:border-2 aria-[invalid=true]:border-error-texto " +
+  "disabled:bg-[#f3f4f1] disabled:text-deshabilitado-texto " +
+  // El campo de archivo: su botón, dentro de los 48 px.
+  "file:my-1.5 file:mr-3 file:min-h-9 file:cursor-pointer file:rounded-[10px] file:border-0 file:bg-fondo-suave " +
+  "file:px-3 file:text-sm file:font-semibold file:text-tinta " +
   ANILLO_FOCO;
 
-const CLASE_AYUDA = "text-xs text-zinc-600 dark:text-zinc-400";
-const CLASE_ERROR = "text-xs font-medium text-red-700 dark:text-red-400";
+/** El área de texto crece con sus filas. */
+const CLASE_AREA = "py-3";
+
+const CLASE_AYUDA = "text-sm text-texto-muted";
+const CLASE_ERROR = "text-[13px] font-semibold text-error-texto";
 
 type DatosCampo = {
   etiqueta: ReactNode;
@@ -60,8 +67,8 @@ export function Campo({
   const { idAyuda, idError, describedBy } = descripciones(idControl, { ayuda, error });
 
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={idControl} className="text-sm font-medium">
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <label htmlFor={idControl} className="text-sm font-semibold">
         {etiqueta}
       </label>
       {children({ id: idControl, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined })}
@@ -98,7 +105,7 @@ export function Selector({ id, etiqueta, ayuda, error, className, ...props }: Da
 export function AreaTexto({ id, etiqueta, ayuda, error, className, ...props }: DatosCampo & ComponentProps<"textarea">) {
   return (
     <Campo id={id} etiqueta={etiqueta} ayuda={ayuda} error={error}>
-      {(control) => <textarea {...props} {...control} className={`${CLASE_CONTROL} ${className ?? ""}`} />}
+      {(control) => <textarea {...props} {...control} className={`${CLASE_CONTROL} ${CLASE_AREA} ${className ?? ""}`} />}
     </Campo>
   );
 }
@@ -116,7 +123,7 @@ export function GrupoCampos({
 
   return (
     <fieldset aria-describedby={describedBy} className={`flex flex-col gap-3 ${className ?? ""}`}>
-      <legend className="mb-2 text-sm font-medium">{leyenda}</legend>
+      <legend className="mb-2 text-sm font-semibold">{leyenda}</legend>
       {children}
       {ayuda && (
         <p id={idAyuda} className={CLASE_AYUDA}>
@@ -135,22 +142,28 @@ export function GrupoCampos({
 /** Una opción (`radio` o `checkbox`) con su etiqueta a la derecha. Va dentro de un `GrupoCampos`. */
 export function Opcion({ etiqueta, className, ...props }: { etiqueta: ReactNode } & ComponentProps<"input">) {
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <input {...props} className={`${ANILLO_FOCO} ${className ?? ""}`} />
+    <label className="flex min-h-11 items-center gap-3 text-[15px]">
+      <input {...props} className={`size-5 shrink-0 accent-acento ${ANILLO_FOCO} ${className ?? ""}`} />
       {etiqueta}
     </label>
   );
 }
 
+/**
+ * Botones de DESIGN §3: el primario con el acento (y su texto, que contrasta; Q-42), el
+ * secundario blanco con borde, y el destructivo, secundario con el texto `error-acción`.
+ * Deshabilitados, todos en gris (`deshabilitado`).
+ */
 const VARIANTES_BOTON = {
-  primario: "bg-teal-700 text-white hover:bg-teal-800",
-  secundario:
-    "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800",
-  peligro: "bg-red-700 text-white hover:bg-red-800",
+  primario: "border border-acento bg-acento px-5 font-bold text-sobre-acento",
+  secundario: "border border-borde-control bg-superficie px-[18px] font-semibold text-tinta",
+  peligro: "border border-borde-control bg-superficie px-[18px] font-bold text-error-accion",
 };
 
 export const claseBoton = (variante: keyof typeof VARIANTES_BOTON = "primario") =>
-  `rounded-md px-4 py-2 text-sm font-medium disabled:opacity-60 ${VARIANTES_BOTON[variante]} ${ANILLO_FOCO}`;
+  "inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-boton text-[15px] no-underline " +
+  "hover:brightness-95 disabled:cursor-not-allowed disabled:border-deshabilitado disabled:bg-deshabilitado " +
+  `disabled:text-deshabilitado-texto disabled:hover:brightness-100 ${VARIANTES_BOTON[variante]} ${ANILLO_FOCO}`;
 
 /**
  * Envía un formulario a una Server Action sin el reinicio automático que React hace
@@ -178,14 +191,14 @@ export function useEnvio<E>(fn: (previo: Awaited<E>, datos: FormData) => Promise
  */
 export function BotonEnviar({
   children,
-  textoEnviando,
+  textoEnviando = "Procesando…",
   variante,
   enviando = false,
   ...props
 }: {
   children: ReactNode;
-  /** Lo que dice mientras se envía, como "Guardando…". */
-  textoEnviando: ReactNode;
+  /** Lo que dice mientras se envía, como "Guardando…". Por defecto, "Procesando…" (DESIGN §3). */
+  textoEnviando?: ReactNode;
   variante?: keyof typeof VARIANTES_BOTON;
   /** Para formularios con `useEnvio`, que `useFormStatus` no ve. */
   enviando?: boolean;
@@ -200,7 +213,7 @@ export function BotonEnviar({
   );
 }
 
-/** Sección de una página con su título (`h2`) y una descripción opcional. */
+/** Sección de una página, como tarjeta (DESIGN §2.3), con su título (`h2`) y una descripción opcional. */
 export function Seccion({
   titulo,
   descripcion,
@@ -212,12 +225,15 @@ export function Seccion({
 }) {
   const id = useId();
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-4">
+    <section
+      aria-labelledby={id}
+      className="flex min-w-0 flex-col gap-4 rounded-tarjeta border border-borde bg-superficie p-[18px] sm:p-6"
+    >
       <div className="flex flex-col gap-1">
-        <h2 id={id} className="text-lg font-semibold">
+        <h2 id={id} className="text-2xl leading-tight font-bold">
           {titulo}
         </h2>
-        {descripcion && <p className="text-sm text-zinc-600 dark:text-zinc-400">{descripcion}</p>}
+        {descripcion && <p className="text-sm text-texto-muted">{descripcion}</p>}
       </div>
       {children}
     </section>

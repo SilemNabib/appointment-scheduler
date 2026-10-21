@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Versión** | 0.8 (borrador) |
-| **Fecha** | 2026-10-18 |
+| **Versión** | 0.9 (borrador) |
+| **Fecha** | 2026-10-20 |
 | **Fuente** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 (RN-10 actualizada por D-06) |
 | **Documento técnico** | [ARCHITECTURE.md](ARCHITECTURE.md) |
 
@@ -22,6 +22,7 @@
 | 0.6 | 2026-10-08 | **Quién atiende (nueva RN-33):** dos formas de atender un servicio, por capacidad anónima o por empleados con nombre y foto. Con empleados, el cliente puede elegir quién lo atiende o tomar "Sin preferencia" (D-18), y cada empleado puede tener horario propio (D-19). En el MVP solo entra el modelo (D-17). Cambian O-2, RN-06 y C-01; nuevo flujo F-13. |
 | 0.7 | 2026-10-08 | Se agregan cuatro cambios:<br>• **Límite de reprogramaciones** del cliente (nueva **RN-34**, D-20).<br>• **Asistencia por defecto:** la cita se marca sola al terminar, según la configuración del negocio (D-21, precisa RN-16).<br>• **Identidad:** prevalece el teléfono y desaparece la revisión de conflictos (D-22; cambia RN-18.5 y se eliminan F-10 y PAN-10).<br>• **Calendarios:** invitaciones en los correos al cliente, enlace de suscripción para el dueño y, con el módulo de empleados, correo e invitaciones para cada empleado (nueva **RN-35**, D-23). |
 | 0.8 | 2026-10-18 | El criterio de aceptación de RN-26 dice "los 6 límites" (decía 5): `max_locations` se sumó en la v0.5 (Q-03 de TASKS-01). |
+| 0.9 | 2026-10-20 | Decisiones tras la revisión del diseño del flujo (D-24 a D-31): profesionales, precio y cobro fuera del MVP; categorías, marca ampliada, código de reserva y lista de contactos entran en el MVP; ubicación solo con Google Maps; controles de demo fuera del producto. |
 
 ---
 
@@ -654,6 +655,14 @@ No hay sincronización en doble vía: lo ocupado en un calendario externo no blo
 | D-21 | **Asistencia por defecto:** el negocio elige entre "asistió" (valor inicial), "no asistió" y "siempre decido yo". Si el dueño no marcó una cita cuando termina, el sistema aplica ese valor; el dueño puede corregirlo (precisa RN-16). | Resuelta (2026-10-08) |
 | D-22 | **Identidad del cliente:** prevalece el teléfono. No hay conflictos de identidad ni revisión del dueño. Si el teléfono coincide con un cliente y el correo con otro, la cita va al del teléfono (cambia RN-18.5; se eliminan F-10, PAN-10 y la tabla de revisiones). | Resuelta (2026-10-08) |
 | D-23 | **Calendarios sin conectar cuentas (RN-35).** En el MVP: invitación de calendario en los correos al cliente y enlace de suscripción privado para el dueño. Con el módulo de empleados: correo del empleado e invitaciones en C-09 y C-10. La sincronización en doble vía con Google o Microsoft (OAuth) queda fuera. | Resuelta (2026-10-08) |
+| D-24 | **Profesionales (RN-33):** la sección de profesionales queda fuera del MVP, como indica D-17. El diseño la muestra, pero marcada como posterior al MVP. | Resuelta (2026-10-20) |
+| D-25 | **Precio por servicio:** queda fuera del MVP junto con el cobro en línea (§4.2). El MVP no muestra ni guarda precios. | Resuelta (2026-10-20) |
+| D-26 | **Categorías de servicio:** entran en el MVP. El negocio clasifica sus servicios y el cliente puede filtrar por categoría en la página pública (PUB-02). | Resuelta (2026-10-20) |
+| D-27 | **Marca del negocio:** entran el rubro (línea corta), el eslogan, la frase del banner y la descripción del negocio, todos en la configuración de marca (PAN-11). | Resuelta (2026-10-20) |
+| D-28 | **Código de reserva:** cada cita tiene un código legible (por ejemplo, `EB-4821`) que aparece en la confirmación y en el correo. El cliente lo usa para identificar su cita al llamar al negocio. Se agrega a `cita`. | Resuelta (2026-10-20) |
+| D-29 | **Contactos del negocio:** el negocio puede tener una lista de contactos (WhatsApp, teléfono y correo) en lugar de un solo teléfono por sede. Precisa PUB-01, PAN-11 y F-02. Requiere un cambio en el modelo de datos. | Resuelta (2026-10-20) |
+| D-30 | **Ubicación:** solo se ofrece el enlace a Google Maps para cómo llegar. No se agrega Waze. | Resuelta (2026-10-20) |
+| D-31 | **Herramientas de demo:** los controles de simulación del diseño (hora ocupada, límite de frecuencia y estado de suscripción) son solo de demostración y no forman parte del producto. | Resuelta (2026-10-20) |
 
 ## 11. Supuestos y preguntas abiertas
 

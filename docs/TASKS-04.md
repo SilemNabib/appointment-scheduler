@@ -238,7 +238,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * Manual: los títulos y las listas de la plantilla se ven con formato, y un `<script>` en el texto de la política aparece como texto (ARCH §19.2).
       * El tamaño del Worker con el renderizador queda anotado en el commit.
 
-* [ ] T4.20: Encabezados de seguridad
+* [x] T4.20: Encabezados de seguridad
    * Objetivo: Agregar los encabezados de ARCH §19.2 según Q-47: HSTS, `X-Content-Type-Options: nosniff` y `Referrer-Policy: strict-origin-when-cross-origin` en todas las respuestas, y la CSP básica en las páginas públicas.
    * Archivos: `next.config.ts` (o `src/proxy.ts`, si `headers()` no puede excluir el panel; Q-47)
    * Depende de: T4.17

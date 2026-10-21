@@ -97,7 +97,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * Con el azar simulado para que el primer código choque con una cita existente, la reserva sale con otro código y no falla (Q-41).
       * Pasan sin cambios las pruebas de concurrencia de T3.22 y de bloqueo de T3.23.
 
-* [ ] T4.06: Dominio: contactos
+* [x] T4.06: Dominio: contactos
    * Objetivo: Crear en `dominio/contactos.ts` la validación de una lista de contactos (tipo, valor y etiqueta opcional, con los máximos de Q-40), la normalización de cada valor (teléfono y WhatsApp a E.164 con `normalizarTelefono`, correo en minúsculas) y los enlaces de cada tipo: `https://wa.me/…`, `tel:…`, `mailto:…`, y el de Google Maps para una dirección (D-30).
    * Archivos: `src/dominio/contactos.ts`, `tests/unit/dominio/contactos.test.ts`
    * Depende de: T4.02

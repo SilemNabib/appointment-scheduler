@@ -17,6 +17,12 @@ export const esquemaNegocio = z.object({
   colorPrimario: color,
   /** Opcional: vacío o ausente = sin color secundario. */
   colorSecundario: z.union([z.literal("").transform(() => null), color]).nullish().transform((c) => c ?? null),
+  // Marca ampliada (D-27): los máximos son los CHECK de `negocio` (Q-38). Vacío o solo
+  // espacios = NULL.
+  rubro: textoOpcional(60),
+  eslogan: textoOpcional(120),
+  fraseBanner: textoOpcional(120),
+  descripcion: textoOpcional(600),
   direccion: textoOpcional(200),
 });
 
@@ -27,6 +33,10 @@ export type DatosNegocio = {
   logoUrl: string | null;
   colorPrimario: string;
   colorSecundario: string | null;
+  rubro: string | null;
+  eslogan: string | null;
+  fraseBanner: string | null;
+  descripcion: string | null;
   direccion: string | null;
 };
 
@@ -38,8 +48,8 @@ export async function leerNegocio(ctx: Pick<ContextoMiembro, "negocioId">): Prom
 }
 
 /**
- * Guarda, en una transacción, el nombre y los colores del negocio, y la dirección de su
- * sede principal. Cualquier dato inválido devuelve
+ * Guarda, en una transacción, el nombre, los colores y la marca ampliada del negocio, y
+ * la dirección de su sede principal. Cualquier dato inválido devuelve
  * `DATOS_INVALIDOS` sin cambiar nada.
  */
 export async function guardarNegocio(

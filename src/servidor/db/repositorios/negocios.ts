@@ -83,9 +83,14 @@ export type MarcaNegocio = {
   nombre: string;
   colorPrimario: string;
   colorSecundario: string | null;
+  /** Marca ampliada (D-27; Q-38): texto plano, `null` si falta. */
+  rubro: string | null;
+  eslogan: string | null;
+  fraseBanner: string | null;
+  descripcion: string | null;
 };
 
-/** Nombre, logo y colores, para la configuración del negocio (PAN-11). */
+/** Nombre, logo, colores y marca ampliada, para la configuración del negocio (PAN-11). */
 export async function marca(negocioId: string): Promise<(MarcaNegocio & { logoUrl: string | null }) | null> {
   const [fila] = await db()
     .select({
@@ -93,13 +98,17 @@ export async function marca(negocioId: string): Promise<(MarcaNegocio & { logoUr
       logoUrl: negocio.logoUrl,
       colorPrimario: negocio.colorPrimario,
       colorSecundario: negocio.colorSecundario,
+      rubro: negocio.rubro,
+      eslogan: negocio.eslogan,
+      fraseBanner: negocio.fraseBanner,
+      descripcion: negocio.descripcion,
     })
     .from(negocio)
     .where(eq(negocio.id, negocioId));
   return fila ?? null;
 }
 
-/** Cambia el nombre y los colores (PAN-11). Devuelve si el negocio existe. */
+/** Cambia el nombre, los colores y la marca ampliada (PAN-11). Devuelve si el negocio existe. */
 export async function actualizarMarca(negocioId: string, datos: MarcaNegocio, tx: Transaccion): Promise<boolean> {
   const filas = await tx
     .update(negocio)

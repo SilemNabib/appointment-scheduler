@@ -50,6 +50,10 @@ describe("guardarNegocio", () => {
       logoUrl: null,
       colorPrimario: "#1d4ed8",
       colorSecundario: "#f59e0b",
+      rubro: null,
+      eslogan: null,
+      fraseBanner: null,
+      descripcion: null,
       direccion: "Carrera 7 # 12-34",
     });
   });
@@ -76,6 +80,10 @@ describe("guardarNegocio", () => {
     ["un color con letras fuera de a-f", { colorPrimario: "#12345g" }],
     ["un color secundario inválido", { colorSecundario: "azul" }],
     ["un nombre vacío", { nombre: "   " }],
+    ["un rubro de 61 caracteres (Q-38)", { rubro: "x".repeat(61) }],
+    ["un eslogan de 121 caracteres", { eslogan: "x".repeat(121) }],
+    ["una frase del banner de 121 caracteres", { fraseBanner: "x".repeat(121) }],
+    ["una descripción de 601 caracteres", { descripcion: "x".repeat(601) }],
   ])("%s devuelve DATOS_INVALIDOS y no cambia nada", async (_, cambios) => {
     const { negocioId } = await sesionDeDueno();
     const antes = await estado(negocioId);
@@ -85,5 +93,29 @@ describe("guardarNegocio", () => {
       error: "DATOS_INVALIDOS",
     });
     expect(await estado(negocioId)).toEqual(antes);
+  });
+
+  test("guarda y lee el rubro, el eslogan, la frase del banner y la descripción, recortados (D-27; Q-38)", async () => {
+    const { negocioId } = await sesionDeDueno();
+    const marca = {
+      rubro: " Óptica y optometría ",
+      eslogan: "Ve el mundo con claridad",
+      fraseBanner: "Tu examen visual, sin filas",
+      descripcion: "x".repeat(600),
+    };
+
+    expect(await guardarNegocio({ negocioId }, entradaValida(marca))).toEqual({ ok: true, valor: undefined });
+
+    expect(await leerNegocio({ negocioId })).toMatchObject({ ...marca, rubro: "Óptica y optometría" });
+  });
+
+  test("un texto vacío o solo con espacios se guarda como NULL", async () => {
+    const { negocioId } = await sesionDeDueno();
+    await guardarNegocio({ negocioId }, entradaValida({ rubro: "Óptica", eslogan: "Ver bien", fraseBanner: "Hola", descripcion: "Algo" }));
+
+    await guardarNegocio({ negocioId }, entradaValida({ rubro: "", eslogan: "   ", fraseBanner: undefined, descripcion: "\n " }));
+
+    const [fila] = await db().select().from(esquema.negocio).where(eq(esquema.negocio.id, negocioId));
+    expect(fila).toMatchObject({ rubro: null, eslogan: null, fraseBanner: null, descripcion: null });
   });
 });

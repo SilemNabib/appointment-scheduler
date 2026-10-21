@@ -116,7 +116,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * Una lista inválida devuelve `DATOS_INVALIDOS` y la lista anterior queda intacta.
       * Un alta con teléfono crea su contacto `telefono` y deja `sede.telefono` en `NULL`.
 
-* [ ] T4.08: Marca ampliada en `guardarNegocio`
+* [x] T4.08: Marca ampliada en `guardarNegocio`
    * Objetivo: Ampliar `guardarNegocio` y su lectura con el rubro, el eslogan, la frase del banner y la descripción (D-27). Un texto vacío o solo con espacios se guarda como `NULL`.
    * Archivos: `src/servidor/casos-uso/guardar-negocio.ts`, `src/servidor/db/repositorios/negocios.ts`, `tests/integracion/casos-uso/guardar-negocio.test.ts`
    * Depende de: T4.01

@@ -4,6 +4,7 @@ import { crearBloqueoPanel, eliminarBloqueoPanel } from "@/app/(panel)/panel/blo
 import { guardarConsultorioPanel } from "@/app/(panel)/panel/configuracion/consultorio/acciones";
 import { guardarHorarioPanel } from "@/app/(panel)/panel/configuracion/horario/acciones";
 import {
+  guardarContactosNegocio,
   guardarDatosNegocio,
   quitarLogoNegocio,
   subirLogoNegocio,
@@ -57,7 +58,7 @@ const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0
 
 /** Todo lo que las acciones de la fase pueden cambiar, para comparar antes y después. */
 async function datosDelNegocio() {
-  const { negocio, configuracionNegocio, sede, recurso, servicio, horarioSemanal, bloqueo, politicaDatos } = esquema;
+  const { negocio, configuracionNegocio, sede, recurso, servicio, horarioSemanal, bloqueo, politicaDatos, contactoSede } = esquema;
   return {
     negocio: await db().select().from(negocio).where(eq(negocio.id, negocioId)),
     configuracion: await db().select().from(configuracionNegocio).where(eq(configuracionNegocio.negocioId, negocioId)),
@@ -75,6 +76,11 @@ async function datosDelNegocio() {
       .from(politicaDatos)
       .where(eq(politicaDatos.negocioId, negocioId))
       .orderBy(asc(politicaDatos.id)),
+    contactos: await db()
+      .select()
+      .from(contactoSede)
+      .where(eq(contactoSede.negocioId, negocioId))
+      .orderBy(asc(contactoSede.id)),
   };
 }
 
@@ -99,6 +105,19 @@ beforeAll(async () => {
 describe("solo lectura con el negocio suspendido", () => {
   test.each<[string, () => Promise<unknown>]>([
     ["negocio: guardar los datos", () => guardarDatosNegocio(formulario({ nombre: "Otro", colorPrimario: "#000000" }))],
+    ["negocio: guardar la marca ampliada (D-27)", () =>
+      guardarDatosNegocio(
+        formulario({
+          nombre: "Óptica Visión",
+          colorPrimario: "#2b3fd6",
+          rubro: "Óptica",
+          eslogan: "Otro eslogan",
+          fraseBanner: "Otra frase",
+          descripcion: "Otra descripción",
+        }),
+      )],
+    ["negocio: guardar los contactos (D-29)", () =>
+      guardarContactosNegocio({ contactos: [{ tipo: "whatsapp", valor: "300 999 8877", etiqueta: "Citas" }] })],
     ["logo: subir", () => subirLogoNegocio(formulario({ logo: new File([PNG], "logo.png", { type: "image/png" }) }))],
     ["logo: quitar", () => quitarLogoNegocio()],
     ["servicios: crear", () => guardarServicioPanel(formulario({ nombre: "Nuevo", duracionMinutos: "30" }))],

@@ -341,7 +341,7 @@ Pruebas de integración contra la rama efímera de Neon, con los criterios de ac
       * Con una segunda sede activa creada por SQL, la página sigue mostrando solo la sede principal y sus datos (RN-32: "con una sola sede activa…", D-16).
       * Con el slug de A, pedir la política de B por su versión devuelve `NO_ENCONTRADO`, y la página de A no trae datos de B (RN-01).
 
-* [ ] T4.29: Pruebas del código de reserva y de los contactos
+* [x] T4.29: Pruebas del código de reserva y de los contactos
    * Objetivo: Probar las reglas de D-28 y D-29, y la solo lectura de la Server Action nueva.
    * Archivos: `tests/integracion/casos-uso/codigo-reserva.test.ts`, `tests/integracion/casos-uso/contactos-reglas.test.ts`, `tests/integracion/app/panel/solo-lectura.test.ts`, `tests/integracion/app/panel/multi-negocio.test.ts`
    * Depende de: T4.05, T4.10

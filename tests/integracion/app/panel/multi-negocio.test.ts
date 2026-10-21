@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, test, vi } from "vitest";
 import { eliminarBloqueoPanel } from "@/app/(panel)/panel/bloqueos/acciones";
+import { guardarContactosNegocio } from "@/app/(panel)/panel/configuracion/negocio/acciones";
 import {
   activarServicioPanel,
   desactivarServicioPanel,
@@ -64,5 +65,21 @@ describe("multi-negocio en las Server Actions del panel", () => {
 
     const quedan = await db().select().from(esquema.bloqueo).where(eq(esquema.bloqueo.id, bloqueoId));
     expect(quedan).toHaveLength(1);
+  });
+
+  test("desde la sesión de A, guardar contactos cambia los de A y no los de B (RN-01; D-29)", async () => {
+    const { negocioA, negocioB } = await negocioBYSesionDeA();
+    const contactosDe = (negocioId: string) =>
+      db().select().from(esquema.contactoSede).where(eq(esquema.contactoSede.negocioId, negocioId));
+    const antesB = await contactosDe(negocioB);
+    expect(antesB).toHaveLength(1); // el teléfono del alta
+
+    expect(await guardarContactosNegocio({ contactos: [{ tipo: "correo", valor: "a@negocio-a.com" }] })).toEqual({
+      ok: true,
+      valor: undefined,
+    });
+
+    expect(await contactosDe(negocioB)).toEqual(antesB);
+    expect(await contactosDe(negocioA)).toEqual([expect.objectContaining({ tipo: "correo", valor: "a@negocio-a.com" })]);
   });
 });

@@ -270,7 +270,7 @@ El flujo vive en un solo componente de cliente con cuatro pasos: servicio, día 
       * Un teléfono que no se puede normalizar responde 422 con `campos: ["telefono"]`, y un cuerpo sin nombre ni correo, con `["nombre", "correo"]`.
       * Con `sitioWeb` lleno, responde 422 sin `campos`. Ninguna respuesta repite lo que llegó en la solicitud (ARCH §19.2).
 
-* [ ] T4.23: Cliente de la API pública
+* [x] T4.23: Cliente de la API pública
    * Objetivo: Crear las funciones del navegador que llaman a la disponibilidad y a la reserva y devuelven un resultado con tipo: los días, la cita creada (`citaId`, `codigo`, `inicio` y `fin`) o el error, con su código y sus campos. Una falla de red o una respuesta que no es JSON se convierten en un error de conexión.
    * Archivos: `src/componentes/publico/api.ts`, `tests/unit/componentes/publico/api.test.ts`
    * Depende de: T4.22

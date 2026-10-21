@@ -69,6 +69,7 @@ export const estadoNotificacion = pgEnum("estado_notificacion", [
   "fallida",
   "cancelada",
 ]);
+export const tipoContacto = pgEnum("tipo_contacto", ["whatsapp", "telefono", "correo"]); // D-29
 
 // Los dominios los crea la migración manual drizzle/0000_dominios.sql; aquí solo se
 // declaran como tipo de columna para que las tablas los usen en lugar de `text`.
@@ -298,7 +299,7 @@ export const sede = pgTable(
     negocioId: uuid("negocio_id").notNull(),
     nombre: text("nombre").notNull(), // 'Sede principal' en el alta
     direccion: text("direccion"),
-    telefono: text("telefono"),
+    telefono: text("telefono"), // en desuso desde ARCH v0.12: ver contacto_sede (D-29, Q-40)
     activa: boolean("activa").notNull().default(true), // siempre al menos una activa (código, RN-32)
     orden: smallint("orden").notNull().default(0),
     creadoEn: instante("creado_en").notNull().defaultNow(),
@@ -311,6 +312,38 @@ export const sede = pgTable(
     }).onDelete("cascade"),
     unique("sede_id_negocio_id_key").on(t.id, t.negocioId),
     unique("sede_negocio_id_nombre_key").on(t.negocioId, t.nombre),
+  ],
+);
+
+/** Contactos de la sede (D-29): WhatsApp, teléfono y correo, en orden. Hasta 6 por sede (código, Q-40). */
+export const contactoSede = pgTable(
+  "contacto_sede",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    negocioId: uuid("negocio_id").notNull(),
+    sedeId: uuid("sede_id").notNull(),
+    tipo: tipoContacto("tipo").notNull(),
+    valor: text("valor").notNull(), // E.164 (whatsapp, telefono) o correo en minúsculas
+    etiqueta: text("etiqueta"), // opcional, p. ej. "Recepción"
+    orden: smallint("orden").notNull().default(0),
+  },
+  (t) => [
+    foreignKey({
+      name: "contacto_sede_negocio_id_fkey",
+      columns: [t.negocioId],
+      foreignColumns: [negocio.id],
+    }).onDelete("cascade"),
+    check("contacto_sede_etiqueta_check", sql`char_length(${t.etiqueta}) <= 40`),
+    // `\\+` en el código para que el SQL reciba `\+` (ver cliente_telefono_e164_check).
+    check("contacto_sede_check", sql`${t.tipo} = 'correo' OR ${t.valor} ~ '^\\+[1-9][0-9]{6,14}$'`),
+    check("contacto_sede_check1", sql`${t.tipo} <> 'correo' OR ${t.valor} = lower(${t.valor})`),
+    // FK compuesta: el contacto es de una sede del mismo negocio (ARCH §6, defensa 2).
+    foreignKey({
+      name: "contacto_sede_sede_id_negocio_id_fkey",
+      columns: [t.sedeId, t.negocioId],
+      foreignColumns: [sede.id, sede.negocioId],
+    }).onDelete("cascade"),
+    index("contacto_sede_idx").on(t.sedeId, t.orden),
   ],
 );
 

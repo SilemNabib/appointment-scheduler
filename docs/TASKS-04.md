@@ -56,7 +56,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * E1 y E2.
       * Las cinco columnas admiten `NULL` y tienen el `CHECK` de longitud de Q-38 y Q-39. Los negocios existentes conservan su `color_primario`.
 
-* [ ] T4.02: Esquema: contactos de la sede
+* [x] T4.02: Esquema: contactos de la sede
    * Objetivo: Crear el enum `tipo_contacto` y la tabla `contacto_sede` de Q-40, con FK directa a `negocio` y FK compuesta `(sede_id, negocio_id)` (ARCH §18.1). Una migración manual copia cada `sede.telefono` no vacío como un contacto `telefono`.
    * Archivos: `src/servidor/db/esquema.ts`, nueva migración generada y nueva migración manual en `drizzle/`
    * Depende de: T4.01

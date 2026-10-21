@@ -36,7 +36,6 @@ describe("repositorios/sedes y recursos: sede principal", () => {
       id: expect.any(String),
       nombre: "Sede principal",
       direccion: entrada.direccionSede,
-      telefono: entrada.telefonoSede,
     });
     expect(await recursos.consultorioPrincipal(negocioId)).toEqual({
       id: expect.any(String),

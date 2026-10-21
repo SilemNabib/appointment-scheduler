@@ -44,6 +44,7 @@ async function negocioCreado(negocioId: string) {
     miembro: await unoDe(
       db().select().from(esquema.miembroNegocio).where(eq(esquema.miembroNegocio.negocioId, negocioId)),
     ),
+    contactos: await db().select().from(esquema.contactoSede).where(eq(esquema.contactoSede.negocioId, negocioId)),
   };
 }
 
@@ -59,7 +60,7 @@ describe("altaNegocio", () => {
     expect(resultado.ok).toBe(true);
     if (!resultado.ok) return;
 
-    const { negocio, configuracion, sede, recurso, politica, miembro } = await negocioCreado(
+    const { negocio, configuracion, sede, recurso, politica, miembro, contactos } = await negocioCreado(
       resultado.valor.negocioId,
     );
     expect(negocio).toMatchObject({
@@ -87,9 +88,12 @@ describe("altaNegocio", () => {
     expect(sede).toMatchObject({
       nombre: "Sede principal",
       direccion: "Calle 10 # 20-30",
-      telefono: "+57 300 123 4567",
+      telefono: null, // en desuso: el teléfono es un contacto (Q-40)
       activa: true,
     });
+    expect(contactos).toEqual([
+      expect.objectContaining({ sedeId: sede.id, tipo: "telefono", valor: "+573001234567", etiqueta: null, orden: 0 }),
+    ]);
     expect(recurso).toMatchObject({
       sedeId: sede.id,
       nombre: "Consultorio",
@@ -129,9 +133,10 @@ describe("altaNegocio", () => {
     );
     if (!resultado.ok) throw new Error(resultado.error);
 
-    const { sede, miembro } = await negocioCreado(resultado.valor.negocioId);
+    const { sede, miembro, contactos } = await negocioCreado(resultado.valor.negocioId);
     expect(miembro.correo).toBe(correo);
     expect(sede).toMatchObject({ direccion: null, telefono: null });
+    expect(contactos).toEqual([]);
   });
 
   test("con el correo del dueño ya usado no crea nada: todo va en una transacción (Q-09)", async () => {
@@ -150,6 +155,7 @@ describe("altaNegocio", () => {
     ["un vencimiento inexistente", { vencimiento: "2026-02-30" }],
     ["un correo inválido", { correoDueno: "no-es-correo" }],
     ["el nombre vacío", { nombre: "   " }],
+    ["un teléfono de la sede que no se puede normalizar (Q-40)", { telefonoSede: "123" }],
   ])("con %s devuelve DATOS_INVALIDOS y no crea nada (Q-09)", async (_, cambios) => {
     const entrada = entradaValida(cambios);
 

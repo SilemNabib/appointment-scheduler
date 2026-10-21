@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { normalizarValor } from "@/dominio/contactos";
 import { exito, fallo, type Resultado } from "@/dominio/resultado";
 import { validarSlug } from "@/dominio/slug";
 import { vencimientoAInstante, ZONA_HORARIA_POR_DEFECTO } from "@/dominio/tiempo";
@@ -40,12 +41,14 @@ export type AltaRealizada = {
 /**
  * Valida la entrada, resuelve el plan y convierte el vencimiento; luego crea, en una
  * sola transacción con `app.actor` = el admin (RN-30), el negocio, su configuración,
- * la sede principal, el consultorio, la política v1 y el miembro pendiente. Después
+ * la sede principal, el consultorio, la política v1 y el miembro pendiente. El
+ * teléfono de la sede, si llega, queda como su primer contacto `telefono` en E.164, y
+ * `sede.telefono` en `NULL` (D-29; Q-40). Después
  * del `COMMIT` envía la invitación de Clerk al dueño (ARCH §7.4 y §18.4).
  *
  * Errores (Q-09): slug reservado o repetido → `SLUG_NO_DISPONIBLE`; formato de slug
- * inválido, plan inexistente, correo del dueño ya usado o cualquier otro dato
- * inválido → `DATOS_INVALIDOS`.
+ * inválido, plan inexistente, correo del dueño ya usado, teléfono que no se puede
+ * normalizar o cualquier otro dato inválido → `DATOS_INVALIDOS`.
  */
 export async function altaNegocio(
   entrada: unknown,
@@ -57,6 +60,9 @@ export async function altaNegocio(
 
   const slug = validarSlug(datos.slug);
   if (!slug.ok) return fallo(slug.error === "reservado" ? "SLUG_NO_DISPONIBLE" : "DATOS_INVALIDOS");
+
+  const telefono = datos.telefonoSede === null ? null : normalizarValor("telefono", datos.telefonoSede);
+  if (datos.telefonoSede !== null && telefono === null) return fallo("DATOS_INVALIDOS");
 
   const plan = (await listarPlanes()).find((p) => p.codigo === datos.plan);
   if (!plan) return fallo("DATOS_INVALIDOS");
@@ -83,7 +89,8 @@ export async function altaNegocio(
           estadoSuscripcion: datos.estadoSuscripcion,
           vence,
           correoDueno: datos.correoDueno,
-          sede: { direccion: datos.direccionSede, telefono: datos.telefonoSede },
+          sede: { direccion: datos.direccionSede },
+          contactos: telefono === null ? [] : [{ tipo: "telefono", valor: telefono, etiqueta: null }],
           politica: politicaInicial(datos.nombre),
         },
         tx,

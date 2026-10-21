@@ -158,15 +158,6 @@ export function FormularioNegocio({ datos, soloLectura }: { datos: DatosNegocio;
             maxLength={200}
             defaultValue={datos.direccion ?? ""}
           />
-          <Entrada
-            id="telefono"
-            name="telefono"
-            type="tel"
-            etiqueta="Teléfono"
-            ayuda="Para que tus clientes te contacten. Opcional."
-            maxLength={30}
-            defaultValue={datos.telefono ?? ""}
-          />
           <div>
             <BotonEnviar textoEnviando="Guardando…" enviando={enviando}>
               Guardar cambios

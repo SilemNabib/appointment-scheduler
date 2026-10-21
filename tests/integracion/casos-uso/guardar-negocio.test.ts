@@ -14,7 +14,6 @@ const entradaValida = (cambios: Partial<EntradaNegocio> = {}): EntradaNegocio =>
   colorPrimario: "#1d4ed8",
   colorSecundario: "#f59e0b",
   direccion: "Carrera 7 # 12-34",
-  telefono: "+57 601 555 1234",
   ...cambios,
 });
 
@@ -42,7 +41,8 @@ describe("guardarNegocio", () => {
       colorSecundario: "#f59e0b",
     });
     const [principal, segunda] = despues.sedes;
-    expect(principal).toEqual({ ...antes.sedes[0], direccion: "Carrera 7 # 12-34", telefono: "+57 601 555 1234" });
+    // sede.telefono no se escribe (Q-40): los teléfonos son contactos.
+    expect(principal).toEqual({ ...antes.sedes[0], direccion: "Carrera 7 # 12-34" });
     expect(segunda).toEqual(antes.sedes.find((s) => s.id === otraSede));
     expect(await estado(otroNegocio)).toEqual(otroAntes);
     expect(await leerNegocio({ negocioId })).toEqual({
@@ -51,16 +51,15 @@ describe("guardarNegocio", () => {
       colorPrimario: "#1d4ed8",
       colorSecundario: "#f59e0b",
       direccion: "Carrera 7 # 12-34",
-      telefono: "+57 601 555 1234",
     });
   });
 
-  test("guarda los colores en minúsculas, y el secundario, la dirección y el teléfono vacíos como NULL", async () => {
+  test("guarda los colores en minúsculas, y el secundario y la dirección vacíos como NULL", async () => {
     const { negocioId } = await sesionDeDueno();
 
     const resultado = await guardarNegocio(
       { negocioId },
-      entradaValida({ colorPrimario: "#ABCDEF", colorSecundario: "", direccion: " ", telefono: "" }),
+      entradaValida({ colorPrimario: "#ABCDEF", colorSecundario: "", direccion: " " }),
     );
 
     expect(resultado.ok).toBe(true);
@@ -68,7 +67,6 @@ describe("guardarNegocio", () => {
       colorPrimario: "#abcdef",
       colorSecundario: null,
       direccion: null,
-      telefono: null,
     });
   });
 

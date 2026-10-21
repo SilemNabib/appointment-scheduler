@@ -11,18 +11,19 @@ import { sede } from "../esquema";
 // con menor (`orden`, `creado_en`). El alta la crea y no hay interfaz para crear
 // otra, así que hay exactamente una. El `id` desempata para que el orden sea total.
 
+// `sede.telefono` está en desuso desde ARCH v0.12: los teléfonos son contactos de la
+// sede (contactos.ts; D-29, Q-40). No se lee ni se escribe.
+
 export type Sede = {
   id: string;
   nombre: string;
   direccion: string | null;
-  telefono: string | null;
 };
 
 const columnas = {
   id: sede.id,
   nombre: sede.nombre,
   direccion: sede.direccion,
-  telefono: sede.telefono,
 };
 
 const ordenPrincipal = [asc(sede.orden), asc(sede.creadoEn), asc(sede.id)];
@@ -54,12 +55,12 @@ export async function principal(negocioId: string): Promise<Sede | null> {
 }
 
 /**
- * Cambia la dirección y el teléfono de la sede principal (PAN-11), y de ninguna otra.
- * Devuelve si la encontró.
+ * Cambia la dirección de la sede principal (PAN-11), y de ninguna otra. Devuelve si la
+ * encontró.
  */
-export async function actualizarContactoPrincipal(
+export async function actualizarDireccionPrincipal(
   negocioId: string,
-  datos: Pick<Sede, "direccion" | "telefono">,
+  datos: Pick<Sede, "direccion">,
   tx: Transaccion,
 ): Promise<boolean> {
   const filas = await tx

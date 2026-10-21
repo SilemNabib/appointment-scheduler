@@ -1,5 +1,6 @@
 import "server-only";
 import { and, asc, eq, isNull, lt, ne, or, sql } from "drizzle-orm";
+import type { Contacto } from "@/dominio/contactos";
 import type { DatosSuscripcion } from "@/dominio/suscripcion";
 import { db, type Transaccion } from "../cliente";
 import {
@@ -11,6 +12,7 @@ import {
   recurso,
   sede,
 } from "../esquema";
+import * as contactos from "./contactos";
 
 // Negocios. Toda función recibe `negocioId` como primer parámetro y lo usa en el
 // WHERE (ARCH §6, defensa 1). Al crear, el id se genera antes, en el caso de uso.
@@ -235,7 +237,9 @@ export type DatosNuevoNegocio = {
   /** Fin de prueba o pagado hasta, según el estado, ya convertido al instante que se guarda. */
   vence: Date;
   correoDueno: string;
-  sede: { direccion: string | null; telefono: string | null };
+  sede: { direccion: string | null };
+  /** Contactos de la sede principal, ya validados (D-29). */
+  contactos: Contacto[];
   politica: string;
 };
 
@@ -244,7 +248,8 @@ export const NOMBRE_RECURSO_INICIAL = "Consultorio";
 
 /**
  * Crea, dentro de la transacción del alta, las seis filas de ARCH §18.4: el negocio,
- * su configuración con los valores por defecto de D-09, la "Sede principal", el
+ * su configuración con los valores por defecto de D-09, la "Sede principal" (con sus
+ * contactos, D-29), el
  * recurso "Consultorio" (capacidad 1) en esa sede, la política v1 y el miembro
  * pendiente (sin usuario de Clerk, ARCH §7.4).
  */
@@ -268,9 +273,9 @@ export async function crear(negocioId: string, datos: DatosNuevoNegocio, tx: Tra
       negocioId,
       nombre: NOMBRE_SEDE_PRINCIPAL,
       direccion: datos.sede.direccion,
-      telefono: datos.sede.telefono,
     })
     .returning({ sedeId: sede.id });
+  await contactos.insertar(negocioId, sedeId, datos.contactos, tx);
 
   await tx.insert(recurso).values({
     negocioId,

@@ -106,7 +106,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * Un WhatsApp "300 123 4567" da `+573001234567` y el enlace `https://wa.me/573001234567`. Un teléfono no válido, un correo mal formado o más contactos que el máximo devuelven un error que indica qué contacto falló.
       * El enlace de Google Maps codifica la dirección ("Cra. 7 # 12-34, Bogotá") en el parámetro `query`.
 
-* [ ] T4.07: Caso de uso `guardarContactos` y alta con contacto
+* [x] T4.07: Caso de uso `guardarContactos` y alta con contacto
    * Objetivo: Implementar `listarContactos` y `guardarContactos`, que reemplaza en una transacción la lista de contactos de la sede principal (Q-20, TASKS-02), empieza con `requireEscritura` y valida con T4.06. `altaNegocio` pasa a crear el teléfono de la sede principal como contacto `telefono`, y `guardarNegocio` deja de escribir `sede.telefono` (Q-40).
    * Archivos: `src/servidor/casos-uso/contactos.ts`, `src/servidor/db/repositorios/contactos.ts`, `src/servidor/casos-uso/alta-negocio.ts`, `src/servidor/casos-uso/guardar-negocio.ts`, `tests/integracion/casos-uso/contactos.test.ts`
    * Depende de: T4.06

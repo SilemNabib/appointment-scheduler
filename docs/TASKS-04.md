@@ -298,7 +298,7 @@ El flujo vive en un solo componente de cliente con cuatro pasos: servicio, día 
       * Con el dispositivo en otra zona horaria (sensor de ubicación de las DevTools), las horas se ven en hora de Colombia (RN-03).
       * Con un bloqueo de día completo en `development`, ese día aparece sin cupo.
 
-* [ ] T4.26: Paso "Tus datos"
+* [x] T4.26: Paso "Tus datos"
    * Objetivo: Construir PUB-05: nombre, apellido, celular con `+57` por defecto, correo y la casilla obligatoria con la versión de la política y su enlace (T4.19), sin el campo de notas (Q-43). Lleva el campo oculto `sitioWeb` fuera del orden de tabulación y oculto para los lectores de pantalla (ARCH §15). Los errores de T4.22 se muestran junto a cada campo. "Atrás" vuelve a las horas sin perder lo escrito.
    * Archivos: `src/componentes/publico/paso-datos.tsx`
    * Depende de: T4.19, T4.22, T4.25

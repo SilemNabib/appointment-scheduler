@@ -5,8 +5,10 @@ import type { Contacto } from "@/dominio/contactos";
 import { formatearDiaLocal, formatearHora } from "@/dominio/formato";
 import type { FechaLocal } from "@/dominio/tiempo";
 import type { ServicioOfrecido } from "@/servidor/casos-uso/pagina-publica";
+import { reservar, type CitaCreada } from "./api";
 import { BarraPasos } from "./barra-pasos";
 import { EstadoPagina } from "./estado-pagina";
+import { camposFaltantes, DATOS_VACIOS, PasoDatos, type CampoDatos, type DatosCliente } from "./paso-datos";
 import { PasoHorario, useDisponibilidad } from "./paso-horario";
 import { duracionTexto, PasoServicio } from "./paso-servicio";
 import { Resumen } from "./resumen";
@@ -39,6 +41,11 @@ export function Reserva(props: PropsReserva) {
   const [inicio, setInicio] = useState<string | null>(null);
   const [avisoHorario] = useState<string | null>(null);
   const [suspendido, setSuspendido] = useState(false);
+  const [datos, setDatos] = useState<DatosCliente>(DATOS_VACIOS);
+  const [errores, setErrores] = useState<CampoDatos[]>([]);
+  const [avisoEnvio, setAvisoEnvio] = useState<{ tipo: "error" | "advertencia"; texto: string } | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [cita, setCita] = useState<CitaCreada | null>(null);
   const servicio = servicios.find((s) => s.id === servicioId) ?? null;
   const disponibilidad = useDisponibilidad({ slug: props.slug, sedeId: sede.id, servicioId, hoy, ultimoDia });
 
@@ -59,6 +66,35 @@ export function Reserva(props: PropsReserva) {
     setPaso(1);
   };
   const alSuspender = useCallback(() => setSuspendido(true), []);
+
+  const cambiarDato = <C extends keyof DatosCliente>(campo: C, valor: DatosCliente[C]) => {
+    setDatos((d) => ({ ...d, [campo]: valor }));
+    // Al corregir un campo, su error se va.
+    if (campo !== "sitioWeb") setErrores((e) => e.filter((c) => c !== campo));
+  };
+
+  const enviar = async () => {
+    const faltan = camposFaltantes(datos);
+    setAvisoEnvio(null);
+    if (faltan.length > 0) return setErrores(faltan);
+    if (!servicio || !inicio) return setPaso(servicio ? 1 : 0);
+    setEnviando(true);
+    const resultado = await reservar(props.slug, {
+      sedeId: sede.id,
+      servicioId: servicio.id,
+      inicio,
+      ...datos,
+      politicaDatosId: props.politica.id,
+    });
+    setEnviando(false);
+    if (resultado.ok) {
+      setCita(resultado.valor);
+      return setPaso(3);
+    }
+    const { codigo, campos } = resultado.error;
+    if (codigo === "DATOS_INVALIDOS" && campos?.length) return setErrores(campos as CampoDatos[]);
+    setAvisoEnvio({ tipo: "error", texto: "No pudimos confirmar tu reserva. Revisa los datos e intenta de nuevo." });
+  };
 
   if (suspendido) {
     return <EstadoPagina estado="suspendida" nombre={props.nombreNegocio} contactos={sede.contactos} />;
@@ -92,6 +128,21 @@ export function Reserva(props: PropsReserva) {
               alVolver={() => setPaso(0)}
             />
           )}
+          {paso === 2 && (
+            <PasoDatos
+              datos={datos}
+              errores={errores}
+              aviso={avisoEnvio}
+              enviando={enviando}
+              nombreNegocio={props.nombreNegocio}
+              urlPolitica={`/${props.slug}/politica/${props.politica.version}`}
+              versionPolitica={props.politica.version}
+              alCambiar={cambiarDato}
+              alEnviar={() => void enviar()}
+              alVolver={() => setPaso(1)}
+            />
+          )}
+          {paso === 3 && cita && <p className="m-0">Código de reserva: {cita.codigo}</p>}
         </div>
       </section>
       <Resumen

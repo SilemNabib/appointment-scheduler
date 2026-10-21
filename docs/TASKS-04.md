@@ -329,7 +329,7 @@ El flujo vive en un solo componente de cliente con cuatro pasos: servicio, día 
 
 Pruebas de integración contra la rama efímera de Neon, con los criterios de aceptación de las RN que esta fase hace posibles. Cada caso cita su origen.
 
-* [ ] T4.28: Pruebas de la página pública
+* [x] T4.28: Pruebas de la página pública
    * Objetivo: Probar con `leerPaginaPublica` los criterios de las RN que tocan la página pública.
    * Archivos: `tests/integracion/casos-uso/pagina-publica-reglas.test.ts`
    * Depende de: T4.16, T4.19

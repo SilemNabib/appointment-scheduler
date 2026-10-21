@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Versión** | 0.11 (borrador) |
-| **Fecha** | 2026-10-18 |
-| **Fuentes** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 · [PRD.md](PRD.md) v0.7 |
+| **Versión** | 0.12 (borrador) |
+| **Fecha** | 2026-10-20 |
+| **Fuentes** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 · [PRD.md](PRD.md) v0.9 · [TASKS-04.md](TASKS-04.md) |
 
 > Este documento describe **cómo** se construye el producto del [PRD](PRD.md). Las referencias `RN-xx`, `D-xx`, `S-xx` y `P-xx` remiten a ese documento. Lo marcado como **propuesto** es una decisión de este documento que la fuente dejó abierta y que aún no se ha aceptado. Lo **aceptado** quedó confirmado en el PRD (D-06 a D-23).
 
@@ -23,6 +23,7 @@
 | 0.9 | 2026-10-16 | **Hallazgos de la Fase 1:**<br>• El middleware es `src/proxy.ts`, sin `createRouteMatcher`, y los `<ClerkProvider>` llevan `afterSignOutUrl="/login"` (§4, §7.3).<br>• El `Request` de `scheduled` lleva el encabezado `host` (§14.5).<br>• Dónde vive cada valor (§21.3).<br>• `npm run deploy` migra `production`, compila, quita los `.env` del bundle y despliega; scripts contra `production` (§21.4).<br>• Riesgos nuevos: el proxy en Workers y Clerk en `http://localhost`; tamaño medido del Worker (§21.4, §23). |
 | 0.10 | 2026-10-18 | Dos cambios:<br>• **Workers Paid desde la Fase 3** (Q-17 de TASKS-01): qué ocupa el Worker y el nuevo límite de 10 MiB (§21.4, §23).<br>• **Operaciones de la Fase 2** en §18.4: datos del negocio y logo, consultorio, servicios, bloqueos, configuración, política y acciones del admin (Q-19 de TASKS-02). |
 | 0.11 | 2026-10-18 | **Límites de Workers** (Q-36 de TASKS-03): la documentación vigente de Cloudflare no tiene límite comprimido; el tamaño se mide sin comprimir, con 64 MiB en los dos planes. La cuenta sigue en el plan gratuito, y el límite que importa es el de CPU, 10 ms por solicitud. Workers Paid se decide antes del primer cliente (§21.4, §23). |
+| 0.12 | 2026-10-20 | **Modelo de D-26 a D-29** (PRD v0.9; Q-38 a Q-41 y Q-46 de TASKS-04):<br>• **D-27:** `negocio.rubro`, `eslogan`, `frase_banner` y `descripcion`.<br>• **D-26:** `servicio.categoria`, sin tabla aparte.<br>• **D-29:** enum `tipo_contacto` y tabla `contacto_sede`. `sede.telefono` deja de usarse, pero no se borra.<br>• **D-28:** `cita.codigo`, único por negocio, y cómo se genera en la reserva (§11.4).<br>• **Contratos:** la reserva responde también `codigo`, y `DATOS_INVALIDOS` puede traer `campos` (§18.5).<br>• **Operaciones:** `listarContactos`, `guardarContactos` y `listarCategorias`; cambian `guardarNegocio`, `guardarServicio` y `altaNegocio` (§18.4).<br>• **Color de marca (Q-42):** el valor por defecto de `negocio.color_primario` pasa de `#0f766e` a `#2b3fd6`, el acento de DESIGN.md, solo para los negocios nuevos.<br>Afecta a §11, §17, §18 y §19.1. |
 
 ---
 
@@ -587,7 +588,7 @@ sequenceDiagram
         W->>DB: Resolver el cliente (RN-18, §12)
         W->>DB: INSERT cita, evento_cita y notificaciones
         W->>DB: COMMIT
-        W-->>N: 201 con citaId, inicio y fin
+        W-->>N: 201 con citaId, codigo, inicio y fin
         W-)R: waitUntil: enviar las notificaciones de la cita (§14)
     end
 ```
@@ -619,7 +620,8 @@ SELECT inicio, fin
    AND inicio < $ocupado_hasta AND fin > $inicio;
 -- (Además se leen configuracion_negocio, el horario_semanal de la sede y servicio_sede.)
 
--- 3. Cliente (§12), cita, evento y notificaciones (§14)
+-- 3. Cliente (§12), código de reserva (§11.4), cita, evento y notificaciones (§14)
+SELECT 1 FROM cita WHERE negocio_id = $negocio_id AND codigo = $codigo;  -- si existe, se genera otro
 INSERT INTO cita (…) VALUES (…) RETURNING id;
 INSERT INTO evento_cita (…) VALUES (…);
 INSERT INTO notificacion (…) VALUES (…), (…), (…);
@@ -635,6 +637,16 @@ COMMIT;
 - **Crear un bloqueo también toma el bloqueo (D-15).** Sin él, una reserva podría colarse entre la verificación "no hay citas en este rango" y el `INSERT` del bloqueo. `crearBloqueo` bloquea con `FOR UPDATE` los recursos afectados, **ordenados por `id`**: el del bloqueo; si no tiene recurso, todos los de su sede; y si tampoco tiene sede, todos los del negocio. Ordenarlos evita que dos operaciones se esperen mutuamente en orden cruzado. Después busca citas `confirmada` con `ocupado_hasta > now()` en el rango. Si hay alguna, responde `BLOQUEO_CON_CITAS` con la lista. Si no hay, inserta. Como la reserva lee los bloqueos **después** de tomar el mismo bloqueo, siempre ve el bloqueo recién creado.
 - **Varios candidatos (RN-33):** cuando el sistema asigna el empleado, la reserva bloquea a todos los candidatos en orden de `id`, igual que `crearBloqueo`. En el MVP siempre hay un solo candidato.
 - **Alternativas descartadas (ADR-04):** `EXCLUDE USING gist` solo sirve para capacidad 1. `SERIALIZABLE` funciona, pero obliga a reintentar ante fallos de serialización. Un `pg_advisory_xact_lock` sería equivalente, pero menos explícito.
+
+### 11.4 Código de reserva (D-28)
+
+Cada cita tiene un código legible que el cliente usa para identificarla al hablar con el negocio (Q-41 de [TASKS-04](TASKS-04.md)).
+
+- **Formato:** `AA-0000`, con `CHECK (codigo ~ '^[A-Z]{2}-[0-9]{4,6}$')` y `UNIQUE (negocio_id, codigo)` (§18.2).
+- **Prefijo:** dos letras que salen del nombre del negocio al reservar: las iniciales de las dos primeras palabras o, si hay una sola, sus dos primeras letras, sin tildes y en mayúsculas. Sin letras, `XX`. Como se calcula al crear la cita, cambiar el nombre del negocio no cambia los códigos existentes.
+- **Generación:** `dominio/codigo-reserva.ts` arma el código con 4 dígitos al azar, y el azar llega como parámetro (§4). Dentro de la transacción de la reserva (§11.2), se comprueba que el código esté libre antes del `INSERT`. Si aun así choca, porque otra reserva de otro recurso tomó el mismo código, se reintenta la transacción, igual que ante un choque por el correo (§12). Después de 5 choques se usan 6 dígitos.
+- **No es una credencial:** no da acceso a nada. La gestión por link sigue exigiendo la firma de §13.
+- **Migración:** las citas anteriores a la columna se rellenaron con el prefijo de su negocio y un número correlativo.
 
 ## 12. Identidad de clientes (RN-18, RN-19)
 
@@ -992,11 +1004,16 @@ erDiagram
     cita ||--o{ evento_cita : registra
     cita |o--o{ notificacion : genera
     negocio ||--o{ enlace_calendario : publica
+    sede ||--o{ contacto_sede : "se contacta por"
 
     negocio {
         uuid id PK
         text slug UK
         text nombre
+        text rubro "D-27"
+        text eslogan "D-27"
+        text frase_banner "D-27"
+        text descripcion "D-27"
         text zona_horaria
         uuid plan_id FK
         estado_suscripcion estado_suscripcion
@@ -1025,8 +1042,17 @@ erDiagram
         uuid negocio_id FK
         text nombre "Sede principal en el alta"
         text direccion
-        text telefono
+        text telefono "en desuso: ver contacto_sede"
         boolean activa
+    }
+    contacto_sede {
+        uuid id PK
+        uuid negocio_id FK
+        uuid sede_id FK
+        tipo_contacto tipo "whatsapp, telefono o correo"
+        text valor "normalizado"
+        text etiqueta
+        smallint orden
     }
     recurso {
         uuid id PK
@@ -1043,6 +1069,7 @@ erDiagram
         uuid id PK
         uuid negocio_id FK
         text nombre
+        text categoria "D-26; NULL = sin categoría"
         smallint duracion_minutos
         smallint buffer_minutos
         boolean activo
@@ -1090,6 +1117,7 @@ erDiagram
     cita {
         uuid id PK
         uuid negocio_id FK
+        text codigo "D-28; único por negocio"
         uuid sede_id FK
         uuid servicio_id FK
         uuid recurso_id FK "asignado"
@@ -1189,19 +1217,20 @@ erDiagram
 
 | Tabla | Propósito | Notas clave |
 |---|---|---|
-| `negocio` | Cliente del SaaS | `slug` único (RN-02), plan, estado de suscripción y vencimiento (`fin_prueba` o `pagado_hasta`; RN-04, RN-31), zona horaria (RN-03) |
+| `negocio` | Cliente del SaaS | `slug` único (RN-02), plan, estado de suscripción y vencimiento (`fin_prueba` o `pagado_hasta`; RN-04, RN-31), zona horaria (RN-03) y marca: nombre, logo, colores, rubro, eslogan, frase del banner y descripción (PAN-11, D-27). Los textos de marca son texto plano, sin Markdown. |
 | `configuracion_negocio` | Reglas de reserva y de operación | 1:1 con el negocio. Valores por defecto en D-09, más el límite de reprogramaciones (D-20) y la asistencia por defecto (D-21). |
 | `politica_datos` | Versiones de la política de tratamiento (D-05) | **Inmutable**: editar crea una versión nueva. La vigente es la de mayor `version`. |
 | `miembro_negocio` | Usuarios del panel y su rol | Une a Clerk con el negocio (§7.4) |
-| `sede` | Lugar físico del negocio (RN-32) | Dirección y teléfono. Siempre hay al menos una activa; la "Sede principal" se crea en el alta. Se desactiva, no se borra. |
+| `sede` | Lugar físico del negocio (RN-32) | Dirección. Siempre hay al menos una activa; la "Sede principal" se crea en el alta. Se desactiva, no se borra. `telefono` está en desuso desde la v0.12: sus valores pasaron a `contacto_sede`, y la columna se conserva para que la migración sea compatible hacia atrás (§8). |
+| `contacto_sede` | Contactos de la sede: WhatsApp, teléfono y correo (D-29) | Lista ordenada de hasta 6 contactos por sede, con el máximo validado en código. El valor se guarda normalizado: E.164 para WhatsApp y teléfono (§12), y minúsculas para el correo. Se reemplaza completa al guardar (Q-40 de [TASKS-04](TASKS-04.md)). |
 | `recurso` | Lo que una cita ocupa en una sede: un espacio con capacidad N o un empleado (`profesional`, capacidad 1) | Los empleados tienen nombre, foto y descripción; no son usuarios (RN-33). `capacidad ≥ 1` (RN-06). Se desactiva, no se borra. |
-| `servicio` | Catálogo de lo que se reserva, a nivel de negocio | Duración y buffer por defecto (RN-05). Se desactiva, no se borra. |
+| `servicio` | Catálogo de lo que se reserva, a nivel de negocio | Duración y buffer por defecto (RN-05) y categoría opcional (D-26), sin tabla aparte: con unos 8 servicios basta, y el panel sugiere las existentes para evitar variantes. Se desactiva, no se borra. |
 | `servicio_sede` | Qué servicios ofrece cada sede y cómo se atienden | Puede sobrescribir la duración y el buffer. `cliente_elige` activa la elección de empleado (RN-33). Una fila por servicio y sede. Se desactiva, no se borra, porque las citas la referencian. |
 | `servicio_sede_recurso` | Quién puede atender cada servicio en cada sede (RN-33) | En el MVP, una fila con el consultorio. Con empleados, una fila por empleado. Se desactiva, no se borra. |
 | `horario_semanal` | Franjas de atención de cada sede o, con `recurso_id`, de un empleado (D-19) | Hora **local**. Las franjas no se solapan; se valida en código y se guarda la semana completa en una transacción. |
 | `bloqueo` | Excepciones puntuales | Intervalo UTC `[inicio, fin)`. Un día completo es de medianoche a medianoche locales. El alcance es el negocio, una sede o un recurso. En el MVP se guarda con la sede principal, no con `NULL`, para que no afecte a sedes futuras. |
 | `cliente` | Paciente del negocio | Identidad por teléfono y correo (RN-18) |
-| `cita` | La reserva | Instantánea del cliente y del servicio, recurso asignado y si lo eligió el cliente, consentimiento y versiones (§18.2) |
+| `cita` | La reserva | Código de reserva (D-28, §11.4), instantánea del cliente y del servicio, recurso asignado y si lo eligió el cliente, consentimiento y versiones (§18.2) |
 | `evento_cita` | Historial de cambios | Base de PAN-03, de C-06 y de los futuros reportes |
 | `enlace_calendario` | Enlaces de suscripción de calendario (RN-35) | Uno vigente por alcance. El token se deriva con HMAC y no se guarda (§14.7). |
 | `notificacion` | Bandeja de salida (RN-20) | §14 |
@@ -1254,6 +1283,7 @@ CREATE TYPE tipo_notificacion   AS ENUM ('confirmacion', 'recordatorio', 'cancel
                                          'dueno_gracia', 'dueno_suspension',   -- correos de la cuenta (S-16)
                                          'empleado_cita_nueva', 'empleado_cambio');  -- módulo de empleados (RN-35)
 CREATE TYPE estado_notificacion AS ENUM ('pendiente', 'enviando', 'enviada', 'fallida', 'cancelada');
+CREATE TYPE tipo_contacto       AS ENUM ('whatsapp', 'telefono', 'correo');  -- D-29
 
 -- Claves del catálogo de §16.2 (una prueba verifica que coincidan con el código)
 CREATE DOMAIN clave_funcionalidad AS text CHECK (VALUE IN (
@@ -1296,9 +1326,13 @@ CREATE TABLE negocio (
                        CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND char_length(slug) BETWEEN 3 AND 40),
   nombre             text NOT NULL,
   logo_url           text,
-  color_primario     text NOT NULL DEFAULT '#0f766e' CHECK (color_primario ~ '^#[0-9a-f]{6}$'),
+  color_primario     text NOT NULL DEFAULT '#2b3fd6' CHECK (color_primario ~ '^#[0-9a-f]{6}$'),  -- acento de DESIGN.md (Q-42)
   color_secundario   text CHECK (color_secundario ~ '^#[0-9a-f]{6}$'),
-  correo_contacto    text,                                    -- dirección y teléfono van en sede (RN-32)
+  correo_contacto    text,                                    -- dirección y contactos van en la sede (RN-32, D-29)
+  rubro              text CHECK (char_length(rubro) <= 60),         -- D-27: línea corta junto al nombre
+  eslogan            text CHECK (char_length(eslogan) <= 120),      -- D-27
+  frase_banner       text CHECK (char_length(frase_banner) <= 120), -- D-27: título del banner (si falta, el nombre)
+  descripcion        text CHECK (char_length(descripcion) <= 600),  -- D-27
   zona_horaria       text NOT NULL DEFAULT 'America/Bogota',  -- validada en código contra la base IANA
   plan_id            uuid NOT NULL REFERENCES plan (id),       -- RN-26
   estado_suscripcion estado_suscripcion NOT NULL DEFAULT 'prueba',
@@ -1364,13 +1398,28 @@ CREATE TABLE sede (
   negocio_id uuid NOT NULL REFERENCES negocio (id) ON DELETE CASCADE,
   nombre     text NOT NULL,                     -- 'Sede principal' en el alta
   direccion  text,
-  telefono   text,
+  telefono   text,                              -- en desuso desde la v0.12: ver contacto_sede (D-29)
   activa     boolean NOT NULL DEFAULT true,     -- siempre al menos una activa (código, RN-32)
   orden      smallint NOT NULL DEFAULT 0,
   creado_en  timestamptz NOT NULL DEFAULT now(),
   UNIQUE (id, negocio_id),
   UNIQUE (negocio_id, nombre)
 );
+
+-- Contactos de la sede (D-29): WhatsApp, teléfono y correo, en orden. Hasta 6 por sede (código).
+CREATE TABLE contacto_sede (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  negocio_id uuid NOT NULL REFERENCES negocio (id) ON DELETE CASCADE,
+  sede_id    uuid NOT NULL,
+  tipo       tipo_contacto NOT NULL,
+  valor      text NOT NULL,                                     -- E.164 (whatsapp, telefono) o correo en minúsculas
+  etiqueta   text CHECK (char_length(etiqueta) <= 40),          -- opcional, p. ej. "Recepción"
+  orden      smallint NOT NULL DEFAULT 0,
+  CHECK (tipo = 'correo' OR valor ~ '^\+[1-9][0-9]{6,14}$'),
+  CHECK (tipo <> 'correo' OR valor = lower(valor)),
+  FOREIGN KEY (sede_id, negocio_id) REFERENCES sede (id, negocio_id) ON DELETE CASCADE
+);
+CREATE INDEX contacto_sede_idx ON contacto_sede (sede_id, orden);
 
 CREATE TABLE recurso (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1396,6 +1445,7 @@ CREATE TABLE servicio (
   negocio_id       uuid NOT NULL REFERENCES negocio (id) ON DELETE CASCADE,
   nombre           text NOT NULL,
   descripcion      text,
+  categoria        text CHECK (char_length(categoria) BETWEEN 1 AND 40),            -- D-26; NULL = sin categoría
   duracion_minutos smallint NOT NULL CHECK (duracion_minutos BETWEEN 5 AND 720),   -- RN-05
   buffer_minutos   smallint NOT NULL DEFAULT 0 CHECK (buffer_minutos BETWEEN 0 AND 240),  -- D-02
   activo           boolean NOT NULL DEFAULT true,
@@ -1485,6 +1535,7 @@ CREATE UNIQUE INDEX cliente_correo_uq ON cliente (negocio_id, correo) WHERE corr
 CREATE TABLE cita (
   id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   negocio_id           uuid NOT NULL REFERENCES negocio (id) ON DELETE CASCADE,
+  codigo               text NOT NULL CHECK (codigo ~ '^[A-Z]{2}-[0-9]{4,6}$'),  -- código de reserva (D-28, §11.4)
   sede_id              uuid NOT NULL,           -- RN-32
   servicio_id          uuid NOT NULL,
   recurso_id           uuid NOT NULL,           -- asignado: elegido por el cliente o por el sistema (RN-33)
@@ -1513,6 +1564,7 @@ CREATE TABLE cita (
   creado_en            timestamptz NOT NULL DEFAULT now(),
   actualizado_en       timestamptz NOT NULL DEFAULT now(),
   UNIQUE (id, negocio_id),
+  UNIQUE (negocio_id, codigo),                  -- D-28
   CHECK (inicio < fin AND fin <= ocupado_hasta),
   CHECK ((estado = 'cancelada') = (cancelada_en IS NOT NULL)),
   CHECK ((estado = 'cancelada') = (cancelada_por IS NOT NULL)),
@@ -1679,6 +1731,8 @@ SELECT p.id, l, NULL
 | Transiciones de estado válidas (PRD §7) | — | `dominio/estados-cita.ts` y `UPDATE … WHERE estado = <esperado>` |
 | Asistencia solo después del inicio (RN-16) | — | `dominio/plazos.ts` |
 | Un cliente por teléfono y uno por correo en cada negocio (RN-18, RN-19) | `UNIQUE (negocio_id, telefono_e164)` e índice único parcial por correo | Normalización |
+| El código de reserva no se repite dentro del negocio (D-28) | `UNIQUE (negocio_id, codigo)` y `CHECK` de formato | Comprobación antes del `INSERT` y reintento de la transacción (§11.4) |
+| Los contactos pertenecen a una sede del mismo negocio y están normalizados (D-29) | FK compuesta `(sede_id, negocio_id)` y `CHECK` de E.164 y de minúsculas | `dominio/contactos.ts`; hasta 6 por sede |
 | Cada mensaje se envía una sola vez (RN-20) | `UNIQUE (clave_idempotencia)` y `SKIP LOCKED` | Clave de idempotencia en Resend |
 | Claves de planes válidas | Dominios `clave_funcionalidad` y `clave_limite` | Catálogo y prueba de sincronía |
 | Límites no negativos | `CHECK (valor IS NULL OR valor >= 0)` | — |
@@ -1710,7 +1764,7 @@ type EntradaReserva = {
   politicaDatosId: string;  // la versión que vio el cliente
 };
 
-reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string; inicio: string; fin: string },
+reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string; codigo: string; inicio: string; fin: string },
   'NO_ENCONTRADO' | 'NEGOCIO_SUSPENDIDO' | 'HORARIO_NO_DISPONIBLE' | 'LIMITE_PLAN' | 'DATOS_INVALIDOS'>>;
 ```
 
@@ -1718,7 +1772,7 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 
 | Operación | Actor | Toma el bloqueo del recurso | Precondiciones | Efectos (en una transacción) | Errores |
 |---|---|---|---|---|---|
-| `reservarCita` | Cliente | Sí: el recurso elegido o todos los candidatos, ordenados por `id` (§10.3) | Negocio no suspendido; servicio, sede y recurso activos; si viene `recursoId`, debe estar en `servicio_sede_recurso` y el servicio debe tener `cliente_elige`; política del negocio; `evaluarInicio` sin motivos; `max_appointments_per_month` | Cliente (§12); cita `confirmada` con el recurso elegido o asignado; evento `creada`; notificaciones C-01, C-02 y C-05 | `NO_ENCONTRADO`, `NEGOCIO_SUSPENDIDO`, `HORARIO_NO_DISPONIBLE`, `LIMITE_PLAN` |
+| `reservarCita` | Cliente | Sí: el recurso elegido o todos los candidatos, ordenados por `id` (§10.3) | Negocio no suspendido; servicio, sede y recurso activos; si viene `recursoId`, debe estar en `servicio_sede_recurso` y el servicio debe tener `cliente_elige`; política del negocio; `evaluarInicio` sin motivos; `max_appointments_per_month` | Cliente (§12); cita `confirmada` con el recurso elegido o asignado y su código de reserva (§11.4); evento `creada`; notificaciones C-01, C-02 y C-05 | `NO_ENCONTRADO`, `NEGOCIO_SUSPENDIDO`, `HORARIO_NO_DISPONIBLE`, `LIMITE_PLAN` |
 | `crearCitaManual` | Dueño | Sí | Servicio activo; `evaluarInicio` con `actor: 'dueno'` sin motivos (RN-09 sin la anticipación, D-11) | Igual, con `origen = 'panel'` y sin consentimiento. C-01 y C-02 si hay correo. Sin C-05 (S-06). | `HORARIO_NO_DISPONIBLE` (con los motivos), `NEGOCIO_SUSPENDIDO` |
 | `reprogramarCita` | Cliente (token) | Sí | Token válido; estado `confirmada`; `ahora ≤ inicio − plazo`; `reprogramaciones_cliente < max_reprogramaciones_cliente`, o límite `NULL` (RN-34); negocio no suspendido (D-14); `evaluarInicio` excluyendo la propia cita | `inicio`, `fin` y `ocupado_hasta` nuevos; `version + 1`; `reprogramaciones_cliente + 1`; recordatorio anulado y creado de nuevo; evento `reprogramada`; C-04 (con la invitación actualizada) y C-06 | `NO_ENCONTRADO`, `NEGOCIO_SUSPENDIDO`, `FUERA_DE_PLAZO`, `LIMITE_REPROGRAMACIONES`, `ESTADO_INVALIDO`, `HORARIO_NO_DISPONIBLE` |
 | `moverCita` | Dueño | Sí | `version` esperada (control optimista); `evaluarInicio` con `actor: 'dueno'`, excluyendo la propia cita (D-11) | Igual que reprogramar, pero **sin** sumar `reprogramaciones_cliente` (D-20); C-04 | `CONFLICTO_VERSION`, `HORARIO_NO_DISPONIBLE`, `NEGOCIO_SUSPENDIDO` |
@@ -1726,7 +1780,7 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 | `marcarAsistencia` | Dueño | No | `ahora ≥ inicio`; estado `confirmada`, `completada` o `no_asistio` (S-09) | Estado nuevo; evento | `ANTES_DEL_INICIO`, `ESTADO_INVALIDO`, `NEGOCIO_SUSPENDIDO` |
 | `crearBloqueo` | Dueño | **Sí**, todos los recursos afectados (del recurso, de la sede o del negocio), ordenados por `id` (§11.3) | `fin > inicio`; ninguna cita `confirmada` con `ocupado_hasta > now()` en el rango (D-15) | Bloqueo | `BLOQUEO_CON_CITAS` (con la lista de citas), `NEGOCIO_SUSPENDIDO` |
 | `guardarHorarioSemanal` | Dueño | No | Franjas sin solape en cada día | Reemplaza la semana completa | `FRANJAS_SOLAPADAS` |
-| `guardarServicio` | Dueño | No | `max_services` al crear o activar | Servicio en el catálogo. En el MVP crea también su `servicio_sede` en la sede principal (sin `cliente_elige`) y su `servicio_sede_recurso` con el consultorio. | `LIMITE_PLAN` |
+| `guardarServicio` | Dueño | No | `max_services` al crear o activar; categoría de 1 a 40 caracteres o vacía (D-26) | Servicio en el catálogo, con su categoría (vacía = `NULL`). En el MVP crea también su `servicio_sede` en la sede principal (sin `cliente_elige`) y su `servicio_sede_recurso` con el consultorio. | `LIMITE_PLAN` |
 | `guardarSede` | Dueño (interfaz posterior, D-16) | No | `max_locations` al crear o activar; no desactivar la última sede activa | Sede | `LIMITE_PLAN`, `ESTADO_INVALIDO` |
 | `ofrecerServicioEnSede` | Dueño (interfaz posterior, D-16 y D-17) | No | Recursos de esa sede; sobrescrituras válidas; con `cliente_elige` o con empleados en la lista, la funcionalidad `resource_per_service`; `cliente_elige` exige que todos sean empleados | Crea o actualiza `servicio_sede` y su lista en `servicio_sede_recurso` | `DATOS_INVALIDOS`, `LIMITE_PLAN` |
 | `guardarEmpleado` | Dueño (interfaz posterior, D-17) | No | `resource_per_service`; `max_resources` al crear o activar; foto válida (§19.2); horario propio dentro del de la sede | Recurso `profesional` (capacidad 1) con nombre, foto, descripción y horario propio opcional | `LIMITE_PLAN`, `DATOS_INVALIDOS` |
@@ -1737,12 +1791,14 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 | `aplicarAsistenciaPorDefecto` | Sistema (cron) | No | — | Marca con el valor por defecto las citas `confirmada` cuyo `fin` ya pasó, salvo `manual` o negocio suspendido; evento con actor `sistema` (§14.4, D-21) | — |
 | `generarEnlaceCalendario` | Dueño | No | — | Revoca el enlace vigente del alcance y crea otro; devuelve la URL (§14.7) | `NEGOCIO_SUSPENDIDO` |
 | `servirCalendario` | Calendario externo (token) | No | Enlace existente, no revocado y con firma válida | Genera el iCalendar (§14.7) | `NO_ENCONTRADO` |
-| `altaNegocio` | Admin | No | Slug válido y no reservado; plan existente; `fin_prueba` si el estado es `prueba`, o `pagado_hasta` si es `activa` | Negocio, configuración con los valores de D-09, "Sede principal" con su dirección y teléfono, recurso "Consultorio" (capacidad 1) en esa sede, política v1 y miembro pendiente; invitación de Clerk **después** del `COMMIT` | `SLUG_NO_DISPONIBLE`, `DATOS_INVALIDOS` |
+| `altaNegocio` | Admin | No | Slug válido y no reservado; plan existente; `fin_prueba` si el estado es `prueba`, o `pagado_hasta` si es `activa` | Negocio, configuración con los valores de D-09, "Sede principal" con su dirección y, si se indica, su teléfono como contacto `telefono` (D-29), recurso "Consultorio" (capacidad 1) en esa sede, política v1 y miembro pendiente; invitación de Clerk **después** del `COMMIT` | `SLUG_NO_DISPONIBLE`, `DATOS_INVALIDOS` |
 | `suspenderNegocio` | Admin | No | Negocio no suspendido | `estado_suscripcion = 'suspendida'` y C-08, en la misma transacción, auditada con el admin como autor | `ESTADO_INVALIDO` |
 | `registrarPago` | Admin | No | `pagado_hasta` nuevo, mayor que el actual | `estado_suscripcion = 'activa'` y `pagado_hasta` en una sola sentencia, auditada con el admin como autor (RN-30, RN-31) | `DATOS_INVALIDOS` |
 | `cambiarFinPrueba` | Admin | No | Negocio en `prueba` (Q-25 de TASKS-02) | Nuevo `fin_prueba`, auditado con el admin como autor (ADM-03, RN-30) | `ESTADO_INVALIDO`, `DATOS_INVALIDOS`, `NO_ENCONTRADO` |
 | `detalleNegocioAdmin` | Admin | No | — | Datos y estado efectivo de la suscripción de un negocio (ADM-01, ADM-03) | — |
-| `guardarNegocio` | Dueño | No | Nombre no vacío; colores `#rrggbb` | Nombre y colores del negocio, y dirección y teléfono de la sede principal, en una transacción (PAN-11) | `DATOS_INVALIDOS` |
+| `guardarNegocio` | Dueño | No | Nombre no vacío; colores `#rrggbb`; textos de marca dentro de su longitud (D-27) | Nombre, colores, rubro, eslogan, frase del banner y descripción del negocio (vacío = `NULL`), y dirección de la sede principal, en una transacción (PAN-11). Desde la v0.12 no escribe `sede.telefono`. | `DATOS_INVALIDOS` |
+| `listarContactos` y `guardarContactos` | Dueño | No | Lista válida según `dominio/contactos.ts`: tipo, valor normalizable y hasta 6 (D-29) | Lee o reemplaza, en una transacción, la lista ordenada de contactos de la sede principal (PAN-11) | `DATOS_INVALIDOS`, `NEGOCIO_SUSPENDIDO` |
+| `listarCategorias` | Dueño | No | — | Las categorías distintas de los servicios del negocio, para sugerirlas en el formulario (PAN-12, D-26) | — |
 | `subirLogo` y `quitarLogo` | Dueño | No | PNG, JPEG o WebP de hasta 512 KB (§19.2) | Guarda el logo en R2 con nombre aleatorio y actualiza `negocio.logo_url`; el anterior se borra (PAN-11; Q-21 de TASKS-02) | `DATOS_INVALIDOS` |
 | `guardarConsultorio` | Dueño | No | Capacidad entera ≥ 1 (RN-06) | Nombre y capacidad del consultorio de la sede principal (PAN-13) | `DATOS_INVALIDOS` |
 | `activarServicio` y `desactivarServicio` | Dueño | No | Servicio del negocio; `max_services` al activar (RN-28) | Cambia `servicio.activo`; desactivar no toca las citas (PAN-12, RN-05) | `NO_ENCONTRADO`, `LIMITE_PLAN` |
@@ -1751,13 +1807,21 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 | `publicarPolitica` | Dueño | No | Texto no vacío | Crea la versión siguiente de `politica_datos`; las anteriores no cambian (PAN-17) | `DATOS_INVALIDOS` |
 | `leerConfiguracion`, `leerHorarioSemanal`, `listarPoliticas` y `estadoConfiguracion` | Dueño | No | — | Solo leen. Funcionan con el negocio suspendido (D-14). | — |
 
-Las operaciones de las filas de `cambiarFinPrueba` en adelante se agregaron al implementar la Fase 2 (Q-19 de [TASKS-02](TASKS-02.md)). Las del dueño en el MVP actúan sobre la sede principal y su consultorio (Q-20).
+Las operaciones de las filas de `cambiarFinPrueba` en adelante se agregaron al implementar la Fase 2 (Q-19 de [TASKS-02](TASKS-02.md)). Las del dueño en el MVP actúan sobre la sede principal y su consultorio (Q-20). `listarContactos`, `guardarContactos` y `listarCategorias` se agregaron con la Fase 4 (Q-39 y Q-40 de [TASKS-04](TASKS-04.md)).
 
 Las transiciones de estado se escriben como `UPDATE cita SET estado = $nuevo … WHERE id = $id AND negocio_id = $n AND estado = $esperado`. Si no afecta ninguna fila, la operación devuelve `ESTADO_INVALIDO`. Esto hace idempotentes los dobles clics y los reintentos.
 
 ### 18.5 Contratos HTTP públicos
 
 Errores con el formato `{ "error": { "codigo": "HORARIO_NO_DISPONIBLE", "mensaje": "Esa hora se acaba de ocupar." } }`.
+
+`DATOS_INVALIDOS` de la reserva puede traer además `campos`, con los nombres de los campos del cuerpo que fallaron, nunca sus valores (Q-46 de [TASKS-04](TASKS-04.md)):
+
+```json
+{ "error": { "codigo": "DATOS_INVALIDOS", "mensaje": "Revisa los datos e intenta de nuevo.", "campos": ["telefono"] } }
+```
+
+Los campos posibles son `nombre`, `apellido`, `telefono`, `correo` y `aceptaPolitica`. Un teléfono que no se puede normalizar sale como `telefono`. La trampa para bots (`sitioWeb`, §15) responde `DATOS_INVALIDOS` sin `campos`, para no delatarla. Es un cambio aditivo: un cliente que no conoce `campos` sigue funcionando.
 
 **Disponibilidad**
 
@@ -1796,7 +1860,7 @@ Content-Type: application/json
   "sitioWeb": ""
 }
 ```
-Respuesta `201`: `{ "citaId": "…", "inicio": "…", "fin": "…" }`. El link de gestión llega por correo.
+Respuesta `201`: `{ "citaId": "…", "codigo": "OV-4821", "inicio": "…", "fin": "…" }`. `codigo` es el código de reserva (§11.4), que la confirmación muestra. El link de gestión llega por correo.
 
 **Gestión por link** (el token va en el cuerpo, nunca en la URL de la API)
 
@@ -1814,7 +1878,7 @@ GET /api/calendario/{enlaceId}/{token}     → 200 text/calendar (§14.7) · 404
 
 | Código | HTTP | Cuándo |
 |---|---|---|
-| `DATOS_INVALIDOS` | 422 | Falla la validación de Zod (incluido un teléfono no normalizable o la trampa para bots llena) |
+| `DATOS_INVALIDOS` | 422 | Falla la validación de Zod (incluido un teléfono no normalizable o la trampa para bots llena). En la reserva, con `campos` opcional. |
 | `NO_ENCONTRADO` | 404 | Slug, servicio o cita inexistentes, de otro negocio o con un token inválido |
 | `NEGOCIO_SUSPENDIDO` | 403 | RN-04 y D-14: reservas, acciones por link y cambios en el panel de un negocio suspendido |
 | `BLOQUEO_CON_CITAS` | 409 | D-15 (solo en el panel) |
@@ -1841,6 +1905,7 @@ El panel usa **Server Actions** con los mismos casos de uso y los mismos código
 | Correo de empleados | `recurso.correo` | Enviar C-09 y C-10 con invitación de calendario (RN-35) | Opcional. El negocio debe tener la autorización del empleado. |
 | Citas en el enlace de calendario | Respuesta de `/api/calendario/…` | Mostrar la agenda en el calendario del dueño | Solo servicio, nombre del cliente, sede y empleado. El enlace es privado y revocable. |
 | Correo y contraseña del dueño | Clerk (y el correo también en `miembro_negocio`) | Autenticación | La contraseña nunca llega a nuestra base de datos |
+| Contactos del negocio | `contacto_sede` | Que el cliente se comunique con el negocio (PUB-01, PUB-07, GES-04; D-29) | Públicos en la página. Si uno es el teléfono o el correo personal del dueño, lo publica el propio negocio. |
 | IP del visitante | Solo en memoria | Límite de frecuencia | No se guarda |
 
 ### 19.2 Controles

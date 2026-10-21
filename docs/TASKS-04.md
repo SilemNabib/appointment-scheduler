@@ -4,7 +4,7 @@
 |---|---|
 | **Versión** | 0.1 (borrador) |
 | **Fecha** | 2026-10-20 |
-| **Fuentes** | [PRD.md](PRD.md) v0.9 · [ARCHITECTURE.md](ARCHITECTURE.md) v0.11 · [DESIGN.md](DESIGN.md) v1.0 · [TASKS-03.md](TASKS-03.md) |
+| **Fuentes** | [PRD.md](PRD.md) v0.9 · [ARCHITECTURE.md](ARCHITECTURE.md) v0.12 · [DESIGN.md](DESIGN.md) v1.0 · [TASKS-03.md](TASKS-03.md) |
 
 > El PRD manda en el **qué** y ARCHITECTURE en el **cómo**. DESIGN.md describe cómo se ve y se comporta la interfaz; donde difiere del PRD, prevalece el PRD (DESIGN, encabezado). Si una tarea contradice a alguno de los tres, se corrige la tarea. El formato de las tareas, sus marcas y la definición de terminado están en [TASKS-00](TASKS-00.md). Lo que los documentos no definen está en [Preguntas](#preguntas): las nuevas siguen la numeración de TASKS-03 (desde Q-37), y las anteriores se citan con su documento, como "Q-35 (TASKS-03)".
 
@@ -45,7 +45,7 @@
 
 ### 4.A Modelo de datos (D-26 a D-29)
 
-Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-de-datos-esquema-y-migraciones) y depende de la anterior para mantener lineal la cadena de migraciones. Como ARCH §18.2 todavía no tiene estas columnas, el SQL debe coincidir con el modelo de Q-38 a Q-41.
+Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-de-datos-esquema-y-migraciones) y depende de la anterior para mantener lineal la cadena de migraciones. El SQL debe coincidir con ARCH §18.2 (v0.12), que recoge el modelo de Q-38 a Q-41.
 
 * [ ] T4.01: Esquema: marca ampliada y categoría de servicio
    * Objetivo: Agregar a `negocio` el rubro, el eslogan, la frase del banner y la descripción (D-27), y a `servicio` la categoría (D-26), según Q-38 y Q-39. Cambiar el valor por defecto de `negocio.color_primario` a `#2b3fd6` (Q-42).
@@ -375,7 +375,7 @@ Pruebas de integración contra la rama efímera de Neon, con los criterios de ac
 
 ## Preguntas
 
-Puntos que el PRD, ARCHITECTURE y DESIGN no definían. Todas quedaron resueltas el 2026-10-20. El modelo y los contratos nuevos (Q-38 a Q-41 y Q-46) falta agregarlos a ARCH §17, §18.2 y §18.5 (v0.12). Siguen vigentes, y aplican a esta fase, Q-20 y Q-24 de [TASKS-02](TASKS-02.md#preguntas), y Q-35 y Q-36 de [TASKS-03](TASKS-03.md#preguntas).
+Puntos que el PRD, ARCHITECTURE y DESIGN no definían. Todas quedaron resueltas el 2026-10-20. El modelo y los contratos nuevos (Q-38 a Q-41 y Q-46) quedaron en ARCH §11.4, §17, §18 y §19.1 (v0.12). Siguen vigentes, y aplican a esta fase, Q-20 y Q-24 de [TASKS-02](TASKS-02.md#preguntas), y Q-35 y Q-36 de [TASKS-03](TASKS-03.md#preguntas).
 
 | ID | Pregunta | Decisión | Afecta a |
 |---|---|---|---|

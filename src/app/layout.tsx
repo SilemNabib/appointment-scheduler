@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { fuenteCuerpo, fuenteTitulos } from "./fuentes";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className="h-full antialiased">
+    <html lang="es" className={`h-full antialiased ${fuenteTitulos.variable} ${fuenteCuerpo.variable}`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

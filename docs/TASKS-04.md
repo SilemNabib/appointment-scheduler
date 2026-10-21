@@ -154,7 +154,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
 
 ### 4.C Base visual (DESIGN.md)
 
-* [ ] T4.12: Tokens, tipografía y movimiento
+* [x] T4.12: Tokens, tipografía y movimiento
    * Objetivo: Reemplazar el estilo de la Fase 1 en `globals.css` por los tokens de DESIGN §2.1 como variables CSS y tema de Tailwind, con solo el tema claro (Q-44). Cargar Bricolage Grotesque y Figtree con `next/font` (servidas por el propio Worker) y desactivar las animaciones con `prefers-reduced-motion: reduce` (DESIGN §2.4).
    * Archivos: `src/app/globals.css`, `src/app/layout.tsx`, `src/app/fuentes.ts`
    * Depende de: T3.33
@@ -163,7 +163,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * `npm run build` pasa, y en `npm run preview` las fuentes llegan desde `/_next/static/media/…`, sin solicitudes a dominios de Google (pestaña Red).
       * Con el sistema en tema oscuro, las páginas se ven con los tokens claros. Con `prefers-reduced-motion: reduce` emulado, no hay animaciones de entrada.
 
-* [ ] T4.13: Dominio: color de marca y contraste
+* [x] T4.13: Dominio: color de marca y contraste
    * Objetivo: Crear en `dominio/color.ts` la razón de contraste de WCAG 2.1 entre dos colores `#rrggbb` y las decisiones de Q-42: el color del texto sobre el acento (blanco o `tinta`) y si el acento sirve como color de texto sobre `superficie` y `fondo`; si no sirve, el texto usa `tinta` (RNF-03).
    * Archivos: `src/dominio/color.ts`, `tests/unit/dominio/color.test.ts`
    * Depende de: T3.33

@@ -1,24 +1,119 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Tokens de DESIGN §2 (Q-44): solo el tema claro. Los colores son clases de Tailwind
+ * (`bg-fondo`, `text-tinta`, `border-borde`…). El acento es el color de marca de cada
+ * negocio: la página pública fija `--acento`, `--sobre-acento` y `--acento-texto` con
+ * las decisiones de contraste de dominio/color.ts (Q-42); sin ellas, el del diseño.
+ */
+@theme {
+  --color-fondo: #f5f6f2;
+  --color-superficie: #ffffff;
+  --color-tinta: #15171a;
+  --color-tinta-suave: #3a3f45;
+  --color-texto-muted: #5b6068;
+  --color-borde: #e3e5e0;
+  --color-borde-control: #cfd2cb;
+  --color-fondo-suave: #f0f1ec;
+  --color-lima: #d9f36b;
+  --color-exito-fondo: #e2f4df;
+  --color-exito-texto: #1f5f1b;
+  --color-exito-borde: #bfe3b8;
+  --color-aviso-fondo: #fff4e0;
+  --color-aviso-texto: #6b3600;
+  --color-aviso-borde: #f1cf96;
+  --color-error-fondo: #fdecea;
+  --color-error-texto: #8e1f14;
+  --color-error-borde: #f5c2bc;
+  --color-error-accion: #b42318;
+  --color-deshabilitado: #e4e6e1;
+  --color-deshabilitado-texto: #6b7077;
+  --color-whatsapp: #17784a;
+  --color-foco: #8c9bff;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
+  --font-titulos: var(--fuente-titulos), var(--fuente-cuerpo), sans-serif;
+  --font-cuerpo: var(--fuente-cuerpo), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-codigo: ui-monospace, Menlo, monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Radios de DESIGN §2.3. */
+  --radius-tarjeta: 24px;
+  --radius-control: 12px;
+  --radius-boton: 14px;
+
+  --animate-entrada: entrada 0.25s ease;
+  --animate-giro: giro 0.8s linear infinite;
+
+  @keyframes entrada {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes giro {
+    to {
+      transform: rotate(360deg);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+/* El acento depende del negocio: se resuelve en tiempo de ejecución, no al compilar. */
+@theme inline {
+  --color-acento: var(--acento, #2b3fd6);
+  --color-sobre-acento: var(--sobre-acento, #ffffff);
+  --color-acento-texto: var(--acento-texto, var(--acento, #2b3fd6));
+}
+
+/*
+ * Sin tema oscuro (Q-44). Las páginas del panel que aún usan `dark:` se revisan en la
+ * Fase 5; mientras tanto, la variante solo aplicaría con una clase `.dark` que nadie
+ * pone, así que con el sistema en oscuro todo se ve con los tokens claros.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--color-fondo);
+    color: var(--color-tinta);
+    font-family: var(--font-cuerpo);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  /* Títulos y cifras (DESIGN §2.2). */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-titulos);
+    letter-spacing: -0.02em;
+  }
+
+  /* Anillo de foco de DESIGN §2.1 en todos los controles. */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-foco);
+    outline-offset: 2px;
+  }
+
+  ::placeholder {
+    color: #7a7f86;
+  }
+}
+
+/* DESIGN §2.4: con movimiento reducido no hay animaciones de entrada ni transiciones. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

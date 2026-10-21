@@ -111,3 +111,40 @@ export async function leerPaginaPublica(slug: string, ahora: Date): Promise<Resu
     ultimoDia: sumarDias(hoy, reglas.anticipacionMaximaDias),
   });
 }
+
+/** Una versión de la política, para `/{slug}/politica/{version}` (PUB-05, RN-17; Q-45). */
+export type PoliticaPublica = {
+  marca: Pick<MarcaPagina, "nombre" | "slug" | "colorPrimario" | "colorSecundario" | "zonaHoraria">;
+  version: number;
+  contenido: string;
+  publicadaEn: Date;
+};
+
+/**
+ * Esa versión de la política del negocio del slug, también una anterior a la vigente:
+ * el cliente lee la que vio al reservar (F-01). Se muestra aunque el negocio esté
+ * suspendido. Una versión que no es un entero positivo, que no existe o que es de otro
+ * negocio devuelve `NO_ENCONTRADO` (RN-01).
+ */
+export async function leerPoliticaPublica(
+  slug: string,
+  version: string,
+): Promise<Resultado<PoliticaPublica, "NO_ENCONTRADO">> {
+  if (!/^[1-9]\d{0,8}$/.test(version)) return fallo("NO_ENCONTRADO");
+  const negocio = await negocios.paginaPorSlug(slug);
+  if (!negocio) return fallo("NO_ENCONTRADO");
+  const politica = await politicas.porVersion(negocio.id, Number(version));
+  if (!politica) return fallo("NO_ENCONTRADO");
+  return exito({
+    marca: {
+      nombre: negocio.nombre,
+      slug: negocio.slug,
+      colorPrimario: negocio.colorPrimario,
+      colorSecundario: negocio.colorSecundario,
+      zonaHoraria: negocio.zonaHoraria,
+    },
+    version: politica.version,
+    contenido: politica.contenido,
+    publicadaEn: politica.publicadaEn,
+  });
+}

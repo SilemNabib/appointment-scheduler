@@ -41,6 +41,20 @@ export async function vigente(negocioId: string): Promise<{ id: string; version:
   return fila ?? null;
 }
 
+/** Una versión de la política del negocio, con su texto, o `null` si no existe en ese negocio (RN-01). */
+export async function porVersion(negocioId: string, version: number): Promise<VersionPolitica | null> {
+  const [fila] = await db()
+    .select({
+      id: politicaDatos.id,
+      version: politicaDatos.version,
+      contenido: politicaDatos.contenido,
+      publicadaEn: politicaDatos.publicadaEn,
+    })
+    .from(politicaDatos)
+    .where(and(eq(politicaDatos.negocioId, negocioId), eq(politicaDatos.version, version)));
+  return fila ?? null;
+}
+
 /**
  * Si la versión es del negocio. Cualquier versión vale para una reserva, no solo la
  * vigente: se guarda la que vio el cliente (F-01).

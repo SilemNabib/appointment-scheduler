@@ -228,7 +228,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * Prueba unitaria: lunes a viernes de 8:00 a 12:00 y de 14:00 a 18:00, más el sábado de 8:00 a 12:00, se resumen en dos líneas, con las horas en formato de 12 horas (RNF-02). Un día sin franjas aparece como cerrado.
       * Manual: a 360 px, el encabezado se ve sin desplazamiento horizontal; sin logo, aparece la inicial. Los campos de marca vacíos no dejan huecos, y la página no muestra la palabra "sede" (RN-32).
 
-* [ ] T4.19: Página de la política de datos
+* [x] T4.19: Página de la política de datos
    * Objetivo: Crear `/{slug}/politica/{version}`, que muestra esa versión de la política del negocio con un renderizador de Markdown sin HTML crudo (ARCH §19.2), con su número de versión y su fecha. La casilla de PUB-05 enlaza a la versión que el cliente vio (F-01; Q-45).
    * Archivos: `src/app/(publico)/[slug]/politica/[version]/page.tsx`, `src/componentes/markdown.tsx`, `src/servidor/casos-uso/pagina-publica.ts`, `src/servidor/db/repositorios/politicas.ts`, `tests/integracion/casos-uso/pagina-publica.test.ts`, `package.json`
    * Depende de: T4.17

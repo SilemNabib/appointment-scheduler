@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, test } from "vitest";
 import { guardarContactos } from "@/servidor/casos-uso/contactos";
 import { guardarNegocio } from "@/servidor/casos-uso/guardar-negocio";
-import { leerPaginaPublica } from "@/servidor/casos-uso/pagina-publica";
+import { leerPaginaPublica, leerPoliticaPublica } from "@/servidor/casos-uso/pagina-publica";
 import { publicarPolitica } from "@/servidor/casos-uso/politica-datos";
 import { desactivarServicio, guardarServicio } from "@/servidor/casos-uso/servicios";
 import { db } from "@/servidor/db/cliente";
@@ -132,5 +132,36 @@ describe("leerPaginaPublica", () => {
   test("sin franjas, el estado es sin_horarios (F-05)", async () => {
     const n = await negocioConAgenda({ franjas: [] });
     expect(await leerPaginaPublica(n.slug, AHORA)).toMatchObject({ ok: true, valor: { estado: "sin_horarios" } });
+  });
+});
+
+describe("leerPoliticaPublica (PUB-05, RN-17; Q-45)", () => {
+  test("una versión anterior sigue disponible después de publicar otra", async () => {
+    const n = await negocioConAgenda();
+    const v2 = await publicarPolitica({ negocioId: n.negocioId }, { contenido: "# Política\n\nVersión 2." });
+    if (!v2.ok) throw new Error(v2.error);
+
+    const anterior = await leerPoliticaPublica(n.slug, "1");
+    const vigente = await leerPoliticaPublica(n.slug, "2");
+
+    expect(anterior).toMatchObject({ ok: true, valor: { version: 1, contenido: expect.stringContaining("Política de tratamiento"), marca: { slug: n.slug } } });
+    expect(vigente).toMatchObject({ ok: true, valor: { version: 2, contenido: "# Política\n\nVersión 2.", publicadaEn: expect.any(Date) } });
+  });
+
+  test("una versión inexistente, mal escrita o de otro negocio devuelve NO_ENCONTRADO (RN-01)", async () => {
+    const a = await negocioConAgenda();
+    const b = await negocioConAgenda();
+    await publicarPolitica({ negocioId: b.negocioId }, { contenido: "De B, versión 2." });
+
+    for (const version of ["2", "0", "-1", "1.5", "uno", "", "9999999999"]) {
+      expect(await leerPoliticaPublica(a.slug, version), version).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+    }
+    expect(await leerPoliticaPublica("no-existe-este-slug", "1")).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+    expect((await leerPoliticaPublica(b.slug, "2")).ok).toBe(true);
+  });
+
+  test("se muestra aunque el negocio esté suspendido", async () => {
+    const n = await negocioConAgenda({ suscripcion: { estadoSuscripcion: "suspendida" } });
+    expect(await leerPoliticaPublica(n.slug, "1")).toMatchObject({ ok: true, valor: { version: 1 } });
   });
 });

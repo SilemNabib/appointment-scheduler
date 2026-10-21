@@ -73,3 +73,29 @@ describe("responder", () => {
     expect(texto).not.toMatch(/Ana|\+57/);
   });
 });
+
+/** El cuerpo de error de una respuesta. */
+const errorDe = async (r: Response) => ((await r.json()) as { error: Record<string, unknown> }).error;
+
+describe("campos de DATOS_INVALIDOS (Q-46)", () => {
+  test("DATOS_INVALIDOS lleva los campos que fallaron, en el orden del formulario y sin repetidos", async () => {
+    const respuesta = responder({ ...fallo("DATOS_INVALIDOS" as const), campos: ["correo", "nombre", "correo"] });
+    expect(respuesta.status).toBe(422);
+    expect(await respuesta.json()).toEqual({
+      error: { codigo: "DATOS_INVALIDOS", mensaje: "Revisa los datos e intenta de nuevo.", campos: ["nombre", "correo"] },
+    });
+  });
+
+  test("solo deja pasar nombres de campos conocidos: nunca un valor ni sitioWeb", async () => {
+    const respuesta = responder({ ...fallo("DATOS_INVALIDOS" as const), campos: ["Ana Pérez", "+573001234567", "sitioWeb", "telefono"] });
+    const texto = await respuesta.text();
+    expect(JSON.parse(texto).error.campos).toEqual(["telefono"]);
+    expect(texto).not.toMatch(/Ana|\+57|sitioWeb/);
+  });
+
+  test("sin campos válidos, o con otro código, la respuesta no lleva la clave campos", async () => {
+    expect(await errorDe(responder(fallo("DATOS_INVALIDOS" as const)))).not.toHaveProperty("campos");
+    expect(await errorDe(responder({ ...fallo("DATOS_INVALIDOS" as const), campos: ["sitioWeb"] }))).not.toHaveProperty("campos");
+    expect(await errorDe(respuestaError("HORARIO_NO_DISPONIBLE", ["telefono"]))).not.toHaveProperty("campos");
+  });
+});

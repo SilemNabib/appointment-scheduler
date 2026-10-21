@@ -9,7 +9,7 @@ import {
 } from "@/dominio/codigo-reserva";
 import { evaluarInicio } from "@/dominio/disponibilidad";
 import { normalizarCorreo, normalizarTelefono, type DatosIdentidad } from "@/dominio/identidad-cliente";
-import { ErrorNegocio, exito, fallo, type Resultado } from "@/dominio/resultado";
+import { ErrorNegocio, exito, fallo, type Fallo, type Resultado } from "@/dominio/resultado";
 import { estadoEfectivo } from "@/dominio/suscripcion";
 import { fechaLocal, intervaloDeDias, mesLocal } from "@/dominio/tiempo";
 import { enTransaccion, type Transaccion } from "@/servidor/db/cliente";
@@ -63,6 +63,29 @@ export type ErrorReserva =
   | "HORARIO_NO_DISPONIBLE"
   | "LIMITE_PLAN";
 
+/**
+ * Los campos de PUB-05 que `DATOS_INVALIDOS` puede nombrar (Q-46), en el orden del
+ * formulario. La trampa `sitioWeb` no está (ARCH §15).
+ */
+export const CAMPOS_RESERVA = ["nombre", "apellido", "telefono", "correo", "aceptaPolitica"] as const;
+export type CampoReserva = (typeof CAMPOS_RESERVA)[number];
+
+/**
+ * `DATOS_INVALIDOS` con los campos de PUB-05 que fallaron, en el orden del formulario
+ * (Q-46): solo sus nombres, nunca los valores. Sin `campos` si falló otra cosa o si la
+ * trampa `sitioWeb` llegó llena, para no delatarla (ARCH §15).
+ */
+export type DatosInvalidosReserva = Fallo<"DATOS_INVALIDOS"> & { campos?: CampoReserva[] };
+
+/** El resultado de la reserva: `DATOS_INVALIDOS` puede traer sus `campos`. */
+type ResultadoReserva<T> = Resultado<T, ErrorReserva> | DatosInvalidosReserva;
+
+/** Los campos de PUB-05 que fallaron, de la lista de Q-46; sin repetidos y en su orden. */
+function datosInvalidos(fallaron: ReadonlySet<string>): DatosInvalidosReserva {
+  const campos = CAMPOS_RESERVA.filter((c) => fallaron.has(c));
+  return campos.length > 0 ? { ...fallo("DATOS_INVALIDOS"), campos } : fallo("DATOS_INVALIDOS");
+}
+
 /** Lo que la transacción necesita, ya validado. */
 export type ReservaPreparada = {
   negocio: negocios.NegocioPublico;
@@ -81,7 +104,7 @@ export type ReservaPreparada = {
  *
  * 1. valida el cuerpo con Zod: los cuatro datos, un teléfono normalizable, la casilla
  *    marcada y `sitioWeb` vacío (RN-17; ARCH §15). Si algo falla devuelve
- *    `DATOS_INVALIDOS` sin tocar la base;
+ *    `DATOS_INVALIDOS`, con los campos de PUB-05 que fallaron (Q-46), sin tocar la base;
  * 2. resuelve el negocio por el slug y rechaza uno suspendido (RN-04);
  * 3. comprueba la oferta (servicio, sede y recurso activos) y que la política sea del
  *    negocio: si no, `NO_ENCONTRADO` (ARCH §6). También con cualquier `recursoId`, porque
@@ -92,12 +115,19 @@ export type ReservaPreparada = {
 export async function prepararReserva(
   entrada: unknown,
   ahora: Date,
-): Promise<Resultado<ReservaPreparada, ErrorReserva>> {
+): Promise<ResultadoReserva<ReservaPreparada>> {
   const leida = esquemaReserva.safeParse(entrada);
-  if (!leida.success) return fallo("DATOS_INVALIDOS");
+  if (!leida.success) {
+    const fallaron = new Set(leida.error.issues.map((i) => String(i.path[0])));
+    if (fallaron.has("sitioWeb")) return fallo("DATOS_INVALIDOS");
+    // Un teléfono que pasó la forma pero no se puede normalizar también falló.
+    const telefono = (entrada as { telefono?: unknown } | null)?.telefono;
+    if (typeof telefono === "string" && !normalizarTelefono(telefono)) fallaron.add("telefono");
+    return datosInvalidos(fallaron);
+  }
   const datos = leida.data;
   const telefonoE164 = normalizarTelefono(datos.telefono);
-  if (!telefonoE164) return fallo("DATOS_INVALIDOS");
+  if (!telefonoE164) return datosInvalidos(new Set(["telefono"]));
 
   const negocio = await negocios.porSlug(datos.slug);
   if (!negocio) return fallo("NO_ENCONTRADO");
@@ -175,7 +205,7 @@ export async function reservarCita(
   entrada: unknown,
   ahora: Date,
   azar: Azar = azarSeguro,
-): Promise<Resultado<CitaReservada, ErrorReserva>> {
+): Promise<ResultadoReserva<CitaReservada>> {
   const preparada = await prepararReserva(entrada, ahora);
   if (!preparada.ok) return preparada;
   for (let intento = 1; ; intento++) {

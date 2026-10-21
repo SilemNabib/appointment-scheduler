@@ -1,8 +1,10 @@
 import "server-only";
-import type { CodigoError, Resultado } from "@/dominio/resultado";
+import type { CodigoError, Fallo, Resultado } from "@/dominio/resultado";
+import { CAMPOS_RESERVA } from "@/servidor/casos-uso/reservar-cita";
 
 // Respuestas JSON de la API pública (ARCH §18.5). Los errores salen con el formato
-// `{ "error": { "codigo", "mensaje" } }` y el estado HTTP de la tabla de §18.5. Los
+// `{ "error": { "codigo", "mensaje" } }` (y `campos` en DATOS_INVALIDOS de la reserva, Q-46)
+// y el estado HTTP de la tabla de §18.5. Los
 // mensajes están en español (RNF-02) y, donde el PRD tiene un texto, son ese texto.
 // Nunca llevan datos del cliente ni detalles internos (ARCH §19.2).
 
@@ -44,13 +46,26 @@ export function respuestaJson(cuerpo: unknown, estado = 200): Response {
   return Response.json(cuerpo, { status: estado, headers: ENCABEZADOS });
 }
 
-/** Solo el código y su mensaje fijo: nada de lo que llegó en la solicitud ni del error interno. */
-export function respuestaError(codigo: CodigoPublico): Response {
+/**
+ * Solo el código y su mensaje fijo: nada de lo que llegó en la solicitud ni del error
+ * interno. `DATOS_INVALIDOS` puede llevar `campos`: solo nombres de `CAMPOS_RESERVA`, sin
+ * repetidos (Q-46); si no queda ninguno, no lleva la clave.
+ */
+export function respuestaError(codigo: CodigoPublico, campos?: readonly unknown[]): Response {
   const { estado, mensaje } = ERRORES_PUBLICOS[codigo];
-  return respuestaJson({ error: { codigo, mensaje } }, estado);
+  const validos =
+    codigo === "DATOS_INVALIDOS" && campos
+      ? CAMPOS_RESERVA.filter((c) => campos.includes(c))
+      : [];
+  return respuestaJson({ error: { codigo, mensaje, ...(validos.length > 0 ? { campos: validos } : {}) } }, estado);
 }
 
 /** El `Resultado` de un caso de uso público: el valor con `estadoExito`, o el error de §18.5. */
-export function responder<T>(resultado: Resultado<T, CodigoPublico>, estadoExito = 200): Response {
-  return resultado.ok ? respuestaJson(resultado.valor, estadoExito) : respuestaError(resultado.error);
+export function responder<T>(
+  resultado: Resultado<T, CodigoPublico> | (Fallo<CodigoPublico> & { campos?: readonly string[] }),
+  estadoExito = 200,
+): Response {
+  if (resultado.ok) return respuestaJson(resultado.valor, estadoExito);
+  const campos = "campos" in resultado && Array.isArray(resultado.campos) ? resultado.campos : undefined;
+  return respuestaError(resultado.error, campos);
 }

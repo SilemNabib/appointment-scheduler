@@ -261,7 +261,7 @@ El flujo vive en un solo componente de cliente con cuatro pasos: servicio, día 
       * Con hoy el 2026-10-20 y el último día el 2026-12-19, se puede ir de octubre a diciembre; el rango de octubre va del 20 al 31 y el de diciembre, del 1 al 19.
       * El siguiente día con cupo salta los días con `inicios: []` y devuelve `null` si no hay ninguno en lo consultado.
 
-* [ ] T4.22: Errores por campo en la API de reservas
+* [x] T4.22: Errores por campo en la API de reservas
    * Objetivo: Hacer que `DATOS_INVALIDOS` de `POST /api/publico/{slug}/reservas` traiga la lista de campos que fallaron (`nombre`, `apellido`, `telefono`, `correo` o `aceptaPolitica`), sin los valores recibidos (Q-46). La trampa `sitioWeb` responde `DATOS_INVALIDOS` sin campos, para no delatarla.
    * Archivos: `src/servidor/casos-uso/reservar-cita.ts`, `src/servidor/http/respuestas.ts`, `tests/integracion/app/api/publico/reservas.test.ts`, `tests/unit/servidor/respuestas.test.ts`
    * Depende de: T4.05

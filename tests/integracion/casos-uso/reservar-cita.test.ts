@@ -65,7 +65,7 @@ describe("prepararReserva: entrada (RN-17; ARCH §15 y §18.5)", () => {
     // Con una base inalcanzable, cualquier consulta lanzaría un error.
     vi.stubEnv("DATABASE_URL", "postgresql://nadie:nada@base-inexistente.invalid/nada");
     for (const entrada of casos) {
-      expect(await prepararReserva(entrada, AHORA), JSON.stringify(entrada)).toEqual({
+      expect(await prepararReserva(entrada, AHORA), JSON.stringify(entrada)).toMatchObject({
         ok: false,
         error: "DATOS_INVALIDOS",
       });

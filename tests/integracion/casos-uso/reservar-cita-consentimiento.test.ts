@@ -49,7 +49,7 @@ describe("consentimiento (RN-17)", () => {
     ];
 
     for (const [que, entrada] of casos) {
-      expect(await reservarCita(entrada, AHORA), que).toEqual({ ok: false, error: "DATOS_INVALIDOS" });
+      expect(await reservarCita(entrada, AHORA), que).toMatchObject({ ok: false, error: "DATOS_INVALIDOS" });
     }
     expect(await citasDe(n.negocioId)).toEqual([]);
   });

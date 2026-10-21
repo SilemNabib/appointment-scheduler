@@ -103,6 +103,44 @@ describe("POST /api/publico/{slug}/reservas (ARCH §18.5)", () => {
     }
   });
 
+  test("un teléfono que no se puede normalizar responde 422 con campos: [\"telefono\"] (Q-46)", async () => {
+    const n = await negocioConAgenda();
+    const respuesta = await enviar(n.slug, JSON.stringify(cuerpo(n, { telefono: "123" })));
+    expect(respuesta.status).toBe(422);
+    expect(await respuesta.json()).toEqual({ error: { ...DATOS_INVALIDOS.error, campos: ["telefono"] } });
+  });
+
+  test("un cuerpo sin nombre ni correo responde con campos: [\"nombre\", \"correo\"], y sin la casilla, con aceptaPolitica", async () => {
+    const n = await negocioConAgenda();
+    const sinNombreNiCorreo = Object.fromEntries(Object.entries(cuerpo(n)).filter(([k]) => k !== "nombre" && k !== "correo"));
+    const sinCasilla = await enviar(n.slug, JSON.stringify(cuerpo(n, { aceptaPolitica: false, apellido: "" })));
+
+    const respuesta = await enviar(n.slug, JSON.stringify(sinNombreNiCorreo));
+
+    expect(await respuesta.json()).toEqual({ error: { ...DATOS_INVALIDOS.error, campos: ["nombre", "correo"] } });
+    expect(((await sinCasilla.json()) as typeof DATOS_INVALIDOS & { error: { campos: string[] } }).error.campos).toEqual([
+      "apellido",
+      "aceptaPolitica",
+    ]);
+  });
+
+  test("con sitioWeb lleno responde 422 sin campos, aunque otros datos también fallen (ARCH §15)", async () => {
+    const n = await negocioConAgenda();
+    for (const extra of [{ sitioWeb: "https://spam.example" }, { sitioWeb: "x", telefono: "123", nombre: "" }]) {
+      const respuesta = await enviar(n.slug, JSON.stringify(cuerpo(n, extra)));
+      expect(respuesta.status).toBe(422);
+      expect(await respuesta.json()).toEqual(DATOS_INVALIDOS);
+    }
+  });
+
+  test("ninguna respuesta de error repite lo que llegó en la solicitud (ARCH §19.2)", async () => {
+    const n = await negocioConAgenda();
+    const valores = { nombre: "Zacarías", apellido: "Quintero", telefono: "777", correo: "zq-sin-arroba" };
+    const texto = await (await enviar(n.slug, JSON.stringify(cuerpo(n, valores)))).text();
+    expect(JSON.parse(texto).error.campos).toEqual(["telefono", "correo"]);
+    for (const valor of Object.values(valores)) expect(texto).not.toContain(valor);
+  });
+
   test("el slug sale de la URL, no del cuerpo (ARCH §6)", async () => {
     const [a, b] = await Promise.all([negocioConAgenda(), negocioConAgenda()]);
     // La sede, el servicio y la política son de A, pero la URL es la de B.

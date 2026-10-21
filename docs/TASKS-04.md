@@ -125,7 +125,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * Los cuatro campos se guardan y se leen. Uno que pasa su longitud máxima devuelve `DATOS_INVALIDOS` y no cambia nada.
       * Pasan sin cambios las demás pruebas de `guardarNegocio` de T2.09.
 
-* [ ] T4.09: Categoría en `guardarServicio`
+* [x] T4.09: Categoría en `guardarServicio`
    * Objetivo: Agregar la categoría a `guardarServicio` (recortada; vacía = sin categoría) y crear `listarCategorias`, con las categorías distintas del negocio, para sugerirlas en el formulario (Q-39).
    * Archivos: `src/servidor/casos-uso/servicios.ts`, `src/servidor/db/repositorios/servicios.ts`, `tests/integracion/casos-uso/servicios.test.ts`
    * Depende de: T4.01

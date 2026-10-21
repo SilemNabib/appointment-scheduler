@@ -27,6 +27,8 @@ export const esquemaServicio = z.object({
     .transform((id) => id ?? null),
   nombre: z.string().trim().min(1).max(120),
   descripcion: textoOpcional(500),
+  /** D-26: recortada, de hasta 40 caracteres (`CHECK` de Q-39); vacía = sin categoría. */
+  categoria: textoOpcional(40),
   duracionMinutos: z.coerce.number().int().min(5).max(720),
   /** Vacío o ausente = 0 (RN-05, D-02). */
   bufferMinutos: z.preprocess(
@@ -41,11 +43,16 @@ export async function listarServicios(ctx: Ctx) {
   return servicios.listar(ctx.negocioId);
 }
 
+/** Las categorías que ya usa el negocio, para sugerirlas en el formulario y evitar variantes (Q-39). */
+export async function listarCategorias(ctx: Ctx): Promise<string[]> {
+  return servicios.categorias(ctx.negocioId);
+}
+
 /**
  * Crea o edita un servicio. Al crear exige cupo de `max_services` (RN-25) y, en una
  * transacción, crea el servicio, su oferta en la sede principal y su asociación con
- * el consultorio. Al editar cambia el nombre, la descripción, la duración y el
- * buffer; editar no exige cupo (RN-28).
+ * el consultorio. Al editar cambia el nombre, la descripción, la categoría, la
+ * duración y el buffer; editar no exige cupo (RN-28).
  */
 export async function guardarServicio(
   ctx: Ctx,

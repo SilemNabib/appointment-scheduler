@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNotNull } from "drizzle-orm";
 import { db, type Transaccion } from "../cliente";
 import { servicio, servicioSede, servicioSedeRecurso } from "../esquema";
 import { idSedePrincipal } from "./sedes";
@@ -11,6 +11,8 @@ import { idSedePrincipal } from "./sedes";
 export type DatosServicio = {
   nombre: string;
   descripcion: string | null;
+  /** D-26; `null` = sin categoría (Q-39). */
+  categoria: string | null;
   duracionMinutos: number;
   bufferMinutos: number;
 };
@@ -21,6 +23,7 @@ const columnas = {
   id: servicio.id,
   nombre: servicio.nombre,
   descripcion: servicio.descripcion,
+  categoria: servicio.categoria,
   duracionMinutos: servicio.duracionMinutos,
   bufferMinutos: servicio.bufferMinutos,
   activo: servicio.activo,
@@ -33,6 +36,16 @@ export async function listar(negocioId: string): Promise<Servicio[]> {
     .from(servicio)
     .where(eq(servicio.negocioId, negocioId))
     .orderBy(desc(servicio.activo), asc(servicio.orden), asc(servicio.nombre), asc(servicio.id));
+}
+
+/** Las categorías distintas de los servicios del negocio, en orden alfabético (Q-39). */
+export async function categorias(negocioId: string): Promise<string[]> {
+  const filas = await db()
+    .selectDistinct({ categoria: servicio.categoria })
+    .from(servicio)
+    .where(and(eq(servicio.negocioId, negocioId), isNotNull(servicio.categoria)))
+    .orderBy(asc(servicio.categoria));
+  return filas.map((f) => f.categoria!);
 }
 
 /** Servicios activos, para el cupo de `max_services` (ARCH §16.3). */

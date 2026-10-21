@@ -5,6 +5,7 @@ import {
   activarServicio,
   desactivarServicio,
   guardarServicio,
+  listarCategorias,
   type EntradaServicio,
 } from "@/servidor/casos-uso/servicios";
 import { db } from "@/servidor/db/cliente";
@@ -153,6 +154,42 @@ describe("guardarServicio: editar", () => {
       });
     }
     expect(await filasDe(deB)).toEqual(antes);
+  });
+});
+
+describe("categoría (PAN-12; D-26, Q-39)", () => {
+  test('crear y editar guardan la categoría recortada: " Lentes " queda como "Lentes", y vacía, en NULL', async () => {
+    const { negocioId } = await sesionDeDueno();
+    const id = await crear(negocioId, { categoria: " Lentes " });
+    expect((await filasDe(id)).servicio.categoria).toBe("Lentes");
+
+    expect(await guardarServicio({ negocioId }, examenVisual({ id, categoria: "Exámenes" }))).toEqual({ ok: true, valor: { id } });
+    expect((await filasDe(id)).servicio.categoria).toBe("Exámenes");
+
+    await guardarServicio({ negocioId }, examenVisual({ id, categoria: "   " }));
+    expect((await filasDe(id)).servicio.categoria).toBeNull();
+    expect((await filasDe(await crear(negocioId))).servicio.categoria).toBeNull();
+  });
+
+  test("una categoría de 41 caracteres devuelve DATOS_INVALIDOS", async () => {
+    const { negocioId } = await sesionDeDueno();
+    expect(await guardarServicio({ negocioId }, examenVisual({ categoria: "x".repeat(41) }))).toEqual({
+      ok: false,
+      error: "DATOS_INVALIDOS",
+    });
+  });
+
+  test("listarCategorias devuelve cada categoría una vez, sin las vacías ni las de otros negocios (ARCH §6)", async () => {
+    const { negocioId } = await sesionDeDueno();
+    const { negocioId: otro } = await sesionDeDueno();
+    await crear(negocioId, { nombre: "Examen visual", categoria: "Exámenes" });
+    await crear(negocioId, { nombre: "Examen de niños", categoria: "Exámenes" });
+    await crear(negocioId, { nombre: "Adaptación", categoria: "Lentes" });
+    await crear(negocioId, { nombre: "Limpieza" });
+    await crear(otro, { nombre: "Masaje", categoria: "Spa" });
+
+    expect(await listarCategorias({ negocioId })).toEqual(["Exámenes", "Lentes"]);
+    expect(await listarCategorias({ negocioId: otro })).toEqual(["Spa"]);
   });
 });
 

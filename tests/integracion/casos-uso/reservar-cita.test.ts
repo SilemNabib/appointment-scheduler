@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import type { Azar } from "@/dominio/codigo-reserva";
 import { publicarPolitica } from "@/servidor/casos-uso/politica-datos";
 import { prepararReserva, reservarCita, type EntradaReserva } from "@/servidor/casos-uso/reservar-cita";
 import { db, enTransaccion } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
-import { fijarLimite, negocioConAgenda } from "../fixtures";
+import { crearCliente, crearRecurso, crearSede, datosDeCita, fijarLimite, negocioConAgenda } from "../fixtures";
 
 // Reserva pública (PUB-05, F-01; RN-04, RN-17, RN-25; ARCH §15, §18.4 y §18.5; Q-29,
 // Q-30). "Ahora" es el viernes 1-mar-2030 a las 10:00 a. m. de Bogotá; la reserva es
@@ -162,18 +163,19 @@ const clientesDe = (negocioId: string) =>
   db().select().from(esquema.cliente).where(eq(esquema.cliente.negocioId, negocioId));
 
 describe("reservarCita: transacción (RN-09 a RN-12, RN-17; ARCH §11)", () => {
-  test("una reserva válida responde { citaId, inicio, fin } y deja la cita confirmada, con fin = inicio + duración y ocupado_hasta = fin + buffer", async () => {
+  test("una reserva válida responde { citaId, codigo, inicio, fin } y deja la cita confirmada, con fin = inicio + duración y ocupado_hasta = fin + buffer", async () => {
     const n = await negocioConAgenda({ servicio: { duracionMinutos: 30, bufferMinutos: 10 } });
 
     const resultado = await reservarCita(reserva(n), AHORA);
 
     expect(resultado).toEqual({
       ok: true,
-      valor: { citaId: expect.any(String), inicio: LUNES_9AM, fin: "2030-03-04T14:30:00.000Z" },
+      valor: { citaId: expect.any(String), codigo: expect.any(String), inicio: LUNES_9AM, fin: "2030-03-04T14:30:00.000Z" },
     });
     const [cita] = await citasDe(n.negocioId);
     expect(cita).toMatchObject({
       id: resultado.ok ? resultado.valor.citaId : "",
+      codigo: resultado.ok ? resultado.valor.codigo : "",
       sedeId: n.sedeId,
       servicioId: n.servicioId,
       recursoId: n.recursoId,
@@ -199,14 +201,105 @@ describe("reservarCita: transacción (RN-09 a RN-12, RN-17; ARCH §11)", () => {
     expect(eventos).toEqual([expect.objectContaining({ tipo: "creada", actor: "cliente", actorId: null, datos: {} })]);
   });
 
-  test("la cita queda con un código de reserva con el prefijo del nombre de su negocio (D-28; Q-41)", async () => {
+  test("la cita queda con un código de reserva con el prefijo del nombre de su negocio, y la respuesta lo devuelve (D-28; Q-41)", async () => {
     const n = await negocioConAgenda();
-    await db().update(esquema.negocio).set({ nombre: "Óptica Visión Clara" }).where(eq(esquema.negocio.id, n.negocioId));
+    await db().update(esquema.negocio).set({ nombre: "Ébano Spa" }).where(eq(esquema.negocio.id, n.negocioId));
 
-    expect((await reservarCita(reserva(n), AHORA)).ok).toBe(true);
+    const resultado = await reservarCita(reserva(n), AHORA);
 
     const [cita] = await citasDe(n.negocioId);
-    expect(cita.codigo).toMatch(/^OV-[0-9]{4}$/);
+    expect(cita.codigo).toMatch(/^ES-[0-9]{4}$/);
+    expect(resultado).toEqual({ ok: true, valor: expect.objectContaining({ citaId: cita.id, codigo: cita.codigo }) });
+  });
+
+  /** Una cita del panel con ese código, para que el primer código de la reserva choque. */
+  async function citaConCodigo(n: Negocio, codigo: string) {
+    const clienteId = await crearCliente(n.negocioId);
+    await db()
+      .insert(esquema.cita)
+      .values({ ...datosDeCita({ ...n, clienteId }), codigo, inicio: new Date("2030-03-05T14:00:00Z"), fin: new Date("2030-03-05T14:30:00Z"), ocupadoHasta: new Date("2030-03-05T14:30:00Z") });
+  }
+
+  /** Un azar que devuelve los valores en orden y repite el último. */
+  const secuencia = (...valores: number[]): Azar => {
+    let i = 0;
+    return () => valores[Math.min(i++, valores.length - 1)];
+  };
+
+  test("si el primer código ya existe en el negocio, la reserva sale con otro y no falla (Q-41)", async () => {
+    const n = await negocioConAgenda(); // "Óptica Visión": OV
+    await citaConCodigo(n, "OV-0042");
+
+    const resultado = await reservarCita(reserva(n), AHORA, secuencia(42, 43));
+
+    expect(resultado).toEqual({ ok: true, valor: expect.objectContaining({ codigo: "OV-0043" }) });
+    const codigos = (await citasDe(n.negocioId)).map((c) => c.codigo).sort();
+    expect(codigos).toEqual(["OV-0042", "OV-0043"]);
+  });
+
+  test("después de 5 choques usa 6 dígitos (Q-41)", async () => {
+    const n = await negocioConAgenda();
+    await citaConCodigo(n, "OV-0042");
+
+    const resultado = await reservarCita(reserva(n), AHORA, secuencia(42));
+
+    expect(resultado).toEqual({ ok: true, valor: expect.objectContaining({ codigo: "OV-000042" }) });
+  });
+
+  test("si otra reserva toma el mismo código entre la comprobación y el INSERT, choca con el UNIQUE, reintenta la transacción y sale con otro (Q-41; ARCH §11.4)", async () => {
+    const n = await negocioConAgenda(); // "Óptica Visión": OV
+    // La otra cita va en una segunda sede, con su recurso: no comparte el bloqueo del recurso
+    // de la reserva, así que la reserva solo puede esperar por el UNIQUE del código.
+    const sedeB = await crearSede(n.negocioId);
+    const recursoB = await crearRecurso(n.negocioId, sedeB);
+    await db().insert(esquema.servicioSede).values({ negocioId: n.negocioId, servicioId: n.servicioId, sedeId: sedeB });
+    const clienteB = await crearCliente(n.negocioId);
+
+    // 1. Una transacción inserta OV-0042 y queda abierta: la reserva no ve esa fila.
+    let confirmar!: () => void;
+    let pidOtra!: number;
+    const insertada = Promise.withResolvers<void>();
+    const otra = enTransaccion(async (tx) => {
+      const filas = await tx.execute<{ pid: number }>(sql`SELECT pg_backend_pid() AS pid`);
+      pidOtra = filas.rows[0].pid;
+      await tx.insert(esquema.cita).values({
+        ...datosDeCita({ negocioId: n.negocioId, sedeId: sedeB, servicioId: n.servicioId, recursoId: recursoB, clienteId: clienteB }),
+        codigo: "OV-0042",
+      });
+      insertada.resolve();
+      await new Promise<void>((r) => (confirmar = r));
+    });
+    await insertada.promise;
+
+    // 2. La reserva comprueba OV-0042 libre e inserta: espera por el UNIQUE.
+    const reservada = reservarCita(reserva(n), AHORA, secuencia(42, 43));
+    await vi.waitFor(
+      async () => {
+        const [{ esperando }] = await db().execute<{ esperando: number }>(
+          sql`SELECT count(*)::int AS esperando FROM pg_stat_activity WHERE ${pidOtra}::int = ANY (pg_blocking_pids(pid))`,
+        ).then((r) => r.rows);
+        expect(esperando).toBe(1);
+      },
+      { timeout: 20_000, interval: 200 },
+    );
+
+    // 3. La otra confirma: la reserva choca, reintenta y elige OV-0043.
+    confirmar();
+    await otra;
+    expect(await reservada).toEqual({ ok: true, valor: expect.objectContaining({ codigo: "OV-0043" }) });
+    const codigos = (await citasDe(n.negocioId)).map((c) => c.codigo).sort();
+    expect(codigos).toEqual(["OV-0042", "OV-0043"]);
+  });
+
+  test("el mismo código en otro negocio no choca (UNIQUE por negocio; D-28)", async () => {
+    const a = await negocioConAgenda();
+    const b = await negocioConAgenda();
+    await citaConCodigo(a, "OV-0042");
+
+    expect(await reservarCita(reserva(b), AHORA, secuencia(42))).toEqual({
+      ok: true,
+      valor: expect.objectContaining({ codigo: "OV-0042" }),
+    });
   });
 
   test("la duración y el buffer salen de la oferta: con la sobrescritura de la sede, los de la sede (RN-32)", async () => {

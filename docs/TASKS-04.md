@@ -87,7 +87,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * "Óptica Visión Clara" da el prefijo `OV`, y "Ébano" da `EB`: sin tildes y en mayúsculas. Un nombre sin letras da `XX`.
       * Con un azar fijo, el código es `OV-0042`. Con 6 dígitos, `OV-000042`. Todo código cumple el `CHECK` de Q-41 (T4.03).
 
-* [ ] T4.05: La reserva genera el código
+* [x] T4.05: La reserva genera el código
    * Objetivo: Completar el código de la reserva de T4.03: comprobar dentro de la transacción (T3.19) que el código esté libre, con los reintentos de Q-41, y devolverlo. `POST /api/publico/{slug}/reservas` responde `{ citaId, codigo, inicio, fin }` (cambio aditivo del contrato de ARCH §18.5).
    * Archivos: `src/servidor/casos-uso/reservar-cita.ts`, `src/servidor/db/repositorios/citas.ts`, `src/app/api/publico/[slug]/reservas/route.ts`, `tests/integracion/casos-uso/reservar-cita.test.ts`
    * Depende de: T4.03

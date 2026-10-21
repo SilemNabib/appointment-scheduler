@@ -1,6 +1,10 @@
+import { eq } from "drizzle-orm";
 import { describe, expect, test } from "vitest";
 import { POST } from "@/app/api/publico/[slug]/reservas/route";
+import { prefijoCodigo } from "@/dominio/codigo-reserva";
 import { diaSemana, fechaLocal, localAUtc, sumarDias, ZONA_HORARIA_POR_DEFECTO } from "@/dominio/tiempo";
+import { db } from "@/servidor/db/cliente";
+import * as esquema from "@/servidor/db/esquema";
 import { negocioConAgenda } from "../../../fixtures";
 
 // POST /api/publico/{slug}/reservas (PUB-05, PUB-06; ARCH §18.5 y §19.2; Q-33). La ruta
@@ -40,17 +44,27 @@ function enviar(slug: string, contenido: BodyInit, tipo: string | null = "applic
 const DATOS_INVALIDOS = { error: { codigo: "DATOS_INVALIDOS", mensaje: "Revisa los datos e intenta de nuevo." } };
 
 describe("POST /api/publico/{slug}/reservas (ARCH §18.5)", () => {
-  test("una reserva válida responde 201, y la misma hora pedida otra vez responde 409 HORARIO_NO_DISPONIBLE", async () => {
+  test("una reserva válida responde 201 con { citaId, codigo, inicio, fin }, y la misma hora pedida otra vez responde 409 HORARIO_NO_DISPONIBLE", async () => {
     const n = await negocioConAgenda();
     const inicio = proximoDiaHabilALas9();
 
     const primera = await enviar(n.slug, JSON.stringify(cuerpo(n, { inicio })));
     expect(primera.status).toBe(201);
-    expect(await primera.json()).toEqual({
+    const creada = (await primera.json()) as { citaId: string; codigo: string };
+    expect(creada).toEqual({
       citaId: expect.any(String),
+      codigo: expect.any(String),
       inicio,
       fin: new Date(Date.parse(inicio) + 30 * 60_000).toISOString(),
     });
+    // El código es el de la cita, con el prefijo del nombre del negocio (D-28; Q-41).
+    const [cita] = await db()
+      .select({ codigo: esquema.cita.codigo, nombreNegocio: esquema.negocio.nombre })
+      .from(esquema.cita)
+      .innerJoin(esquema.negocio, eq(esquema.negocio.id, esquema.cita.negocioId))
+      .where(eq(esquema.cita.id, creada.citaId));
+    expect(creada.codigo).toBe(cita.codigo);
+    expect(creada.codigo).toMatch(new RegExp(`^${prefijoCodigo(cita.nombreNegocio)}-[0-9]{4}$`));
 
     const segunda = await enviar(n.slug, JSON.stringify(cuerpo(n, { inicio, telefono: "310 555 0000", correo: "luis@mail.com" })));
     expect(segunda.status).toBe(409);

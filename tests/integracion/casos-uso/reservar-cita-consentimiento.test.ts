@@ -97,7 +97,7 @@ describe("hora de la cita (RN-03)", () => {
     const resultado = await reservarCita(reserva(n, { inicio: sieteDeLaNoche }), AHORA);
     expect(resultado).toEqual({
       ok: true,
-      valor: { citaId: expect.any(String), inicio: sieteDeLaNoche, fin: "2030-03-05T00:30:00.000Z" },
+      valor: { citaId: expect.any(String), codigo: expect.any(String), inicio: sieteDeLaNoche, fin: "2030-03-05T00:30:00.000Z" },
     });
     const [cita] = await citasDe(n.negocioId);
     expect(cita.inicio.toISOString()).toBe(sieteDeLaNoche);

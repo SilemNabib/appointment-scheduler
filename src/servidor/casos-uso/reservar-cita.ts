@@ -1,6 +1,12 @@
 import "server-only";
 import { z } from "zod";
-import { generarCodigo, prefijoCodigo, type Azar } from "@/dominio/codigo-reserva";
+import {
+  DIGITOS_CODIGO,
+  DIGITOS_CODIGO_LARGO,
+  generarCodigo,
+  prefijoCodigo,
+  type Azar,
+} from "@/dominio/codigo-reserva";
 import { evaluarInicio } from "@/dominio/disponibilidad";
 import { normalizarCorreo, normalizarTelefono, type DatosIdentidad } from "@/dominio/identidad-cliente";
 import { ErrorNegocio, exito, fallo, type Resultado } from "@/dominio/resultado";
@@ -130,9 +136,20 @@ export async function prepararReserva(
   });
 }
 
-export type CitaReservada = { citaId: string; inicio: string; fin: string };
+/** La respuesta 201 de `POST /api/publico/{slug}/reservas` (ARCH §18.5). */
+export type CitaReservada = { citaId: string; codigo: string; inicio: string; fin: string };
 
 const MS_POR_MINUTO = 60_000;
+
+/** Choques de código después de los cuales se usan 6 dígitos (Q-41). */
+const CHOQUES_ANTES_DE_6_DIGITOS = 5;
+/** Códigos de 6 dígitos que se prueban antes de rendirse: con un millón posibles, no se llega. */
+const INTENTOS_CON_6_DIGITOS = 5;
+/** Intentos de la transacción ante un choque por el correo o por el código (ARCH §11.4, §12). */
+const INTENTOS_DE_TRANSACCION = 3;
+
+/** El azar del código de reserva (ARCH §11.4), con el generador criptográfico del runtime. */
+const azarSeguro: Azar = (maximo) => crypto.getRandomValues(new Uint32Array(1))[0] % maximo;
 
 /**
  * Reserva una cita (ARCH §11 y §18.4): las precondiciones de `prepararReserva` y,
@@ -144,29 +161,36 @@ const MS_POR_MINUTO = 60_000;
  *    con lo confirmado hasta ese momento, y evalúa el inicio con actor `cliente`. Si no
  *    pasa, `HORARIO_NO_DISPONIBLE` sin escribir nada (RN-09);
  * 3. resuelve el cliente (RN-18);
- * 4. inserta la cita `confirmada`, con su código de reserva (D-28), su instantánea, el
- *    consentimiento (`politica_aceptada_en = ahora`), `fin` y `ocupado_hasta`, y el
- *    evento `creada`;
+ * 4. elige un código de reserva libre en el negocio (D-28; Q-41) e inserta la cita
+ *    `confirmada`, con ese código, su instantánea, el consentimiento
+ *    (`politica_aceptada_en = ahora`), `fin` y `ocupado_hasta`, y el evento `creada`;
  * 5. encola sus notificaciones C-01, C-02 y C-05 (ARCH §14.1).
  *
- * Si el cliente choca con el correo de otro creado al mismo tiempo, reintenta la
- * transacción una vez: en el reintento ya lo encuentra por correo (ARCH §12).
+ * Si el `INSERT` choca con otra reserva creada al mismo tiempo, por el correo del cliente
+ * (ARCH §12) o por el código (de otro recurso, que no espera el mismo bloqueo; ARCH §11.4),
+ * reintenta la transacción: en el reintento encuentra al cliente por correo, o ve el
+ * código ocupado y elige otro. `azar` es para las pruebas.
  */
-export async function reservarCita(entrada: unknown, ahora: Date): Promise<Resultado<CitaReservada, ErrorReserva>> {
+export async function reservarCita(
+  entrada: unknown,
+  ahora: Date,
+  azar: Azar = azarSeguro,
+): Promise<Resultado<CitaReservada, ErrorReserva>> {
   const preparada = await prepararReserva(entrada, ahora);
   if (!preparada.ok) return preparada;
-  const reservar = () => enTransaccion((tx) => reservarEnTransaccion(preparada.valor, ahora, tx));
-  try {
-    return await reservar();
-  } catch (error) {
-    if (!esChoquePorCorreo(error)) throw error;
-    return reservar();
+  for (let intento = 1; ; intento++) {
+    try {
+      return await enTransaccion((tx) => reservarEnTransaccion(preparada.valor, ahora, azar, tx));
+    } catch (error) {
+      if (intento >= INTENTOS_DE_TRANSACCION || !esChoqueReintentable(error)) throw error;
+    }
   }
 }
 
 async function reservarEnTransaccion(
   r: ReservaPreparada,
   ahora: Date,
+  azar: Azar,
   tx: Transaccion,
 ): Promise<Resultado<CitaReservada, ErrorReserva>> {
   // 1. Primero el bloqueo del recurso (ARCH §11.2, paso 1).
@@ -196,9 +220,7 @@ async function reservarEnTransaccion(
   const { servicio } = leida.oferta;
   const fin = new Date(r.inicio.getTime() + servicio.duracionMinutos * MS_POR_MINUTO);
   const ocupadoHasta = new Date(fin.getTime() + servicio.bufferMinutos * MS_POR_MINUTO);
-  // El prefijo sale del nombre actual: cambiarlo después no cambia el código (ARCH §11.4).
-  // La comprobación de código libre y los reintentos de Q-41 llegan con T4.05 (Q-50).
-  const codigo = generarCodigo(prefijoCodigo(r.negocio.nombre), azarSeguro);
+  const codigo = await codigoLibre(r.negocio, azar, tx);
   const citaId = await citas.crearPublica(
     r.negocio.id,
     {
@@ -226,7 +248,22 @@ async function reservarEnTransaccion(
 
   // 5. Las notificaciones, en la misma transacción (ARCH §14.1). Nadie las envía hasta la Fase 6 (Q-28).
   await encolarNotificaciones(r, citaId, leida.reglas.recordatorioHorasAntes, ahora, tx);
-  return exito({ citaId, inicio: r.inicio.toISOString(), fin: fin.toISOString() });
+  return exito({ citaId, codigo, inicio: r.inicio.toISOString(), fin: fin.toISOString() });
+}
+
+/**
+ * Un código de reserva que el negocio todavía no usa (Q-41). El prefijo sale del nombre
+ * actual del negocio: cambiarlo después no cambia los códigos existentes (ARCH §11.4).
+ * Prueba códigos de 4 dígitos y, después de 5 choques, de 6.
+ */
+async function codigoLibre(negocio: negocios.NegocioPublico, azar: Azar, tx: Transaccion): Promise<string> {
+  const prefijo = prefijoCodigo(negocio.nombre);
+  for (let choques = 0; choques < CHOQUES_ANTES_DE_6_DIGITOS + INTENTOS_CON_6_DIGITOS; choques++) {
+    const digitos = choques < CHOQUES_ANTES_DE_6_DIGITOS ? DIGITOS_CODIGO : DIGITOS_CODIGO_LARGO;
+    const codigo = generarCodigo(prefijo, azar, digitos);
+    if (!(await citas.codigoOcupado(negocio.id, codigo, tx))) return codigo;
+  }
+  throw new Error(`No se encontró un código de reserva libre para el negocio ${negocio.id}.`);
 }
 
 /**
@@ -260,12 +297,12 @@ async function encolarNotificaciones(
   );
 }
 
-/** El azar del código de reserva (ARCH §11.4), con el generador criptográfico del runtime. */
-const azarSeguro: Azar = (maximo) => crypto.getRandomValues(new Uint32Array(1))[0] % maximo;
-
-/** Violación de `cliente_correo_uq`: otro cliente con ese correo se creó al mismo tiempo (ARCH §12). */
-function esChoquePorCorreo(error: unknown): boolean {
+/**
+ * Violación de `cliente_correo_uq` (otro cliente con ese correo se creó al mismo tiempo;
+ * ARCH §12) o de `cita_negocio_id_codigo_key` (otra reserva tomó el mismo código; ARCH §11.4).
+ */
+function esChoqueReintentable(error: unknown): boolean {
   const causa = error instanceof Error && error.cause ? error.cause : error;
   const { code, constraint } = (causa ?? {}) as { code?: string; constraint?: string };
-  return code === "23505" && constraint === "cliente_correo_uq";
+  return code === "23505" && (constraint === "cliente_correo_uq" || constraint === "cita_negocio_id_codigo_key");
 }

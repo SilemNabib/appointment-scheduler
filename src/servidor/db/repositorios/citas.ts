@@ -20,6 +20,20 @@ export async function contarCreadas(negocioId: string, periodo: Intervalo, conex
   return total;
 }
 
+/**
+ * Si el negocio ya tiene una cita con ese código de reserva (D-28). La reserva lo
+ * comprueba dentro de su transacción antes del `INSERT`; si otra reserva lo toma en ese
+ * momento, el `UNIQUE (negocio_id, codigo)` lo detiene (ARCH §11.4).
+ */
+export async function codigoOcupado(negocioId: string, codigo: string, tx: Transaccion): Promise<boolean> {
+  const [fila] = await tx
+    .select({ id: cita.id })
+    .from(cita)
+    .where(and(eq(cita.negocioId, negocioId), eq(cita.codigo, codigo)))
+    .limit(1);
+  return fila !== undefined;
+}
+
 export type NuevaCita = {
   /** Código de reserva (D-28; ARCH §11.4). */
   codigo: string;

@@ -209,7 +209,7 @@ Cada tarea cumple los criterios E1 y E2 de [TASKS-01 §1.B](TASKS-01.md#1b-base-
       * Con el negocio de prueba, devuelve la marca, los contactos en orden, las franjas, los servicios activos con la duración de la sede y la política vigente. Un slug inexistente devuelve `NO_ENCONTRADO`.
       * Suspendido, el estado es `suspendida`, con la marca y los contactos y sin servicios. Sin servicios activos o sin franjas, el estado es `sin_horarios`.
 
-* [ ] T4.17: Ruta `/{slug}` y sus estados
+* [x] T4.17: Ruta `/{slug}` y sus estados
    * Objetivo: Crear el grupo `(publico)` y la página `/{slug}`, que llama a `leerPaginaPublica` con `ahora` y responde 404 si el slug no existe. Fija las variables CSS de la marca con T4.13, pone el nombre del negocio en el título y muestra los estados: "Reservas no disponibles" con los contactos (PUB-07) y "Aún no hay horarios disponibles" con los contactos (F-05). Con el estado `abierta`, deja el lugar del flujo de reserva (módulo 4.E).
    * Archivos: `src/app/(publico)/layout.tsx`, `src/app/(publico)/[slug]/page.tsx`, `src/app/(publico)/[slug]/not-found.tsx`, `src/componentes/publico/estado-pagina.tsx`
    * Depende de: T4.13, T4.15, T4.16

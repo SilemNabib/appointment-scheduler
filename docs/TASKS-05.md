@@ -179,7 +179,7 @@
       * Una cita a las 7:00 p. m. del 14 de octubre aparece al pedir el 14 y no al pedir el 15 (RN-03; ARCH §9, regla 2).
       * Trae las citas canceladas con su estado (Q-58) y nunca citas de otro negocio (RN-01). Un rango de más de 42 días, o que termina antes de empezar, devuelve `DATOS_INVALIDOS`.
 
-* [ ] T5.13: Dominio: historial de la cita
+* [x] T5.13: Dominio: historial de la cita
    * Objetivo: Crear `dominio/historial-cita.ts`, que convierte los eventos de una cita en las líneas del historial de PAN-03: qué pasó, quién lo hizo (el cliente, "tú" o el sistema) y cuándo, en la zona del negocio. En `reprogramada` muestra la hora anterior y la nueva, y un evento del sistema con `{ "automatica": true }` dice "Marcada automáticamente" (F-08, paso 4).
    * Archivos: `src/dominio/historial-cita.ts`, `tests/unit/dominio/historial-cita.test.ts`
    * Depende de: T5.01

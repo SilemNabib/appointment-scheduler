@@ -212,13 +212,12 @@ export default clerkMiddleware(async (auth, req) => {
 });
 
 export const config = {
-  matcher: [
-    // Todo excepto los internos de Next y los archivos estáticos (patrón recomendado por Clerk)
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api)(.*)',
-  ],
+  // Solo las rutas que usan Clerk, con sus Server Actions (POST a la misma ruta). Ver abajo.
+  matcher: ['/panel/:path*', '/admin/:path*', '/login/:path*', '/registro/:path*', '/sin-acceso'],
 };
 ```
+
+- **Solo en las rutas que usan Clerk** (Q-51 de [TASKS-04](TASKS-04.md)): la página pública, su política y la API no pasan por el middleware. Con el patrón general que recomienda Clerk, cada primera visita a `/{slug}` hacía la redirección de *handshake* al dominio de Clerk (tres viajes más), que en la Fase 4 era la mitad del LCP (RNF-01) y contradecía §7.2. Ninguna de esas rutas llama a `auth()`. Una ruta nueva que use Clerk debe agregarse al `matcher`.
 
 El middleware **solo autentica**. La autorización (a qué negocio pertenece el usuario y si es admin) se verifica de nuevo en cada página, Server Action y ruta, porque el middleware no sabe nada del negocio.
 

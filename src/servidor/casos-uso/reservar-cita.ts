@@ -12,7 +12,7 @@ import * as negocios from "@/servidor/db/repositorios/negocios";
 import * as notificaciones from "@/servidor/db/repositorios/notificaciones";
 import * as politicas from "@/servidor/db/repositorios/politicas";
 import { exigirCupo } from "@/servidor/planes/acceso";
-import { azarSeguro, crearCita, enTransaccionConReintentos, recordatorio } from "./agendar";
+import { avisosDeCitaNueva, azarSeguro, crearCita, enTransaccionConReintentos, type CitaAgendada } from "./agendar";
 import { esId } from "./esquemas";
 
 // Reserva pública (PUB-05, F-01; RN-09 a RN-12, RN-17, RN-18; ARCH §11 y §18.4). El
@@ -197,35 +197,31 @@ export async function reservarCita(
       tx,
     );
     if (!creada.ok) return fallo(creada.error);
-    const { citaId, codigo, fin, recordatorioHorasAntes } = creada.valor;
     // Nadie las envía hasta la Fase 6 (Q-28).
-    await encolarNotificaciones(r, citaId, recordatorioHorasAntes, ahora, tx);
+    await encolarNotificaciones(r, creada.valor, ahora, tx);
+    const { citaId, codigo, fin } = creada.valor;
     return exito({ citaId, codigo, inicio: r.inicio.toISOString(), fin: fin.toISOString() });
   });
 }
 
 /**
- * C-01 (`confirmacion`) y C-02 (`recordatorio`, el de la versión 1, que arma el núcleo)
- * al correo con que se reservó (S-15), y C-05 (`dueno_cita_nueva`) al dueño (RN-22;
- * Q-28), con las claves de ARCH §14.1. El recordatorio no se crea si no hay recordatorio
- * configurado o si su momento ya pasó (S-12).
+ * C-01 (`confirmacion`) y C-02 (`recordatorio`, el de la versión 1) al correo con que se
+ * reservó (S-15), y C-05 (`dueno_cita_nueva`) al dueño (RN-22; Q-28), con las claves de
+ * ARCH §14.1. El recordatorio no se crea si no hay recordatorio configurado o si su
+ * momento ya pasó (S-12).
  */
-async function encolarNotificaciones(
-  r: ReservaPreparada,
-  citaId: string,
-  recordatorioHorasAntes: number | null,
-  ahora: Date,
-  tx: Transaccion,
-): Promise<void> {
-  const alCliente: notificaciones.NuevaNotificacion[] = [
-    { citaId, tipo: "confirmacion", claveIdempotencia: `confirmacion:${citaId}`, programadaPara: ahora },
-  ];
-  const c02 = recordatorio({ citaId, inicio: r.inicio, version: 1 }, recordatorioHorasAntes, ahora);
-  if (c02) alCliente.push(c02);
-  if (r.cliente.correo !== null) await notificaciones.encolar(r.negocio.id, r.cliente.correo, alCliente, tx);
+async function encolarNotificaciones(r: ReservaPreparada, cita: CitaAgendada, ahora: Date, tx: Transaccion): Promise<void> {
+  if (r.cliente.correo !== null) {
+    await notificaciones.encolar(r.negocio.id, r.cliente.correo, avisosDeCitaNueva(cita, ahora), tx);
+  }
   await notificaciones.encolarAlDueno(
     r.negocio.id,
-    { citaId, tipo: "dueno_cita_nueva", claveIdempotencia: `dueno_cita_nueva:${citaId}`, programadaPara: ahora },
+    {
+      citaId: cita.citaId,
+      tipo: "dueno_cita_nueva",
+      claveIdempotencia: `dueno_cita_nueva:${cita.citaId}`,
+      programadaPara: ahora,
+    },
     tx,
   );
 }

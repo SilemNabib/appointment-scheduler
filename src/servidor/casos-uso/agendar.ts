@@ -206,6 +206,22 @@ export function recordatorio(
 }
 
 /**
+ * Los avisos al cliente de una cita nueva, con las claves de ARCH §14.1: C-01
+ * (`confirmacion`) y el C-02 de la versión 1, si corresponde (S-12). Van al correo con
+ * que se reservó (S-15); sin correo, quien llama no encola nada (S-05).
+ */
+export function avisosDeCitaNueva(cita: CitaAgendada, ahora: Date): NuevaNotificacion[] {
+  const c01: NuevaNotificacion = {
+    citaId: cita.citaId,
+    tipo: "confirmacion",
+    claveIdempotencia: `confirmacion:${cita.citaId}`,
+    programadaPara: ahora,
+  };
+  const c02 = recordatorio({ ...cita, version: 1 }, cita.recordatorioHorasAntes, ahora);
+  return c02 ? [c01, c02] : [c01];
+}
+
+/**
  * Un código de reserva que el negocio todavía no usa (Q-41). El prefijo sale del nombre
  * actual del negocio: cambiarlo después no cambia los códigos existentes (ARCH §11.4).
  * Prueba códigos de 4 dígitos y, después de 5 choques, de 6.

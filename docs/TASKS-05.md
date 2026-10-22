@@ -108,7 +108,7 @@
       * Un día después de la anticipación máxima tiene horas para el dueño (D-11). Un servicio inactivo o de otro negocio devuelve `NO_ENCONTRADO` (RN-05, RN-01).
       * Con `citaExcluida`, vuelven a aparecer la hora de esa cita y las que se solapan con ella (RN-14).
 
-* [ ] T5.07: Caso de uso `crearCitaManual`
+* [x] T5.07: Caso de uso `crearCitaManual`
    * Objetivo: Implementar `crearCitaManual(ctx, entrada, ahora)` (ARCH §18.4), que empieza con `requireEscritura`:
       1. valida con Zod el servicio, el inicio, el nombre, el apellido, un teléfono normalizable y el correo opcional (S-05; Q-53). Si algo falla, devuelve `DATOS_INVALIDOS` con los campos que fallaron, como Q-46 (TASKS-04);
       2. comprueba que el servicio esté activo en la sede principal y exige cupo de `max_appointments_per_month` (Q-54);

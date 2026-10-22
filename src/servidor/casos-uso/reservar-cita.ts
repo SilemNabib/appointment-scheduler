@@ -12,7 +12,7 @@ import * as negocios from "@/servidor/db/repositorios/negocios";
 import * as notificaciones from "@/servidor/db/repositorios/notificaciones";
 import * as politicas from "@/servidor/db/repositorios/politicas";
 import { exigirCupo } from "@/servidor/planes/acceso";
-import { azarSeguro, crearCita, enTransaccionConReintentos } from "./agendar";
+import { azarSeguro, crearCita, enTransaccionConReintentos, recordatorio } from "./agendar";
 import { esId } from "./esquemas";
 
 // Reserva pública (PUB-05, F-01; RN-09 a RN-12, RN-17, RN-18; ARCH §11 y §18.4). El
@@ -161,8 +161,6 @@ export async function prepararReserva(
 /** La respuesta 201 de `POST /api/publico/{slug}/reservas` (ARCH §18.5). */
 export type CitaReservada = { citaId: string; codigo: string; inicio: string; fin: string };
 
-const MS_POR_MINUTO = 60_000;
-
 /**
  * Reserva una cita (ARCH §11 y §18.4): las precondiciones de `prepararReserva` y,
  * después, la transacción del núcleo de agendamiento con actor `cliente` (`crearCita`):
@@ -207,10 +205,10 @@ export async function reservarCita(
 }
 
 /**
- * C-01 (`confirmacion`) y C-02 (`recordatorio`) al correo con que se reservó (S-15), y
- * C-05 (`dueno_cita_nueva`) al dueño (RN-22; Q-28), con las claves de ARCH §14.1. El
- * recordatorio es para `inicio − recordatorio_horas_antes`, y no se crea si no hay
- * recordatorio configurado o si ese momento ya pasó (S-12).
+ * C-01 (`confirmacion`) y C-02 (`recordatorio`, el de la versión 1, que arma el núcleo)
+ * al correo con que se reservó (S-15), y C-05 (`dueno_cita_nueva`) al dueño (RN-22;
+ * Q-28), con las claves de ARCH §14.1. El recordatorio no se crea si no hay recordatorio
+ * configurado o si su momento ya pasó (S-12).
  */
 async function encolarNotificaciones(
   r: ReservaPreparada,
@@ -222,13 +220,8 @@ async function encolarNotificaciones(
   const alCliente: notificaciones.NuevaNotificacion[] = [
     { citaId, tipo: "confirmacion", claveIdempotencia: `confirmacion:${citaId}`, programadaPara: ahora },
   ];
-  if (recordatorioHorasAntes !== null) {
-    const programadaPara = new Date(r.inicio.getTime() - recordatorioHorasAntes * 60 * MS_POR_MINUTO);
-    if (programadaPara >= ahora) {
-      // `version` 1: la de una cita nueva; reprogramar crea otro con la versión siguiente (ARCH §14.1).
-      alCliente.push({ citaId, tipo: "recordatorio", claveIdempotencia: `recordatorio:${citaId}:v1`, programadaPara, datos: { version: 1 } });
-    }
-  }
+  const c02 = recordatorio({ citaId, inicio: r.inicio, version: 1 }, recordatorioHorasAntes, ahora);
+  if (c02) alCliente.push(c02);
   if (r.cliente.correo !== null) await notificaciones.encolar(r.negocio.id, r.cliente.correo, alCliente, tx);
   await notificaciones.encolarAlDueno(
     r.negocio.id,

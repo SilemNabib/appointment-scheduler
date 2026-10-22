@@ -78,7 +78,7 @@
       * Pasan sin cambios las pruebas de la reserva de las Fases 3 y 4, incluidas las de concurrencia (T3.22), de bloqueo y reserva simultáneos (T3.23) y del código de reserva (T4.05, T4.29).
       * `reservar-cita.ts` ya no toma bloqueos ni inserta citas por su cuenta: llama al núcleo con actor `cliente` (revisión del código).
 
-* [ ] T5.04: Notificaciones de los cambios de una cita
+* [x] T5.04: Notificaciones de los cambios de una cita
    * Objetivo: Ampliar `repositorios/notificaciones.ts` con los tipos `cancelacion` (C-03) y `reprogramacion` (C-04), y con `anularRecordatorios(negocioId, citaId, tx)`, que pasa a `cancelada` los recordatorios `pendiente` de la cita (ARCH §14.1). Llevar al núcleo de T5.03 el armado del recordatorio con su versión (`recordatorio:{citaId}:v{version}`; S-12), para que lo usen la reserva, la cita manual y el movimiento.
    * Archivos: `src/servidor/db/repositorios/notificaciones.ts`, `src/servidor/casos-uso/agendar.ts`, `tests/integracion/repositorios/notificaciones.test.ts`
    * Depende de: T5.03

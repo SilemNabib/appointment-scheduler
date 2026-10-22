@@ -13,6 +13,7 @@ import { fechaLocal, intervaloDeDias } from "@/dominio/tiempo";
 import { enTransaccion, type Transaccion } from "@/servidor/db/cliente";
 import * as citas from "@/servidor/db/repositorios/citas";
 import * as clientes from "@/servidor/db/repositorios/clientes";
+import type { NuevaNotificacion } from "@/servidor/db/repositorios/notificaciones";
 import * as recursos from "@/servidor/db/repositorios/recursos";
 import { leerAgenda } from "./agenda";
 
@@ -22,7 +23,8 @@ import { leerAgenda } from "./agenda";
 // bloqueo y la evalúa con el mismo motor que lista las horas. Así lo que no se ofrece
 // tampoco se puede agendar, y dos operaciones sobre el mismo recurso no se cruzan.
 // Las precondiciones (validación, negocio, oferta y cupo del plan) quedan en cada caso
-// de uso, fuera de la transacción.
+// de uso, fuera de la transacción. El recordatorio de cada versión de la cita también
+// se arma aquí, igual para todos (ARCH §14.1).
 
 /** El azar del código de reserva (ARCH §11.4), con el generador criptográfico del runtime. */
 export const azarSeguro: Azar = (maximo) => crypto.getRandomValues(new Uint32Array(1))[0] % maximo;
@@ -71,6 +73,7 @@ const horarioNoDisponible = (motivos: MotivoRechazo[] = []): HorarioNoDisponible
 });
 
 const MS_POR_MINUTO = 60_000;
+const MS_POR_HORA = 60 * MS_POR_MINUTO;
 
 /** Choques de código después de los cuales se usan 6 dígitos (Q-41). */
 const CHOQUES_ANTES_DE_6_DIGITOS = 5;
@@ -164,6 +167,29 @@ export async function crearCita(
   );
 
   return exito({ citaId, codigo, inicio: p.inicio, fin, recordatorioHorasAntes: leida.reglas.recordatorioHorasAntes });
+}
+
+/**
+ * El recordatorio (C-02) de una versión de la cita: para `inicio − recordatorio_horas_antes`,
+ * con la clave `recordatorio:{citaId}:v{version}` y `{ version }` en `datos` (ARCH §14.1).
+ * Una cita nueva es la versión 1; moverla o reprogramarla crea el de la siguiente. `null`
+ * si el negocio no tiene recordatorio o si ese momento ya pasó (S-12).
+ */
+export function recordatorio(
+  cita: { citaId: string; inicio: Date; version: number },
+  recordatorioHorasAntes: number | null,
+  ahora: Date,
+): NuevaNotificacion | null {
+  if (recordatorioHorasAntes === null) return null;
+  const programadaPara = new Date(cita.inicio.getTime() - recordatorioHorasAntes * MS_POR_HORA);
+  if (programadaPara < ahora) return null;
+  return {
+    citaId: cita.citaId,
+    tipo: "recordatorio",
+    claveIdempotencia: `recordatorio:${cita.citaId}:v${cita.version}`,
+    programadaPara,
+    datos: { version: cita.version },
+  };
 }
 
 /**

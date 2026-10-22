@@ -208,7 +208,7 @@
 
 ### 5.D Panel: navegación y agenda (PAN-02 a PAN-07)
 
-* [ ] T5.16: Layout y navegación del panel
+* [x] T5.16: Layout y navegación del panel
    * Objetivo: Llevar el layout del panel y su navegación a DESIGN §4.3 y §7 con los tokens (Q-44, TASKS-04; Q-57): encabezado con el mosaico del logo y el nombre del negocio; navegación lateral fija en escritorio y horizontal con desplazamiento en móvil; y las entradas Inicio, Bloqueos y Configuración. El aviso de suscripción (PAN-19) usa el aviso de DESIGN §3. Se quitan los colores de la Fase 1 y las variantes `dark:` de estos archivos.
    * Archivos: `src/app/(panel)/layout.tsx`, `src/componentes/panel/navegacion.tsx`, `src/componentes/panel/aviso-suscripcion.tsx`, `tests/unit/componentes/aviso-suscripcion.test.ts`
    * Depende de: T4.31

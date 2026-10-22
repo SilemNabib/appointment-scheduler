@@ -11,3 +11,13 @@ export async function resumenNegocio(ctx: Pick<ContextoMiembro, "negocioId">): P
   if (!resumen) throw new Error(`No existe el negocio ${ctx.negocioId} del contexto.`);
   return resumen;
 }
+
+/** Lo que muestra el encabezado del panel: el resumen y el logo, para su mosaico (DESIGN §3). */
+export type EncabezadoPanel = negocios.ResumenNegocio & { logoUrl: string | null };
+
+/** El resumen del negocio con su logo, para el encabezado del panel (DESIGN §4.3; Q-57). */
+export async function encabezadoPanel(ctx: Pick<ContextoMiembro, "negocioId">): Promise<EncabezadoPanel> {
+  const [resumen, marca] = await Promise.all([negocios.resumen(ctx.negocioId), negocios.marca(ctx.negocioId)]);
+  if (!resumen || !marca) throw new Error(`No existe el negocio ${ctx.negocioId} del contexto.`);
+  return { ...resumen, logoUrl: marca.logoUrl };
+}

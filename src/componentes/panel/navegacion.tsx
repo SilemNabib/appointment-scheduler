@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import { ANILLO_FOCO } from "@/componentes/formulario";
 
-// Navegación del panel. En el celular se abre y se cierra con el botón "Menú"; desde
-// `md` queda fija a un lado. La página actual se marca con `aria-current`, además del
-// estilo (RNF-03). El panel no muestra el concepto de sede (RN-32, D-16).
+// Navegación del panel (DESIGN §4.3 y §7; Q-57). Desde 700 px queda fija a un lado; en
+// el celular es una fila horizontal que se desplaza dentro de su propio contenedor, sin
+// desplazar la página (RNF-01), y la página actual se lleva a la vista. La página actual
+// se marca con `aria-current`, además del estilo (RNF-03). El panel no muestra el
+// concepto de sede (RN-32) ni "Profesionales" (D-24). Clientes llega en la Fase 7 y "Mi
+// calendario", en la Fase 6.
 
 type Enlace = { href: string; texto: string };
 
@@ -31,26 +34,28 @@ function esActual(href: string, ruta: string) {
   return href === "/panel" ? ruta === href : ruta === href || ruta.startsWith(`${href}/`);
 }
 
+const CLASE_ENLACE =
+  "flex min-h-11 scroll-mx-4 items-center rounded-boton px-3.5 text-sm font-semibold whitespace-nowrap no-underline " +
+  "text-tinta-suave hover:bg-fondo-suave aria-[current=page]:bg-tinta aria-[current=page]:text-white " +
+  ANILLO_FOCO;
+
 export function Navegacion() {
   const ruta = usePathname();
-  const [abierto, setAbierto] = useState(false);
+  const actual = useRef<HTMLAnchorElement>(null);
+
+  // En el celular, la página actual puede quedar fuera de la fila: se desplaza la fila
+  // hasta ella, sin mover la página en vertical.
+  useEffect(() => {
+    actual.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [ruta]);
 
   const lista = (enlaces: Enlace[], idTitulo?: string) => (
-    <ul aria-labelledby={idTitulo} className="flex flex-col gap-1">
+    <ul aria-labelledby={idTitulo} className="flex gap-1 min-[700px]:flex-col">
       {enlaces.map(({ href, texto }) => {
-        const actual = esActual(href, ruta);
+        const esta = esActual(href, ruta);
         return (
-          <li key={href}>
-            <Link
-              href={href}
-              aria-current={actual ? "page" : undefined}
-              onClick={() => setAbierto(false)}
-              className={`block rounded-md px-3 py-2 text-sm ${ANILLO_FOCO} ${
-                actual
-                  ? "bg-teal-50 font-semibold text-teal-900 dark:bg-teal-950 dark:text-teal-100"
-                  : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-              }`}
-            >
+          <li key={href} className="shrink-0">
+            <Link href={href} ref={esta ? actual : undefined} aria-current={esta ? "page" : undefined} className={CLASE_ENLACE}>
               {texto}
             </Link>
           </li>
@@ -60,24 +65,20 @@ export function Navegacion() {
   );
 
   return (
-    <nav aria-label="Panel" className="md:w-56 md:shrink-0">
-      <button
-        type="button"
-        aria-expanded={abierto}
-        aria-controls="menu-panel"
-        onClick={() => setAbierto((a) => !a)}
-        className={`flex w-full items-center justify-between rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium md:hidden dark:border-zinc-700 ${ANILLO_FOCO}`}
-      >
-        Menú
-        <span aria-hidden="true">{abierto ? "▴" : "▾"}</span>
-      </button>
-      <div id="menu-panel" className={`${abierto ? "flex" : "hidden"} mt-2 flex-col gap-4 md:mt-0 md:flex`}>
-        {lista(PRINCIPALES)}
-        <div className="flex flex-col gap-1">
-          <p id="menu-configuracion" className="px-3 text-xs font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
-            Configuración
-          </p>
-          {lista(CONFIGURACION, "menu-configuracion")}
+    <nav aria-label="Panel" className="-mx-4 min-w-0 min-[700px]:mx-0 min-[700px]:w-56 min-[700px]:shrink-0">
+      <div className="overflow-x-auto pb-1 min-[700px]:sticky min-[700px]:top-6 min-[700px]:overflow-visible min-[700px]:pb-0">
+        {/* El relleno va en la fila y no en el contenedor: así también queda al final del desplazamiento. */}
+        <div className="flex w-max items-center gap-1 px-4 min-[700px]:w-auto min-[700px]:flex-col min-[700px]:items-stretch min-[700px]:gap-5 min-[700px]:px-0">
+          {lista(PRINCIPALES)}
+          <div className="flex items-center gap-1 min-[700px]:flex-col min-[700px]:items-stretch min-[700px]:gap-1.5">
+            <p
+              id="menu-configuracion"
+              className="shrink-0 border-l border-borde px-3 text-xs font-bold tracking-[0.08em] text-texto-muted uppercase min-[700px]:border-l-0"
+            >
+              Configuración
+            </p>
+            {lista(CONFIGURACION, "menu-configuracion")}
+          </div>
         </div>
       </div>
     </nav>

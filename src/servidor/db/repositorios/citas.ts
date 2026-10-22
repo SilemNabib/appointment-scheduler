@@ -1,6 +1,7 @@
 import "server-only";
-import { and, count, eq, gte, lt } from "drizzle-orm";
+import { and, count, eq, gte, lt, sql } from "drizzle-orm";
 import type { Intervalo } from "@/dominio/disponibilidad";
+import type { EstadoCita, TipoEvento } from "@/dominio/estados-cita";
 import { db, type Conexion, type Transaccion } from "../cliente";
 import { cita, eventoCita } from "../esquema";
 
@@ -95,12 +96,108 @@ export async function crear(negocioId: string, datos: NuevaCita, tx: Transaccion
       creadoEn: datos.creadaEn,
     })
     .returning({ id: cita.id });
+  await registrarEvento(negocioId, id, { tipo: "creada", actor: datos.creadaPor }, tx);
+  return id;
+}
+
+/** Lo que un cambio de la cita necesita saber de ella, leído en su transacción. */
+export type CitaParaCambio = {
+  id: string;
+  sedeId: string;
+  servicioId: string;
+  recursoId: string;
+  estado: EstadoCita;
+  version: number;
+  inicio: Date;
+  /** El correo con que se reservó, al que van sus avisos (S-15); `null` sin correo (S-05). */
+  clienteCorreo: string | null;
+};
+
+/**
+ * La cita del negocio para cambiarla, o `null` si no existe o es de otro negocio (ARCH
+ * §6). Sin bloqueo de fila: quien la mueve la vuelve a leer después de tomar el bloqueo
+ * de su recurso (ARCH §11.2), y los cambios de estado se protegen con
+ * `UPDATE … WHERE estado = <esperado>` (ARCH §18.4).
+ */
+export async function paraCambio(negocioId: string, citaId: string, tx: Transaccion): Promise<CitaParaCambio | null> {
+  const [fila] = await tx
+    .select({
+      id: cita.id,
+      sedeId: cita.sedeId,
+      servicioId: cita.servicioId,
+      recursoId: cita.recursoId,
+      estado: cita.estado,
+      version: cita.version,
+      inicio: cita.inicio,
+      clienteCorreo: cita.clienteCorreo,
+    })
+    .from(cita)
+    .where(and(eq(cita.negocioId, negocioId), eq(cita.id, citaId)));
+  return fila ?? null;
+}
+
+/**
+ * Cambia la hora de la MISMA fila (RN-14): `inicio`, `fin` y `ocupado_hasta` nuevos y
+ * `version + 1` (ARCH §18.4). Solo si sigue `confirmada` y en la versión esperada: si
+ * otra operación la cambió, no afecta ninguna fila y devuelve `null`. La reprogramación
+ * del cliente suma 1 a `reprogramaciones_cliente` (RN-34); la del dueño no lo toca
+ * (D-20). Devuelve la versión nueva.
+ */
+export async function cambiarHora(
+  negocioId: string,
+  cambio: {
+    citaId: string;
+    versionEsperada: number;
+    inicio: Date;
+    fin: Date;
+    ocupadoHasta: Date;
+    sumaReprogramacionCliente: boolean;
+  },
+  tx: Transaccion,
+): Promise<number | null> {
+  const [fila] = await tx
+    .update(cita)
+    .set({
+      inicio: cambio.inicio,
+      fin: cambio.fin,
+      ocupadoHasta: cambio.ocupadoHasta,
+      version: sql`${cita.version} + 1`,
+      ...(cambio.sumaReprogramacionCliente
+        ? { reprogramacionesCliente: sql`${cita.reprogramacionesCliente} + 1` }
+        : {}),
+    })
+    .where(
+      and(
+        eq(cita.negocioId, negocioId),
+        eq(cita.id, cambio.citaId),
+        eq(cita.estado, "confirmada"),
+        eq(cita.version, cambio.versionEsperada),
+      ),
+    )
+    .returning({ version: cita.version });
+  return fila?.version ?? null;
+}
+
+/** Un evento del historial de la cita (ARCH §18.2), con los `datos` de Q-55 y nunca datos personales. */
+export type NuevoEvento = {
+  tipo: TipoEvento;
+  actor: ActorEvento | { actor: "sistema" };
+  datos?: Record<string, unknown>;
+};
+
+/** Registra un evento de la cita en la transacción del cambio. */
+export async function registrarEvento(
+  negocioId: string,
+  citaId: string,
+  evento: NuevoEvento,
+  tx: Transaccion,
+): Promise<void> {
   await tx.insert(eventoCita).values({
     negocioId,
-    citaId: id,
-    tipo: "creada",
-    actor: datos.creadaPor.actor,
-    actorId: datos.creadaPor.actor === "dueno" ? datos.creadaPor.actorId : null,
+    citaId,
+    tipo: evento.tipo,
+    actor: evento.actor.actor,
+    actorId: evento.actor.actor === "dueno" ? evento.actor.actorId : null,
+    datos: evento.datos ?? {},
   });
-  return id;
 }

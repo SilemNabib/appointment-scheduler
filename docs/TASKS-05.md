@@ -122,7 +122,7 @@
       * Una hora fuera del horario, bloqueada, desalineada o sin cupo devuelve `HORARIO_NO_DISPONIBLE` con sus motivos y no deja ninguna fila (D-01, RN-15).
       * Sin correo, no encola nada al cliente (S-05); con correo, encola C-01 y C-02; nunca C-05 (S-06). El mismo teléfono escrito en otro formato usa el cliente existente (RN-18).
 
-* [ ] T5.08: Caso de uso `moverCita`
+* [x] T5.08: Caso de uso `moverCita`
    * Objetivo: Implementar `moverCita(ctx, { citaId, inicio, version }, ahora)` (ARCH §18.4), que empieza con `requireEscritura`. En una transacción:
       1. toma el bloqueo del recurso de la cita y la lee después del bloqueo;
       2. comprueba que esté `confirmada` (T5.01) y en la `version` esperada (`CONFLICTO_VERSION`; Q-55);

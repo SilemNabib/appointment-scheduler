@@ -98,7 +98,7 @@
       * "300 123 4567" encuentra al cliente `+573001234567`, y "pér" y "PÉR" encuentran a "Ana Pérez" (RN-18).
       * No devuelve clientes de otro negocio (RN-01) ni anonimizados (S-14). Un texto de menos de 2 caracteres devuelve una lista vacía.
 
-* [ ] T5.06: Caso de uso `consultarHorasDueno`
+* [x] T5.06: Caso de uso `consultarHorasDueno`
    * Objetivo: Implementar `consultarHorasDueno(ctx, { servicioId, fecha, citaExcluida }, ahora)`, que devuelve las horas libres de un servicio activo en un día local para el dueño (Q-56). Usa la sede principal, la misma `leerAgenda` de la consulta pública e `iniciosDisponibles` con actor `dueno`: sin anticipación y solo desde `ahora` (D-11). Con `citaExcluida`, la cita que se mueve no ocupa su propio cupo (RN-14). Solo lee.
    * Archivos: `src/servidor/casos-uso/horas-dueno.ts`, `tests/integracion/casos-uso/horas-dueno.test.ts`
    * Depende de: T5.03

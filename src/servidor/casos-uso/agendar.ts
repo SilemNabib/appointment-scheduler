@@ -13,8 +13,10 @@ import { fechaLocal, intervaloDeDias } from "@/dominio/tiempo";
 import { enTransaccion, type Transaccion } from "@/servidor/db/cliente";
 import * as citas from "@/servidor/db/repositorios/citas";
 import * as clientes from "@/servidor/db/repositorios/clientes";
+import * as negocios from "@/servidor/db/repositorios/negocios";
 import type { NuevaNotificacion } from "@/servidor/db/repositorios/notificaciones";
 import * as recursos from "@/servidor/db/repositorios/recursos";
+import * as sedes from "@/servidor/db/repositorios/sedes";
 import { leerAgenda } from "./agenda";
 
 // Núcleo de agendamiento (RN-09, RN-11, RN-15, D-11, D-28; ARCH §11, §11.4 y §18.4). Lo
@@ -81,6 +83,17 @@ const CHOQUES_ANTES_DE_6_DIGITOS = 5;
 const INTENTOS_CON_6_DIGITOS = 5;
 /** Intentos de la transacción ante un choque por el correo o por el código (ARCH §11.4, §12). */
 const INTENTOS_DE_TRANSACCION = 3;
+
+/**
+ * El negocio de la sesión y su sede principal, donde el dueño agenda en el MVP (Q-20 de
+ * TASKS-02): el nombre da el prefijo del código (D-28) y la zona, los días locales
+ * (ARCH §9). Lanza si no existen: el contexto viene de la sesión (ARCH §6).
+ */
+export async function negocioDelPanel(negocioId: string): Promise<{ negocio: PeticionCita["negocio"]; sedeId: string }> {
+  const [negocio, sede] = await Promise.all([negocios.resumen(negocioId), sedes.principal(negocioId)]);
+  if (!negocio || !sede) throw new Error(`No existe el negocio ${negocioId} del contexto o su sede principal.`);
+  return { negocio: { id: negocioId, nombre: negocio.nombre, zonaHoraria: negocio.zonaHoraria }, sedeId: sede.id };
+}
 
 /**
  * Crea una cita `confirmada` (RN-12) dentro de la transacción `READ COMMITTED` que

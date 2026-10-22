@@ -148,7 +148,7 @@
       * El dueño cancela una cita que empieza en una hora (RN-15): queda `cancelada` con `cancelada_por = 'dueno'`, su recordatorio pendiente pasa a `cancelada` y C-03 queda encolado con la clave `cancelacion:{citaId}`.
       * Cancelarla otra vez devuelve `ESTADO_INVALIDO` y no crea otro evento ni otra notificación (ARCH §18.4: dobles clics).
 
-* [ ] T5.10: Caso de uso `marcarAsistencia`
+* [x] T5.10: Caso de uso `marcarAsistencia`
    * Objetivo: Implementar `marcarAsistencia(ctx, { citaId, estado, estadoEsperado }, ahora)` (ARCH §18.4), que empieza con `requireEscritura`. Con T5.02 rechaza el cambio antes del inicio (`ANTES_DEL_INICIO`), y con T5.01 acepta pasar de `confirmada` a `completada` o `no_asistio` y corregir entre esas dos (S-09). El cambio va con `WHERE estado = estadoEsperado` (Q-55) y deja su evento, sin correo (F-08, paso 5).
    * Archivos: `src/servidor/casos-uso/marcar-asistencia.ts`, `src/servidor/db/repositorios/citas.ts`, `tests/integracion/casos-uso/marcar-asistencia.test.ts`
    * Depende de: T5.01, T5.02

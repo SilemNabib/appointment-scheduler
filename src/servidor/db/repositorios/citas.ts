@@ -4,6 +4,7 @@ import type { Intervalo } from "@/dominio/disponibilidad";
 import {
   ESTADOS_CITA,
   sePuedeCancelar,
+  type EstadoAsistencia,
   type EstadoCita,
   type TipoEvento,
 } from "@/dominio/estados-cita";
@@ -205,6 +206,26 @@ export async function cancelar(
     .where(and(eq(cita.negocioId, negocioId), eq(cita.id, citaId), inArray(cita.estado, CANCELABLES)))
     .returning({ clienteCorreo: cita.clienteCorreo });
   return fila ?? null;
+}
+
+/**
+ * Pasa la cita de `de` a un estado de la asistencia solo si sigue en `de` (`UPDATE …
+ * WHERE estado = de`; ARCH §18.4): si otra operación la cambió, no afecta ninguna fila.
+ * Quien llama ya comprobó con `estados-cita.ts` que la transición es válida. Devuelve si
+ * la cambió.
+ */
+export async function cambiarEstado(
+  negocioId: string,
+  citaId: string,
+  cambio: { de: EstadoCita; a: EstadoAsistencia },
+  tx: Transaccion,
+): Promise<boolean> {
+  const filas = await tx
+    .update(cita)
+    .set({ estado: cambio.a })
+    .where(and(eq(cita.negocioId, negocioId), eq(cita.id, citaId), eq(cita.estado, cambio.de)))
+    .returning({ id: cita.id });
+  return filas.length > 0;
 }
 
 /** Un evento del historial de la cita (ARCH §18.2), con los `datos` de Q-55 y nunca datos personales. */

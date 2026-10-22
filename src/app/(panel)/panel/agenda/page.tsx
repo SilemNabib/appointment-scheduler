@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { claseBoton } from "@/componentes/estilos";
+import { ANILLO_FOCO, claseBoton } from "@/componentes/estilos";
 import { AgendaDia } from "@/componentes/panel/agenda-dia";
+import { AgendaSemana } from "@/componentes/panel/agenda-semana";
 import { BuscarCodigo } from "@/componentes/panel/buscar-codigo";
 import { TituloPagina } from "@/componentes/panel/titulo-pagina";
-import { espaciosLibres } from "@/dominio/agenda";
-import { formatearDiaLocal } from "@/dominio/formato";
+import { espaciosLibres, moverSemana, semanaDe } from "@/dominio/agenda";
+import { formatearDiaLocal, formatearFechaLocal } from "@/dominio/formato";
 import { esFechaLocal, fechaLocal, sumarDias, type FechaLocal } from "@/dominio/tiempo";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { listarAgenda } from "@/servidor/casos-uso/agenda-panel";
@@ -19,11 +20,45 @@ export const metadata: Metadata = { title: "Agenda" };
 // parámetros abre el día de hoy en la zona del negocio. Se pueden ver los días pasados.
 // Solo lee: con el negocio suspendido también se ve (D-14).
 
-type Vista = "dia";
+type Vista = "dia" | "semana";
+
+const VISTAS: { vista: Vista; texto: string }[] = [
+  { vista: "dia", texto: "Día" },
+  { vista: "semana", texto: "Semana" },
+];
+
+const esVista = (valor: unknown): valor is Vista => VISTAS.some((v) => v.vista === valor);
 
 const conMayuscula = (texto: string) => texto.charAt(0).toLocaleUpperCase("es-CO") + texto.slice(1);
 
 const href = (vista: Vista, fecha: FechaLocal) => `/panel/agenda?vista=${vista}&fecha=${fecha}`;
+
+/** Lo que cambia según la vista: el rango que se lee, el título y la navegación. */
+function planDeVista(vista: Vista, fecha: FechaLocal, hoy: FechaLocal) {
+  if (vista === "semana") {
+    const semana = semanaDe(fecha);
+    return {
+      rango: semana,
+      descripcion: `Del ${formatearFechaLocal(semana.desde)} al ${formatearFechaLocal(semana.hasta)}`,
+      etiquetaNavegacion: "Cambiar de semana",
+      navegacion: [
+        { texto: "Anterior", destino: moverSemana(fecha, -1).desde, etiqueta: "Semana anterior", actual: false },
+        { texto: "Esta semana", destino: hoy, etiqueta: undefined, actual: semanaDe(hoy).desde === semana.desde },
+        { texto: "Siguiente", destino: moverSemana(fecha, 1).desde, etiqueta: "Semana siguiente", actual: false },
+      ],
+    };
+  }
+  return {
+    rango: { desde: fecha, hasta: fecha },
+    descripcion: conMayuscula(formatearDiaLocal(fecha, true)),
+    etiquetaNavegacion: "Cambiar de día",
+    navegacion: [
+      { texto: "Anterior", destino: sumarDias(fecha, -1), etiqueta: "Día anterior", actual: false },
+      { texto: "Hoy", destino: hoy, etiqueta: undefined, actual: fecha === hoy },
+      { texto: "Siguiente", destino: sumarDias(fecha, 1), etiqueta: "Día siguiente", actual: false },
+    ],
+  };
+}
 
 export default async function PaginaAgenda({
   searchParams,
@@ -37,24 +72,18 @@ export default async function PaginaAgenda({
   const hoy = fechaLocal(ahora, zona);
   const parametros = await searchParams;
   const fecha = esFechaLocal(parametros.fecha) ? parametros.fecha : hoy;
-  const vista: Vista = "dia";
+  const vista: Vista = esVista(parametros.vista) ? parametros.vista : "dia";
+  const plan = planDeVista(vista, fecha, hoy);
 
-  const agenda = await listarAgenda(ctx, fecha, fecha);
-  if (!agenda.ok) throw new Error(`La agenda del ${fecha} no se pudo leer: ${agenda.error}`);
+  const agenda = await listarAgenda(ctx, plan.rango.desde, plan.rango.hasta);
+  if (!agenda.ok) throw new Error(`La agenda de ${plan.rango.desde} a ${plan.rango.hasta} no se pudo leer: ${agenda.error}`);
   const { citas, bloqueos, franjas, granularidadMin } = agenda.valor;
-  const espacios = espaciosLibres({ fecha, zonaHoraria: zona, franjas, granularidadMin, citas, bloqueos, ahora });
-
-  const navegacion = [
-    { texto: "Anterior", destino: sumarDias(fecha, -1), etiqueta: "Día anterior" },
-    { texto: "Hoy", destino: hoy, etiqueta: "Hoy" },
-    { texto: "Siguiente", destino: sumarDias(fecha, 1), etiqueta: "Día siguiente" },
-  ];
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className={`flex flex-col gap-6 ${vista === "dia" ? "max-w-3xl" : ""}`}>
       <TituloPagina
         titulo="Agenda"
-        descripcion={conMayuscula(formatearDiaLocal(fecha, true))}
+        descripcion={plan.descripcion}
         acciones={
           <Link href={`/panel/citas/nueva?fecha=${fecha}`} className={claseBoton("primario")}>
             Nueva cita
@@ -62,14 +91,30 @@ export default async function PaginaAgenda({
         }
       />
 
+      <nav aria-label="Vista de la agenda" className="flex gap-2">
+        {VISTAS.map((v) => (
+          <Link
+            key={v.vista}
+            href={href(v.vista, fecha)}
+            aria-current={v.vista === vista ? "page" : undefined}
+            className={
+              "flex min-h-11 items-center rounded-full border border-borde bg-superficie px-4 text-sm font-semibold text-tinta no-underline " +
+              `hover:brightness-95 aria-[current=page]:border-tinta aria-[current=page]:bg-tinta aria-[current=page]:text-white ${ANILLO_FOCO}`
+            }
+          >
+            {v.texto}
+          </Link>
+        ))}
+      </nav>
+
       <div className="flex flex-col gap-4 min-[700px]:flex-row min-[700px]:items-end min-[700px]:justify-between">
-        <nav aria-label="Cambiar de día" className="flex gap-2">
-          {navegacion.map((n) => (
+        <nav aria-label={plan.etiquetaNavegacion} className="flex flex-wrap gap-2">
+          {plan.navegacion.map((n) => (
             <Link
               key={n.texto}
               href={href(vista, n.destino)}
-              aria-label={n.etiqueta === n.texto ? undefined : n.etiqueta}
-              aria-current={n.texto === "Hoy" && fecha === hoy ? "date" : undefined}
+              aria-label={n.etiqueta}
+              aria-current={n.actual ? "date" : undefined}
               className={claseBoton("secundario")}
             >
               {n.texto}
@@ -81,7 +126,25 @@ export default async function PaginaAgenda({
         </div>
       </div>
 
-      <AgendaDia fecha={fecha} esHoy={fecha === hoy} zonaHoraria={zona} citas={citas} bloqueos={bloqueos} espacios={espacios} />
+      {vista === "semana" ? (
+        <AgendaSemana
+          semana={plan.rango}
+          hoy={hoy}
+          zonaHoraria={zona}
+          citas={citas}
+          bloqueos={bloqueos}
+          hrefDia={(dia) => href("dia", dia)}
+        />
+      ) : (
+        <AgendaDia
+          fecha={fecha}
+          esHoy={fecha === hoy}
+          zonaHoraria={zona}
+          citas={citas}
+          bloqueos={bloqueos}
+          espacios={espaciosLibres({ fecha, zonaHoraria: zona, franjas, granularidadMin, citas, bloqueos, ahora })}
+        />
+      )}
     </div>
   );
 }

@@ -242,7 +242,7 @@
       * Un día con un bloqueo de día completo muestra el bloqueo y no ofrece espacios. Una cita cancelada se distingue por su badge, no solo por el color (RNF-03).
       * Buscar el código de una cita abre su detalle, y un código que no existe muestra "No encontramos una cita con ese código.".
 
-* [ ] T5.19: Vista de semana
+* [x] T5.19: Vista de semana
    * Objetivo: Agregar a `/panel/agenda` la vista de semana (PAN-02; Q-52), de lunes a domingo, con "Anterior", "Esta semana" y "Siguiente". En escritorio muestra una columna por día; en móvil, una lista por día. Cada cita lleva a su detalle y cada día a su vista de día.
    * Archivos: `src/app/(panel)/panel/agenda/page.tsx`, `src/componentes/panel/agenda-semana.tsx`
    * Depende de: T5.18

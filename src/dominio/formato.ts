@@ -55,6 +55,14 @@ export function formatearDiaLocal(fecha: FechaLocal, conAnio = false): string {
   }).format(localAUtc(fecha, "00:00", "UTC"));
 }
 
+/** Fecha local corta, con el día de la semana abreviado: "jue 22" (las columnas de la semana, PAN-02). */
+export function formatearDiaCorto(fecha: FechaLocal): string {
+  return new Intl.DateTimeFormat(LOCALE, { weekday: "short", day: "numeric", timeZone: "UTC" })
+    .format(localAUtc(fecha, "00:00", "UTC"))
+    .replace(".", "")
+    .replace(",", "");
+}
+
 /** El mes de una fecha local, con mayúscula inicial: "Octubre de 2026" (el calendario de PUB-03). */
 export function formatearMesLocal(fecha: FechaLocal): string {
   const texto = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric", timeZone: "UTC" }).format(

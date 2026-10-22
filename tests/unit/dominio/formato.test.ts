@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  formatearDiaCorto,
   formatearDiaLocal,
   formatearFecha,
   formatearFechaHora,
@@ -123,5 +124,12 @@ describe("formatearDiaLocal y formatearMesLocal", () => {
   test("el mes con mayúscula inicial", () => {
     expect(plano(formatearMesLocal("2026-10-20"))).toBe("Octubre de 2026");
     expect(plano(formatearMesLocal("2027-02-01"))).toBe("Febrero de 2027");
+  });
+});
+
+describe("formatearDiaCorto (PAN-02)", () => {
+  test("da el día de la semana abreviado y el número, sin puntos: jue 22", () => {
+    expect(normalizar(formatearDiaCorto("2026-10-22"))).toBe("jue 22");
+    expect(normalizar(formatearDiaCorto("2026-11-01"))).toBe("dom 1");
   });
 });

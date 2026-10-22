@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Versión** | 0.12 (borrador) |
-| **Fecha** | 2026-10-20 |
-| **Fuentes** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 · [PRD.md](PRD.md) v0.9 · [TASKS-04.md](TASKS-04.md) |
+| **Versión** | 0.13 (borrador) |
+| **Fecha** | 2026-10-22 |
+| **Fuentes** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 · [PRD.md](PRD.md) v0.9 · [TASKS-04.md](TASKS-04.md) · [TASKS-05.md](TASKS-05.md) |
 
 > Este documento describe **cómo** se construye el producto del [PRD](PRD.md). Las referencias `RN-xx`, `D-xx`, `S-xx` y `P-xx` remiten a ese documento. Lo marcado como **propuesto** es una decisión de este documento que la fuente dejó abierta y que aún no se ha aceptado. Lo **aceptado** quedó confirmado en el PRD (D-06 a D-23).
 
@@ -24,6 +24,7 @@
 | 0.10 | 2026-10-18 | Dos cambios:<br>• **Workers Paid desde la Fase 3** (Q-17 de TASKS-01): qué ocupa el Worker y el nuevo límite de 10 MiB (§21.4, §23).<br>• **Operaciones de la Fase 2** en §18.4: datos del negocio y logo, consultorio, servicios, bloqueos, configuración, política y acciones del admin (Q-19 de TASKS-02). |
 | 0.11 | 2026-10-18 | **Límites de Workers** (Q-36 de TASKS-03): la documentación vigente de Cloudflare no tiene límite comprimido; el tamaño se mide sin comprimir, con 64 MiB en los dos planes. La cuenta sigue en el plan gratuito, y el límite que importa es el de CPU, 10 ms por solicitud. Workers Paid se decide antes del primer cliente (§21.4, §23). |
 | 0.12 | 2026-10-20 | **Modelo de D-26 a D-29** (PRD v0.9; Q-38 a Q-41 y Q-46 de TASKS-04):<br>• **D-27:** `negocio.rubro`, `eslogan`, `frase_banner` y `descripcion`.<br>• **D-26:** `servicio.categoria`, sin tabla aparte.<br>• **D-29:** enum `tipo_contacto` y tabla `contacto_sede`. `sede.telefono` deja de usarse, pero no se borra.<br>• **D-28:** `cita.codigo`, único por negocio, y cómo se genera en la reserva (§11.4).<br>• **Contratos:** la reserva responde también `codigo`, y `DATOS_INVALIDOS` puede traer `campos` (§18.5).<br>• **Operaciones:** `listarContactos`, `guardarContactos` y `listarCategorias`; cambian `guardarNegocio`, `guardarServicio` y `altaNegocio` (§18.4).<br>• **Color de marca (Q-42):** el valor por defecto de `negocio.color_primario` pasa de `#0f766e` a `#2b3fd6`, el acento de DESIGN.md, solo para los negocios nuevos.<br>Afecta a §11, §17, §18 y §19.1. |
+| 0.13 | 2026-10-22 | **Panel de la Fase 5** (Q-53 a Q-56 y Q-58 a Q-60 de [TASKS-05](TASKS-05.md)):<br>• **Cita manual (Q-54):** lleva código de reserva y exige cupo de `max_appointments_per_month`; `crearCitaManual` suma `DATOS_INVALIDOS`, `NO_ENCONTRADO` y `LIMITE_PLAN`.<br>• **Estados (Q-55):** solo se mueven y se cancelan citas `confirmada`, aunque ya hayan empezado; `moverCita` suma `NO_ENCONTRADO` y `ESTADO_INVALIDO`; `marcarAsistencia` recibe el estado que vio el dueño; qué lleva `evento_cita.datos` en cada tipo.<br>• **Horas del dueño (Q-56):** nueva operación `consultarHorasDueno`.<br>• **Notificaciones (Q-60):** qué encolan la cita manual, el movimiento y la cancelación, y los `datos` de C-04.<br>• **Lecturas del panel:** `listarAgenda`, `detalleCita`, `buscarCitaPorCodigo` y `buscarClientes`.<br>Afecta a §14.1, §18.2 y §18.4. |
 
 ---
 
@@ -715,11 +716,11 @@ Las notificaciones se **insertan en la misma transacción** que el cambio de la 
 Los tipos `dueno_gracia` y `dueno_suspension` son **correos de la cuenta** (S-16): no tienen `cita_id`, salen con el remitente del SaaS y no cuentan para `max_emails_per_month`.
 
 - La **restricción `UNIQUE (clave_idempotencia)`** impide crear dos veces el mismo mensaje (RN-20).
-- **Reprogramar** anula el recordatorio pendiente (`estado = 'cancelada'`) e inserta uno nuevo con la nueva `version`.
-- **Cancelar** anula el recordatorio pendiente.
+- **Reprogramar o mover** anula el recordatorio pendiente (`estado = 'cancelada'`) e inserta uno nuevo con la nueva `version` y `{ "version" }` en `datos`, salvo que su momento ya haya pasado (S-12). C-04 lleva en `datos` `{ "version", "inicio_anterior" }` (Q-60 de [TASKS-05](TASKS-05.md)).
+- **Cancelar**, lo haga el cliente o el dueño, anula el recordatorio pendiente.
 - **Cambiar `recordatorio_horas_antes`** recalcula `programada_para` de los recordatorios pendientes de citas futuras.
-- **Acciones del dueño:** no generan `dueno_*` (S-06).
-- **Citas sin correo** (manuales, S-05): no generan notificaciones al cliente.
+- **Acciones del dueño:** encolan los correos al cliente (C-01 y C-02 en la cita manual, C-04 al mover y C-03 al cancelar), pero no generan `dueno_*` (S-06; Q-60).
+- **Destinatario:** los correos al cliente van al correo con que se reservó la cita (S-15). Las citas sin correo (manuales, S-05) no generan notificaciones al cliente.
 
 ### 14.2 Ciclo de vida de un envío
 
@@ -1593,6 +1594,11 @@ CREATE TABLE evento_cita (
   FOREIGN KEY (cita_id, negocio_id) REFERENCES cita (id, negocio_id) ON DELETE CASCADE
 );
 CREATE INDEX evento_cita_idx ON evento_cita (cita_id, creado_en);
+-- `datos` por tipo (Q-55 de TASKS-05):
+--   creada, cancelada, completada y no_asistio → {}; completada y no_asistio del sistema → {"automatica": true} (§14.4)
+--   reprogramada → {"inicio_anterior", "inicio_nuevo"}, instantes ISO UTC
+--   estado_corregido → {"de", "a"}, con 'completada' o 'no_asistio'
+-- `actor_id` es el clerk_user_id del dueño; NULL cuando el actor es el cliente o el sistema.
 
 -- ============================================================
 -- Notificaciones (RN-20)
@@ -1772,11 +1778,11 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 | Operación | Actor | Toma el bloqueo del recurso | Precondiciones | Efectos (en una transacción) | Errores |
 |---|---|---|---|---|---|
 | `reservarCita` | Cliente | Sí: el recurso elegido o todos los candidatos, ordenados por `id` (§10.3) | Negocio no suspendido; servicio, sede y recurso activos; si viene `recursoId`, debe estar en `servicio_sede_recurso` y el servicio debe tener `cliente_elige`; política del negocio; `evaluarInicio` sin motivos; `max_appointments_per_month` | Cliente (§12); cita `confirmada` con el recurso elegido o asignado y su código de reserva (§11.4); evento `creada`; notificaciones C-01, C-02 y C-05 | `NO_ENCONTRADO`, `NEGOCIO_SUSPENDIDO`, `HORARIO_NO_DISPONIBLE`, `LIMITE_PLAN` |
-| `crearCitaManual` | Dueño | Sí | Servicio activo; `evaluarInicio` con `actor: 'dueno'` sin motivos (RN-09 sin la anticipación, D-11) | Igual, con `origen = 'panel'` y sin consentimiento. C-01 y C-02 si hay correo. Sin C-05 (S-06). | `HORARIO_NO_DISPONIBLE` (con los motivos), `NEGOCIO_SUSPENDIDO` |
+| `crearCitaManual` | Dueño | Sí | Nombre, apellido, teléfono normalizable y correo opcional (S-05); servicio activo en la sede principal; `max_appointments_per_month` (Q-54 de [TASKS-05](TASKS-05.md)); `evaluarInicio` con `actor: 'dueno'` sin motivos (RN-09 sin la anticipación, D-11) | Igual: cliente (§12) y cita `confirmada` con su código de reserva (§11.4), con `origen = 'panel'`, sin consentimiento y con el evento `creada` del dueño. C-01 y C-02 si hay correo. Sin C-05 (S-06). | `DATOS_INVALIDOS` (con `campos`, como en §18.5), `NO_ENCONTRADO`, `HORARIO_NO_DISPONIBLE` (con los motivos), `LIMITE_PLAN`, `NEGOCIO_SUSPENDIDO` |
 | `reprogramarCita` | Cliente (token) | Sí | Token válido; estado `confirmada`; `ahora ≤ inicio − plazo`; `reprogramaciones_cliente < max_reprogramaciones_cliente`, o límite `NULL` (RN-34); negocio no suspendido (D-14); `evaluarInicio` excluyendo la propia cita | `inicio`, `fin` y `ocupado_hasta` nuevos; `version + 1`; `reprogramaciones_cliente + 1`; recordatorio anulado y creado de nuevo; evento `reprogramada`; C-04 (con la invitación actualizada) y C-06 | `NO_ENCONTRADO`, `NEGOCIO_SUSPENDIDO`, `FUERA_DE_PLAZO`, `LIMITE_REPROGRAMACIONES`, `ESTADO_INVALIDO`, `HORARIO_NO_DISPONIBLE` |
-| `moverCita` | Dueño | Sí | `version` esperada (control optimista); `evaluarInicio` con `actor: 'dueno'`, excluyendo la propia cita (D-11) | Igual que reprogramar, pero **sin** sumar `reprogramaciones_cliente` (D-20); C-04 | `CONFLICTO_VERSION`, `HORARIO_NO_DISPONIBLE`, `NEGOCIO_SUSPENDIDO` |
-| `cancelarCita` | Cliente (token) o dueño | No | Estado `confirmada`; negocio no suspendido (D-14); el cliente además debe estar dentro del plazo | `estado = 'cancelada'`, `cancelada_en` y `cancelada_por`; recordatorio anulado; evento; C-03 (y C-06 si canceló el cliente) | `NEGOCIO_SUSPENDIDO`, `FUERA_DE_PLAZO`, `ESTADO_INVALIDO` |
-| `marcarAsistencia` | Dueño | No | `ahora ≥ inicio`; estado `confirmada`, `completada` o `no_asistio` (S-09) | Estado nuevo; evento | `ANTES_DEL_INICIO`, `ESTADO_INVALIDO`, `NEGOCIO_SUSPENDIDO` |
+| `moverCita` | Dueño | Sí | Estado `confirmada`, aunque ya haya empezado (Q-55 de TASKS-05); `version` esperada (control optimista); nueva hora ≥ `ahora` y `evaluarInicio` con `actor: 'dueno'`, excluyendo la propia cita (D-11) | Igual que reprogramar, pero **sin** sumar `reprogramaciones_cliente` (D-20); evento `reprogramada` del dueño; C-04, sin C-06 (S-06) | `NO_ENCONTRADO`, `ESTADO_INVALIDO`, `CONFLICTO_VERSION`, `HORARIO_NO_DISPONIBLE`, `NEGOCIO_SUSPENDIDO` |
+| `cancelarCita` | Cliente (token) o dueño | No | Estado `confirmada`, aunque ya haya empezado (Q-55 de TASKS-05); negocio no suspendido (D-14); el cliente además debe estar dentro del plazo | `estado = 'cancelada'`, `cancelada_en` y `cancelada_por`; recordatorio anulado; evento; C-03 (y C-06 si canceló el cliente) | `NEGOCIO_SUSPENDIDO`, `FUERA_DE_PLAZO`, `ESTADO_INVALIDO` |
+| `marcarAsistencia` | Dueño | No | `ahora ≥ inicio`; estado `confirmada`, `completada` o `no_asistio` (S-09), y todavía el que vio el dueño (`estadoEsperado`; Q-55 de TASKS-05) | Estado nuevo; evento `completada`, `no_asistio` o `estado_corregido` (§18.2) | `ANTES_DEL_INICIO`, `ESTADO_INVALIDO`, `NEGOCIO_SUSPENDIDO` |
 | `crearBloqueo` | Dueño | **Sí**, todos los recursos afectados (del recurso, de la sede o del negocio), ordenados por `id` (§11.3) | `fin > inicio`; ninguna cita `confirmada` con `ocupado_hasta > now()` en el rango (D-15) | Bloqueo | `BLOQUEO_CON_CITAS` (con la lista de citas), `NEGOCIO_SUSPENDIDO` |
 | `guardarHorarioSemanal` | Dueño | No | Franjas sin solape en cada día | Reemplaza la semana completa | `FRANJAS_SOLAPADAS` |
 | `guardarServicio` | Dueño | No | `max_services` al crear o activar; categoría de 1 a 40 caracteres o vacía (D-26) | Servicio en el catálogo, con su categoría (vacía = `NULL`). En el MVP crea también su `servicio_sede` en la sede principal (sin `cliente_elige`) y su `servicio_sede_recurso` con el consultorio. | `LIMITE_PLAN` |
@@ -1805,8 +1811,12 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 | `guardarReglasReserva` y `guardarRecordatorio` | Dueño | No | Valores dentro de los `CHECK` de `configuracion_negocio` (§18.2) | Actualiza la configuración (PAN-15, PAN-16). El recálculo de los recordatorios pendientes va con las notificaciones (Q-23 de TASKS-02). | `DATOS_INVALIDOS` |
 | `publicarPolitica` | Dueño | No | Texto no vacío | Crea la versión siguiente de `politica_datos`; las anteriores no cambian (PAN-17) | `DATOS_INVALIDOS` |
 | `leerConfiguracion`, `leerHorarioSemanal`, `listarPoliticas` y `estadoConfiguracion` | Dueño | No | — | Solo leen. Funcionan con el negocio suspendido (D-14). | — |
+| `consultarHorasDueno` | Dueño | No | Servicio activo en la sede principal | Solo lee: los inicios libres de un día local con `iniciosDisponibles` y `actor: 'dueno'`, es decir, sin anticipación y desde `ahora` (D-11). Con `citaExcluida`, esa cita no ocupa su cupo (RN-14). Se llama con una Server Action, un día por consulta (Q-56 de TASKS-05). | `NO_ENCONTRADO`, `DATOS_INVALIDOS` |
+| `listarAgenda` | Dueño | No | Rango de fechas locales de hasta 42 días | Solo lee: las citas del rango, también las canceladas; los bloqueos que se solapan; y las franjas de la sede principal con la granularidad (PAN-02; Q-58 de TASKS-05) | `DATOS_INVALIDOS` |
+| `detalleCita` y `buscarCitaPorCodigo` | Dueño | No | Cita del negocio; código normalizado (D-28) | Solo leen: la cita con su instantánea, su historial y las acciones que permite en ese momento (PAN-03), o el id de la cita del negocio con ese código (Q-59 de TASKS-05) | `NO_ENCONTRADO` |
+| `buscarClientes` | Dueño | No | Texto de al menos 2 caracteres | Solo lee: hasta 10 clientes del negocio por teléfono exacto o por nombre o apellido, sin los anonimizados (PAN-04, F-06; Q-53 de TASKS-05) | — |
 
-Las operaciones de las filas de `cambiarFinPrueba` en adelante se agregaron al implementar la Fase 2 (Q-19 de [TASKS-02](TASKS-02.md)). Las del dueño en el MVP actúan sobre la sede principal y su consultorio (Q-20). `listarContactos`, `guardarContactos` y `listarCategorias` se agregaron con la Fase 4 (Q-39 y Q-40 de [TASKS-04](TASKS-04.md)).
+Las operaciones de las filas de `cambiarFinPrueba` en adelante se agregaron al implementar la Fase 2 (Q-19 de [TASKS-02](TASKS-02.md)). Las del dueño en el MVP actúan sobre la sede principal y su consultorio (Q-20). `listarContactos`, `guardarContactos` y `listarCategorias` se agregaron con la Fase 4 (Q-39 y Q-40 de [TASKS-04](TASKS-04.md)). `consultarHorasDueno`, `listarAgenda`, `detalleCita`, `buscarCitaPorCodigo` y `buscarClientes` se agregaron con la Fase 5 ([TASKS-05](TASKS-05.md)); como solo leen, funcionan con el negocio suspendido (D-14).
 
 Las transiciones de estado se escriben como `UPDATE cita SET estado = $nuevo … WHERE id = $id AND negocio_id = $n AND estado = $esperado`. Si no afecta ninguna fila, la operación devuelve `ESTADO_INVALIDO`. Esto hace idempotentes los dobles clics y los reintentos.
 

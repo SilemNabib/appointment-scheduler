@@ -60,7 +60,7 @@
       * Una prueba por tabla recorre todas las transiciones válidas e inválidas de PRD §7: `confirmada` pasa a `cancelada`, `completada`, `no_asistio` y a sí misma con otra hora; `completada` y `no_asistio` se corrigen entre sí (S-09); desde `cancelada`, ninguna (S-08) (ARCH §20).
       * Cada transición válida indica su tipo de evento: de `confirmada` a `completada` da `completada`, y de `completada` a `no_asistio`, `estado_corregido` (Q-55).
 
-* [ ] T5.02: Dominio: asistencia después del inicio
+* [x] T5.02: Dominio: asistencia después del inicio
    * Objetivo: Crear `dominio/plazos.ts` con la regla de RN-16: la asistencia se puede marcar desde el instante del inicio (`ahora ≥ inicio`). Los plazos del cliente (RN-13 y RN-34) se agregan en la Fase 6.
    * Archivos: `src/dominio/plazos.ts`, `tests/unit/dominio/plazos.test.ts`
    * Depende de: T4.31

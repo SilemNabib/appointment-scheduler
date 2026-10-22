@@ -1,7 +1,7 @@
 import "server-only";
-import { and, eq, or, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { decidirIdentidad, type ClienteConocido, type DatosIdentidad } from "@/dominio/identidad-cliente";
-import type { Transaccion } from "../cliente";
+import { db, type Conexion, type Transaccion } from "../cliente";
 import { cliente } from "../esquema";
 
 // Clientes del negocio (RN-18, RN-19; ARCH §12). Toda función recibe `negocioId` y lo
@@ -61,4 +61,49 @@ export async function resolver(negocioId: string, datos: DatosIdentidad, tx: Tra
     })
     .returning({ id: cliente.id });
   return id;
+}
+
+/** Un cliente en una lista del panel: lo que se muestra y lo que llena la cita manual (F-06). */
+export type ClienteEncontrado = {
+  id: string;
+  nombre: string;
+  apellido: string;
+  telefonoE164: string | null;
+  correo: string | null;
+};
+
+/** Cómo se busca (Q-53): por el teléfono exacto, ya normalizado, o por el texto en el nombre. */
+export type CriterioBusqueda = { telefonoE164: string } | { texto: string };
+
+/** `%`, `_` y `\` del texto del dueño se buscan tal cual, no como comodines de `LIKE`. */
+const escaparLike = (texto: string) => texto.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/**
+ * Hasta `limite` clientes del negocio, sin los anonimizados (S-14), por nombre y apellido
+ * (PAN-04, F-06; Q-53). Con un teléfono, el que tiene ese `telefono_e164`; con un texto,
+ * los que lo contienen en el nombre, en el apellido o en el nombre completo, sin
+ * distinguir mayúsculas (`ILIKE`, que no quita tildes). Solo lee.
+ */
+export async function buscar(
+  negocioId: string,
+  criterio: CriterioBusqueda,
+  limite: number,
+  conexion: Conexion = db(),
+): Promise<ClienteEncontrado[]> {
+  const coincide =
+    "telefonoE164" in criterio
+      ? eq(cliente.telefonoE164, criterio.telefonoE164)
+      : ilike(sql`${cliente.nombre} || ' ' || ${cliente.apellido}`, `%${escaparLike(criterio.texto)}%`);
+  return conexion
+    .select({
+      id: cliente.id,
+      nombre: cliente.nombre,
+      apellido: cliente.apellido,
+      telefonoE164: cliente.telefonoE164,
+      correo: cliente.correo,
+    })
+    .from(cliente)
+    .where(and(eq(cliente.negocioId, negocioId), isNull(cliente.anonimizadoEn), coincide))
+    .orderBy(asc(cliente.nombre), asc(cliente.apellido), asc(cliente.id))
+    .limit(limite);
 }

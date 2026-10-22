@@ -89,7 +89,7 @@
 
 ### 5.B Operaciones del dueño sobre las citas
 
-* [ ] T5.05: Caso de uso `buscarClientes`
+* [x] T5.05: Caso de uso `buscarClientes`
    * Objetivo: Implementar `buscarClientes(ctx, texto)` para la cita manual (PAN-04, F-06), con las reglas de Q-53: si el texto se normaliza como teléfono, busca por `telefono_e164`; si no, por nombre o apellido. Devuelve hasta 10 clientes del negocio, con nombre, apellido, teléfono y correo, sin los anonimizados. Solo lee. La lista de PAN-09 lo reutiliza en la Fase 7.
    * Archivos: `src/servidor/casos-uso/clientes.ts`, `src/servidor/db/repositorios/clientes.ts`, `tests/integracion/casos-uso/buscar-clientes.test.ts`
    * Depende de: T4.31

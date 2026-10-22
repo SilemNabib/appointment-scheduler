@@ -352,7 +352,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * El recordatorio se anula al cancelar y se rehace al mover, con la clave de la nueva versión (ARCH §20, Notificaciones). Si el nuevo momento del recordatorio ya pasó, no se crea (S-12).
       * Mover encola C-04 con la clave `reprogramacion:{citaId}:v2` y la hora anterior en `datos`, y cancelar encola C-03 con `cancelacion:{citaId}` (ARCH §14.1; Q-60).
 
-* [ ] T5.29: Pruebas de concurrencia del panel
+* [x] T5.29: Pruebas de concurrencia del panel
    * Objetivo: Probar RN-11 en las operaciones del dueño que toman el bloqueo del recurso (ARCH §11.3).
    * Archivos: `tests/integracion/casos-uso/panel-concurrencia.test.ts`
    * Depende de: T5.07, T5.08

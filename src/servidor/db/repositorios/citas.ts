@@ -1,5 +1,5 @@
 import "server-only";
-import { and, count, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import type { Intervalo } from "@/dominio/disponibilidad";
 import {
   ESTADOS_CITA,
@@ -250,4 +250,41 @@ export async function registrarEvento(
     actorId: evento.actor.actor === "dueno" ? evento.actor.actorId : null,
     datos: evento.datos ?? {},
   });
+}
+
+/** Una cita en la agenda del panel (PAN-02): su instantánea, nunca los datos actuales del cliente (RN-18.3). */
+export type CitaDeAgenda = {
+  id: string;
+  codigo: string;
+  inicio: Date;
+  fin: Date;
+  /** `fin` + buffer: lo que ocupa del recurso (RN-10), para los espacios libres. */
+  ocupadoHasta: Date;
+  servicio: string;
+  cliente: string;
+  estado: EstadoCita;
+};
+
+/**
+ * Las citas del negocio que empiezan en el rango `[inicio, fin)`, también las canceladas
+ * (Q-58), por inicio. El rango son días locales completos convertidos a UTC (ARCH §9,
+ * regla 2), así que una cita a las 7:00 p. m. del 14 de octubre en Bogotá cae en el 14.
+ */
+export async function delRango(negocioId: string, rango: Intervalo, conexion: Conexion = db()): Promise<CitaDeAgenda[]> {
+  const filas = await conexion
+    .select({
+      id: cita.id,
+      codigo: cita.codigo,
+      inicio: cita.inicio,
+      fin: cita.fin,
+      ocupadoHasta: cita.ocupadoHasta,
+      servicio: cita.servicioNombre,
+      nombre: cita.clienteNombre,
+      apellido: cita.clienteApellido,
+      estado: cita.estado,
+    })
+    .from(cita)
+    .where(and(eq(cita.negocioId, negocioId), gte(cita.inicio, rango.inicio), lt(cita.inicio, rango.fin)))
+    .orderBy(asc(cita.inicio), asc(cita.id));
+  return filas.map(({ nombre, apellido, ...resto }) => ({ ...resto, cliente: `${nombre} ${apellido}`.trim() }));
 }

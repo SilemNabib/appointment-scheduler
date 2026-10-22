@@ -170,7 +170,7 @@
       * Una cita a las 7:00 p. m. del 14 de octubre en Bogotá (`2026-10-15T00:00:00Z`) se agrupa en el 2026-10-14 (RN-03; ARCH §9).
       * Con una franja de 8:00 a 10:00, granularidad de 30 minutos y una cita de 8:30 a 9:00, los espacios son 8:00, 9:00 y 9:30 (S-04). Una cita cancelada no quita espacios (RN-10).
 
-* [ ] T5.12: Caso de uso `listarAgenda`
+* [x] T5.12: Caso de uso `listarAgenda`
    * Objetivo: Implementar `listarAgenda(ctx, desde, hasta)` para un rango de fechas locales de hasta 42 días (un mes con sus semanas completas). Devuelve las citas del negocio en el rango (ARCH §9, regla 2), con su id, código, inicio, fin, servicio, nombre del cliente (de la instantánea) y estado; los bloqueos que se solapan con el rango; y las franjas de la sede principal con la granularidad. Solo lee, así que funciona con el negocio suspendido (D-14).
    * Archivos: `src/servidor/casos-uso/agenda-panel.ts`, `src/servidor/db/repositorios/citas.ts`, `tests/integracion/casos-uso/agenda-panel.test.ts`
    * Depende de: T5.11

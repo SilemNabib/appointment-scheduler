@@ -89,6 +89,26 @@ export async function vigentesDeLaPrincipal(negocioId: string, ahora: Date): Pro
     .orderBy(asc(bloqueo.inicio), asc(bloqueo.id));
 }
 
+/**
+ * Bloqueos que afectan a la sede principal y se solapan con el rango `[inicio, fin)`,
+ * por inicio: los de la sede y los de todo el negocio, para mostrarlos en la agenda
+ * (PAN-02; Q-58).
+ */
+export async function deLaPrincipalEnRango(negocioId: string, rango: Intervalo): Promise<Bloqueo[]> {
+  return db()
+    .select({ id: bloqueo.id, inicio: bloqueo.inicio, fin: bloqueo.fin, motivo: bloqueo.motivo })
+    .from(bloqueo)
+    .where(
+      and(
+        eq(bloqueo.negocioId, negocioId),
+        or(isNull(bloqueo.sedeId), eq(bloqueo.sedeId, idSedePrincipal(negocioId))),
+        lt(bloqueo.inicio, rango.fin),
+        gt(bloqueo.fin, rango.inicio),
+      ),
+    )
+    .orderBy(asc(bloqueo.inicio), asc(bloqueo.id));
+}
+
 /** Elimina un bloqueo del negocio. Devuelve si lo encontró. */
 export async function eliminar(negocioId: string, id: string): Promise<boolean> {
   const filas = await db()

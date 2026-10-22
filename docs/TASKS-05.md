@@ -218,7 +218,7 @@
       * No aparecen "Profesionales" ni la palabra "sede" (D-24, RN-32). El cierre de sesión y el cambio de contraseña siguen en `<UserButton/>` (PAN-01).
       * En gracia y suspendido, el aviso muestra su texto y su fecha como antes, y su prueba unitaria pasa (PAN-19).
 
-* [ ] T5.17: Detalle de la cita
+* [x] T5.17: Detalle de la cita
    * Objetivo: Crear `/panel/citas/{id}` con `detalleCita` (PAN-03): el código en monoespaciada (DESIGN §2.2), el badge de estado, el servicio, la fecha y la hora, el cliente con sus enlaces de contacto (WhatsApp, teléfono y correo de T4.06) y el historial. Responde 404 con `NO_ENCONTRADO`. Deja el lugar de las acciones de T5.21 y T5.22.
    * Archivos: `src/app/(panel)/panel/citas/[id]/page.tsx`, `src/componentes/panel/historial-cita.tsx`
    * Depende de: T5.14, T5.16

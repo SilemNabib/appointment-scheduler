@@ -344,3 +344,12 @@ export async function eventos(negocioId: string, citaId: string, conexion: Conex
     .where(and(eq(eventoCita.negocioId, negocioId), eq(eventoCita.citaId, citaId)))
     .orderBy(asc(eventoCita.creadoEn), asc(eventoCita.id));
 }
+
+/** El id de la cita del negocio con ese código de reserva, o `null` (D-28; `UNIQUE (negocio_id, codigo)`). */
+export async function idPorCodigo(negocioId: string, codigo: string, conexion: Conexion = db()): Promise<string | null> {
+  const [fila] = await conexion
+    .select({ id: cita.id })
+    .from(cita)
+    .where(and(eq(cita.negocioId, negocioId), eq(cita.codigo, codigo)));
+  return fila?.id ?? null;
+}

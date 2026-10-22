@@ -40,3 +40,16 @@ export function generarCodigo(prefijo: string, azar: Azar, digitos: number = DIG
   const numero = azar(10 ** digitos);
   return `${prefijo}-${String(numero).padStart(digitos, "0")}`;
 }
+
+/** Un código como lo escribe una persona: dos letras y de 4 a 6 dígitos, con guion, espacio o nada entre ellos. */
+const CODIGO_ESCRITO = /^([A-Z]{2})[-\s]?([0-9]{4,6})$/;
+
+/**
+ * El código que el dueño escribe en "Buscar por código" (Q-59), como se guarda: recorta,
+ * pasa a mayúsculas y agrega el guion si falta (" ov-4821 " y "OV4821" dan `OV-4821`).
+ * `null` si no puede ser un código (Q-41): así se rechaza sin consultar la base.
+ */
+export function normalizarCodigo(texto: string): string | null {
+  const m = CODIGO_ESCRITO.exec(texto.trim().toUpperCase());
+  return m ? `${m[1]}-${m[2]}` : null;
+}

@@ -3,6 +3,7 @@ import {
   DIGITOS_CODIGO_LARGO,
   FORMATO_CODIGO,
   generarCodigo,
+  normalizarCodigo,
   prefijoCodigo,
   type Azar,
 } from "@/dominio/codigo-reserva";
@@ -63,4 +64,24 @@ describe("generarCodigo", () => {
       expect(generarCodigo(prefijoCodigo(nombre), fijo(123_456), DIGITOS_CODIGO_LARGO)).toMatch(CHECK_CODIGO);
     }
   });
+});
+
+describe("normalizarCodigo (Q-59)", () => {
+  test.each([
+    [" ov-4821 ", "OV-4821"],
+    ["OV4821", "OV-4821"],
+    ["ov 4821", "OV-4821"],
+    ["eb-000042", "EB-000042"],
+    ["OV-4821", "OV-4821"],
+  ])('"%s" se normaliza como %s', (texto, codigo) => {
+    expect(normalizarCodigo(texto)).toBe(codigo);
+    expect(normalizarCodigo(texto)).toMatch(CHECK_CODIGO);
+  });
+
+  test.each(["", "  ", "OV", "4821", "OV-482", "OV-4821234", "O-4821", "OVX-4821", "ÓV-4821", "OV--4821", "OV-48 21", "Ana Pérez"])(
+    '"%s" no puede ser un código (Q-41)',
+    (texto) => {
+      expect(normalizarCodigo(texto)).toBeNull();
+    },
+  );
 });

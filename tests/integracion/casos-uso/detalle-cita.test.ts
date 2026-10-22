@@ -4,7 +4,7 @@ import type { EstadoEfectivo } from "@/dominio/suscripcion";
 import { localAUtc } from "@/dominio/tiempo";
 import { cancelarCita } from "@/servidor/casos-uso/cancelar-cita";
 import { crearCitaManual } from "@/servidor/casos-uso/cita-manual";
-import { detalleCita } from "@/servidor/casos-uso/detalle-cita";
+import { buscarCitaPorCodigo, detalleCita } from "@/servidor/casos-uso/detalle-cita";
 import { reservarCita } from "@/servidor/casos-uso/reservar-cita";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
@@ -128,5 +128,36 @@ describe("detalleCita (PAN-03)", () => {
     const resultado = await detalleCita(ctx(n, { estado: "suspendida" }), citaId, INICIO);
 
     expect(resultado.ok && resultado.valor).toMatchObject({ id: citaId, acciones: { mover: false, cancelar: false, marcar: false } });
+  });
+});
+
+describe("buscarCitaPorCodigo (D-28; Q-59)", () => {
+  test("encuentra la cita por su código escrito de varias formas", async () => {
+    const { n, citaId, codigo } = await conCita();
+    const [letras, numero] = codigo.split("-");
+
+    for (const texto of [codigo, ` ${codigo.toLowerCase()} `, `${letras}${numero}`]) {
+      expect(await buscarCitaPorCodigo(ctx(n), texto), texto).toEqual({ ok: true, valor: { citaId } });
+    }
+  });
+
+  test("el código de una cita de otro negocio devuelve NO_ENCONTRADO (RN-01)", async () => {
+    const { codigo } = await conCita();
+    const otro = await negocioConAgenda();
+
+    expect(await buscarCitaPorCodigo(ctx(otro), codigo)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+  });
+
+  test("un código que no existe o un texto que no puede ser un código devuelven NO_ENCONTRADO", async () => {
+    const { n } = await conCita();
+
+    for (const texto of ["ZZ-0000", "Ana Pérez", "", null]) {
+      expect(await buscarCitaPorCodigo(ctx(n), texto), String(texto)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+    }
+  });
+
+  test("funciona con el negocio suspendido (D-14)", async () => {
+    const { n, citaId, codigo } = await conCita();
+    expect(await buscarCitaPorCodigo(ctx(n, { estado: "suspendida" }), codigo)).toEqual({ ok: true, valor: { citaId } });
   });
 });

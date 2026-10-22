@@ -1,4 +1,5 @@
 import "server-only";
+import { normalizarCodigo } from "@/dominio/codigo-reserva";
 import { sePuedeCancelar, sePuedeMarcar, sePuedeMover } from "@/dominio/estados-cita";
 import { historialDeCita, type LineaHistorial } from "@/dominio/historial-cita";
 import { puedeMarcarAsistencia } from "@/dominio/plazos";
@@ -8,10 +9,11 @@ import * as citas from "@/servidor/db/repositorios/citas";
 import * as negocios from "@/servidor/db/repositorios/negocios";
 import { esId } from "./esquemas";
 
-// Detalle de la cita (PAN-03, PAN-05 a PAN-07; RN-01, RN-16, RN-18, D-14, S-08; ARCH
-// §6; Q-55). Solo lee: funciona con el negocio suspendido (D-14), pero entonces no
-// ofrece acciones. Las acciones que devuelve solo deciden qué botones se muestran: cada
-// operación vuelve a comprobar sus reglas en el servidor.
+// Detalle de la cita y búsqueda por código (PAN-03, PAN-05 a PAN-07; RN-01, RN-16,
+// RN-18, D-14, D-28, S-08; ARCH §6 y §11.4; Q-55, Q-59). Solo leen: funcionan con el
+// negocio suspendido (D-14), pero entonces el detalle no ofrece acciones. Las acciones
+// que devuelve solo deciden qué botones se muestran: cada operación vuelve a comprobar
+// sus reglas en el servidor.
 
 type Ctx = Pick<ContextoMiembro, "negocioId" | "suscripcion">;
 
@@ -59,4 +61,21 @@ export async function detalleCita(ctx: Ctx, citaId: unknown, ahora: Date): Promi
     historial: historialDeCita(eventos, negocio.zonaHoraria),
     acciones,
   });
+}
+
+/**
+ * El id de la cita del negocio con el código que escribió el dueño (D-28; Q-59). El
+ * código se normaliza (`normalizarCodigo`) y se busca exacto dentro del negocio: el de
+ * una cita de otro negocio responde igual que uno inexistente, `NO_ENCONTRADO` (RN-01).
+ * Un texto que no puede ser un código se rechaza sin consultar la base. No es una
+ * credencial (ARCH §11.4): solo lleva al detalle, que vuelve a exigir la sesión.
+ */
+export async function buscarCitaPorCodigo(
+  ctx: Pick<Ctx, "negocioId">,
+  texto: unknown,
+): Promise<Resultado<{ citaId: string }, "NO_ENCONTRADO">> {
+  const codigo = typeof texto === "string" ? normalizarCodigo(texto) : null;
+  if (codigo === null) return fallo("NO_ENCONTRADO");
+  const citaId = await citas.idPorCodigo(ctx.negocioId, codigo);
+  return citaId ? exito({ citaId }) : fallo("NO_ENCONTRADO");
 }

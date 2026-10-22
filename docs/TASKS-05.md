@@ -197,7 +197,7 @@
       * Una cita de otro negocio o un id que no es un uuid devuelven `NO_ENCONTRADO` (RN-01; ARCH §6, defensa 3).
       * Antes del inicio, las acciones no incluyen la asistencia; desde el inicio, sí (RN-16). Una cita cancelada no tiene acciones (S-08). Con el negocio suspendido, el detalle se lee y no tiene acciones (D-14).
 
-* [ ] T5.15: Búsqueda por código de reserva
+* [x] T5.15: Búsqueda por código de reserva
    * Objetivo: Agregar `normalizarCodigo` a `dominio/codigo-reserva.ts` (recorta, pasa a mayúsculas y agrega el guion si falta) e implementar `buscarCitaPorCodigo(ctx, texto)`, que devuelve el id de la cita del negocio con ese código (D-28; Q-59). Solo lee.
    * Archivos: `src/dominio/codigo-reserva.ts`, `tests/unit/dominio/codigo-reserva.test.ts`, `src/servidor/casos-uso/detalle-cita.ts`, `src/servidor/db/repositorios/citas.ts`, `tests/integracion/casos-uso/detalle-cita.test.ts`
    * Depende de: T5.14

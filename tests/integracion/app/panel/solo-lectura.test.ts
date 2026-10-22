@@ -1,6 +1,12 @@
 import { asc, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import { crearBloqueoPanel, eliminarBloqueoPanel } from "@/app/(panel)/panel/bloqueos/acciones";
+import { cancelarCitaPanel, marcarAsistenciaPanel, moverCitaPanel } from "@/app/(panel)/panel/citas/[id]/acciones";
+import {
+  buscarClientesPanel,
+  crearCitaManualPanel,
+  horasDuenoPanel,
+} from "@/app/(panel)/panel/citas/nueva/acciones";
 import { guardarConsultorioPanel } from "@/app/(panel)/panel/configuracion/consultorio/acciones";
 import { guardarHorarioPanel } from "@/app/(panel)/panel/configuracion/horario/acciones";
 import {
@@ -17,13 +23,19 @@ import {
   desactivarServicioPanel,
   guardarServicioPanel,
 } from "@/app/(panel)/panel/configuracion/servicios/acciones";
+import { localAUtc } from "@/dominio/tiempo";
 import { requireMiembro } from "@/servidor/auth/sesion";
+import { listarAgenda } from "@/servidor/casos-uso/agenda-panel";
 import { crearBloqueo, listarBloqueos } from "@/servidor/casos-uso/bloqueos";
+import { crearCitaManual } from "@/servidor/casos-uso/cita-manual";
+import { buscarClientes } from "@/servidor/casos-uso/clientes";
 import { leerConfiguracion } from "@/servidor/casos-uso/configuracion";
 import { leerConsultorio } from "@/servidor/casos-uso/consultorio";
+import { buscarCitaPorCodigo, detalleCita } from "@/servidor/casos-uso/detalle-cita";
 import { estadoConfiguracion } from "@/servidor/casos-uso/estado-configuracion";
 import { leerNegocio } from "@/servidor/casos-uso/guardar-negocio";
 import { guardarHorarioSemanal, leerHorarioSemanal } from "@/servidor/casos-uso/horario";
+import { consultarHorasDueno } from "@/servidor/casos-uso/horas-dueno";
 import { listarPoliticas } from "@/servidor/casos-uso/politica-datos";
 import { desactivarServicio, guardarServicio, listarServicios } from "@/servidor/casos-uso/servicios";
 import { db } from "@/servidor/db/cliente";
@@ -47,6 +59,8 @@ let negocioId: string;
 let servicioActivo: string;
 let servicioInactivo: string;
 let bloqueoId: string;
+let citaId: string;
+let codigo: string;
 
 const formulario = (campos: Record<string, string | Blob>) => {
   const datos = new FormData();
@@ -59,6 +73,7 @@ const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0
 /** Todo lo que las acciones de la fase pueden cambiar, para comparar antes y después. */
 async function datosDelNegocio() {
   const { negocio, configuracionNegocio, sede, recurso, servicio, horarioSemanal, bloqueo, politicaDatos, contactoSede } = esquema;
+  const { cita, eventoCita, notificacion, cliente } = esquema;
   return {
     negocio: await db().select().from(negocio).where(eq(negocio.id, negocioId)),
     configuracion: await db().select().from(configuracionNegocio).where(eq(configuracionNegocio.negocioId, negocioId)),
@@ -81,6 +96,15 @@ async function datosDelNegocio() {
       .from(contactoSede)
       .where(eq(contactoSede.negocioId, negocioId))
       .orderBy(asc(contactoSede.id)),
+    // Fase 5: las citas, su historial, sus avisos y los clientes.
+    citas: await db().select().from(cita).where(eq(cita.negocioId, negocioId)).orderBy(asc(cita.id)),
+    eventos: await db().select().from(eventoCita).where(eq(eventoCita.negocioId, negocioId)).orderBy(asc(eventoCita.id)),
+    notificaciones: await db()
+      .select()
+      .from(notificacion)
+      .where(eq(notificacion.negocioId, negocioId))
+      .orderBy(asc(notificacion.id)),
+    clientes: await db().select().from(cliente).where(eq(cliente.negocioId, negocioId)).orderBy(asc(cliente.id)),
   };
 }
 
@@ -100,6 +124,21 @@ beforeAll(async () => {
   const bloqueo = await crearBloqueo({ negocioId }, { tipo: "dia", fecha: "2030-03-05" });
   if (!bloqueo.ok) throw new Error(bloqueo.error);
   bloqueoId = bloqueo.valor.id;
+  // Una cita del lunes 4-mar-2030 a las 9:00, creada antes con el caso de uso (que no mira la suscripción).
+  const creada = await crearCitaManual(
+    { negocioId, clerkUserId: "user_dueno" },
+    {
+      nombre: "Ana",
+      apellido: "Pérez",
+      telefono: "300 123 4567",
+      correo: "ana@mail.com",
+      servicioId: servicioActivo,
+      inicio: localAUtc("2030-03-04", "09:00", "America/Bogota").toISOString(),
+    },
+    localAUtc("2030-03-01", "10:00", "America/Bogota"),
+  );
+  if (!creada.ok) throw new Error(creada.error);
+  ({ citaId, codigo } = creada.valor);
 });
 
 describe("solo lectura con el negocio suspendido", () => {
@@ -141,6 +180,22 @@ describe("solo lectura con el negocio suspendido", () => {
       )],
     ["recordatorio: guardar", () => guardarRecordatorioPanel(formulario({ recordatorio: "ninguno" }))],
     ["política: publicar", () => publicarPoliticaPanel(formulario({ contenido: "# Otra política" }))],
+    // Fase 5 (D-14): las operaciones del dueño sobre las citas.
+    ["citas: crear una cita manual", () =>
+      crearCitaManualPanel(
+        formulario({
+          nombre: "Luis",
+          apellido: "Gómez",
+          telefono: "310 555 1234",
+          correo: "",
+          servicioId: servicioActivo,
+          inicio: localAUtc("2030-03-04", "10:00", "America/Bogota").toISOString(),
+        }),
+      )],
+    ["citas: mover", () =>
+      moverCitaPanel({ citaId, inicio: localAUtc("2030-03-04", "10:00", "America/Bogota").toISOString(), version: 1 })],
+    ["citas: cancelar", () => cancelarCitaPanel(citaId)],
+    ["citas: marcar la asistencia", () => marcarAsistenciaPanel({ citaId, estado: "completada", estadoEsperado: "confirmada" })],
   ])("%s devuelve NEGOCIO_SUSPENDIDO y no cambia nada (RN-04; ARCH §20)", async (_, accion) => {
     const antes = await datosDelNegocio();
 
@@ -166,5 +221,21 @@ describe("solo lectura con el negocio suspendido", () => {
     vi.stubEnv("APP_URL", "https://agenda.prueba");
     expect(await estadoConfiguracion(ctx)).toMatchObject({ serviciosActivos: 1, franjas: 1, completa: true });
     vi.unstubAllEnvs();
+  });
+
+  test("la agenda, el detalle, la búsqueda de clientes y las horas libres se siguen leyendo (ARCH §20: \"se puede consultar\")", async () => {
+    const ctx = await requireMiembro();
+    const ahora = localAUtc("2030-03-01", "10:00", "America/Bogota");
+
+    const agenda = await listarAgenda(ctx, "2030-03-04", "2030-03-10");
+    expect(agenda.ok && agenda.valor.citas.map((c) => c.id)).toEqual([citaId]);
+    const detalle = await detalleCita(ctx, citaId, ahora);
+    expect(detalle.ok && detalle.valor).toMatchObject({ id: citaId, acciones: { mover: false, cancelar: false, marcar: false } });
+    expect(await buscarCitaPorCodigo(ctx, codigo)).toEqual({ ok: true, valor: { citaId } });
+    expect((await buscarClientes(ctx, "300 123 4567")).map((c) => c.nombre)).toEqual(["Ana"]);
+    expect(await buscarClientesPanel("Pérez")).toEqual([expect.objectContaining({ nombre: "Ana" })]);
+    const horas = await consultarHorasDueno(ctx, { servicioId: servicioActivo, fecha: "2030-03-04" }, ahora);
+    expect(horas.ok && horas.valor.inicios).not.toContain(localAUtc("2030-03-04", "09:00", "America/Bogota").toISOString());
+    expect((await horasDuenoPanel({ servicioId: servicioActivo, fecha: "2030-03-04" })).ok).toBe(true);
   });
 });

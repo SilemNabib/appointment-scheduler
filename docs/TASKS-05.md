@@ -363,7 +363,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Mover una cita a una hora mientras una reserva pide la misma hora: entra solo una de las dos (ARCH §20: "lo mismo al reprogramar contra una reserva", aquí con `moverCita`; la de `reprogramarCita` va en la Fase 6).
       * Dos movimientos simultáneos de la misma cita con la misma `version`: uno se aplica y el otro devuelve `CONFLICTO_VERSION` (ARCH §18.4).
 
-* [ ] T5.30: Pruebas multi-negocio y de solo lectura
+* [x] T5.30: Pruebas multi-negocio y de solo lectura
    * Objetivo: Probar las Server Actions y las lecturas de esta fase con identificadores de otro negocio y con el negocio suspendido.
    * Archivos: `tests/integracion/app/panel/multi-negocio.test.ts`, `tests/integracion/app/panel/solo-lectura.test.ts`
    * Depende de: T5.22, T5.25

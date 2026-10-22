@@ -1,6 +1,6 @@
 {
   "name": "agenda-citas",
-  "version": "0.38.148",
+  "version": "0.38.149",
   "private": true,
   "scripts": {
     "dev": "next dev",

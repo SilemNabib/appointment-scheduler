@@ -294,7 +294,7 @@
 
 ### 5.E Panel: revisión del resto de las pantallas (DESIGN §4.3)
 
-* [ ] T5.24: Inicio del panel
+* [x] T5.24: Inicio del panel
    * Objetivo: Revisar `/panel` según DESIGN §4.3 (F-05, PAN-18): "Prepara tu negocio" con la lista de verificación y los badges "Listo" y "Falta" (DESIGN §3), el enlace a la página pública con "Ver página", y una tarjeta "Hoy" con las citas del día (T5.12) y el enlace a la agenda. Sin citas, "No tienes citas hoy." (DESIGN §5).
    * Archivos: `src/app/(panel)/panel/page.tsx`
    * Depende de: T5.18

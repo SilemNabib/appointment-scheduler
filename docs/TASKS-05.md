@@ -283,7 +283,7 @@
       * Antes del inicio no aparecen "Asistió" ni "No asistió"; después, sí, y el dueño puede corregir lo que marcó (RN-16, S-09).
       * Al cancelar, la hora vuelve a ofrecerse en la página pública (RN-10) y el detalle muestra "Cancelada" sin acciones (S-08).
 
-* [ ] T5.23: Vista de mes (recortable)
+* [x] T5.23: Vista de mes (recortable)
    * Objetivo: Agregar a `/panel/agenda` la vista de mes (PAN-02), con las semanas de `dominio/calendario.ts` (T4.21) y, en cada día, el número de citas activas, con enlace a su vista de día (Q-58). Es lo primero que se recorta si el plazo aprieta (PRD §4.3; Q-52).
    * Archivos: `src/app/(panel)/panel/agenda/page.tsx`, `src/componentes/panel/agenda-mes.tsx`
    * Depende de: T5.19

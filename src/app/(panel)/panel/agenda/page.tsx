@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ANILLO_FOCO, claseBoton } from "@/componentes/estilos";
 import { AgendaDia } from "@/componentes/panel/agenda-dia";
+import { AgendaMes } from "@/componentes/panel/agenda-mes";
 import { AgendaSemana } from "@/componentes/panel/agenda-semana";
 import { BuscarCodigo } from "@/componentes/panel/buscar-codigo";
 import { TituloPagina } from "@/componentes/panel/titulo-pagina";
 import { espaciosLibres, moverSemana, semanaDe } from "@/dominio/agenda";
-import { formatearDiaLocal, formatearFechaLocal } from "@/dominio/formato";
+import { mesDe, moverMes, primerDia, ultimoDiaDelMes } from "@/dominio/calendario";
+import { formatearDiaLocal, formatearFechaLocal, formatearMesLocal } from "@/dominio/formato";
 import { esFechaLocal, fechaLocal, sumarDias, type FechaLocal } from "@/dominio/tiempo";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { listarAgenda } from "@/servidor/casos-uso/agenda-panel";
@@ -20,11 +22,12 @@ export const metadata: Metadata = { title: "Agenda" };
 // parámetros abre el día de hoy en la zona del negocio. Se pueden ver los días pasados.
 // Solo lee: con el negocio suspendido también se ve (D-14).
 
-type Vista = "dia" | "semana";
+type Vista = "dia" | "semana" | "mes";
 
 const VISTAS: { vista: Vista; texto: string }[] = [
   { vista: "dia", texto: "Día" },
   { vista: "semana", texto: "Semana" },
+  { vista: "mes", texto: "Mes" },
 ];
 
 const esVista = (valor: unknown): valor is Vista => VISTAS.some((v) => v.vista === valor);
@@ -35,6 +38,19 @@ const href = (vista: Vista, fecha: FechaLocal) => `/panel/agenda?vista=${vista}&
 
 /** Lo que cambia según la vista: el rango que se lee, el título y la navegación. */
 function planDeVista(vista: Vista, fecha: FechaLocal, hoy: FechaLocal) {
+  if (vista === "mes") {
+    const mes = mesDe(fecha);
+    return {
+      rango: { desde: primerDia(mes), hasta: ultimoDiaDelMes(mes) },
+      descripcion: formatearMesLocal(fecha),
+      etiquetaNavegacion: "Cambiar de mes",
+      navegacion: [
+        { texto: "Anterior", destino: primerDia(moverMes(mes, -1)), etiqueta: "Mes anterior", actual: false },
+        { texto: "Este mes", destino: hoy, etiqueta: undefined, actual: primerDia(mesDe(hoy)) === primerDia(mes) },
+        { texto: "Siguiente", destino: primerDia(moverMes(mes, 1)), etiqueta: "Mes siguiente", actual: false },
+      ],
+    };
+  }
   if (vista === "semana") {
     const semana = semanaDe(fecha);
     return {
@@ -126,7 +142,9 @@ export default async function PaginaAgenda({
         </div>
       </div>
 
-      {vista === "semana" ? (
+      {vista === "mes" ? (
+        <AgendaMes mes={mesDe(fecha)} hoy={hoy} zonaHoraria={zona} citas={citas} hrefDia={(dia) => href("dia", dia)} />
+      ) : vista === "semana" ? (
         <AgendaSemana
           semana={plan.rango}
           hoy={hoy}

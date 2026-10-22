@@ -360,9 +360,9 @@ Pruebas de integración contra la rama efímera de Neon, con los criterios de ac
       * A 360 px no hay desplazamiento horizontal en ningún paso ni estado, y las áreas táctiles miden al menos 44 px (RNF-01; DESIGN §6).
       * Una reserva completa se hace solo con el teclado, con el foco visible en cada control. El panel de accesibilidad de Lighthouse no informa errores de etiquetas, contraste ni nombres de botones (RNF-03).
       * Con un color de marca claro (`#f5d90a`), los textos y botones de marca cumplen 4.5:1 (RNF-03; Q-42).
-      * Pendiente (2026-10-21): el panel de accesibilidad de Lighthouse, que no estaba instalado. En su lugar se corrió en la página una auditoría propia de etiquetas, nombres de controles, contraste (WCAG 2.1), áreas táctiles y desborde, en cada paso y estado; ver el commit de T4.30.
+      * Lighthouse (2026-10-22, en el Worker, Lighthouse 12 móvil con Edge): accesibilidad 100, sin auditorías fallidas. Antes se había corrido una auditoría propia de etiquetas, nombres de controles, contraste (WCAG 2.1), áreas táctiles y desborde; ver el commit de T4.30.
 
-* [ ] T4.31: Despliegue y verificación de la fase
+* [x] T4.31: Despliegue y verificación de la fase
    * Objetivo: Desplegar la fase en el plan gratuito de Workers (Q-36, TASKS-03) y recorrer la página pública en `*.workers.dev` con el negocio de prueba.
    * Archivos: — (el commit anota el tamaño del Worker, el CPU y el LCP medidos)
    * Depende de: T4.11, T4.20, T4.28–T4.30
@@ -372,7 +372,7 @@ Pruebas de integración contra la rama efímera de Neon, con los criterios de ac
       * En el Worker, con un celular o el viewport de 360 px, una reserva completa termina en la confirmación con su código, y la cita aparece en `production`. El admin suspende el negocio, la página muestra "Reservas no disponibles", y después registra el pago.
       * El LCP de `/{slug}` en Lighthouse móvil (4G simulado) queda anotado frente a los 2,5 s de RNF-01, y el CPU de su render con `wrangler tail`, frente a los 10 ms del plan gratuito (Q-36).
       * `curl -I` muestra los encabezados de T4.20 en el Worker.
-   * Avance (2026-10-21): desplegado (versión `c56714f9`, Total Upload 16471.82 KiB / gzip 3612.22 KiB); migraciones de T4.01 a T4.03 aplicadas en `production`; reserva completa a 360 px con su código (`NO-8969`) y la cita en `production`; encabezados verificados con `curl -I`. CPU medido con `wrangler tail`: de 35 a 875 ms por render de `/{slug}`, muy por encima de los 10 ms del plan gratuito, aunque todas las solicitudes respondieron (Q-36). Desde `/admin`, suspender `testing2` dejó la página en "Reservas no disponibles", y registrar el pago (hasta el 31 de diciembre de 2026: la fecha debe ser posterior a la anterior) la volvió a abrir; los dos cambios quedaron en `auditoria_admin` con el usuario de Clerk. Falta: el LCP con Lighthouse.
+   * Avance (2026-10-21): desplegado (versión `c56714f9`, Total Upload 16471.82 KiB / gzip 3612.22 KiB); migraciones de T4.01 a T4.03 aplicadas en `production`; reserva completa a 360 px con su código (`NO-8969`) y la cita en `production`; encabezados verificados con `curl -I`. CPU medido con `wrangler tail`: de 35 a 875 ms por render de `/{slug}`, muy por encima de los 10 ms del plan gratuito, aunque todas las solicitudes respondieron (Q-36). Desde `/admin`, suspender `testing2` dejó la página en "Reservas no disponibles", y registrar el pago (hasta el 31 de diciembre de 2026: la fecha debe ser posterior a la anterior) la volvió a abrir; los dos cambios quedaron en `auditoria_admin` con el usuario de Clerk. LCP de `/testing2` con Lighthouse móvil (4G simulado): 5,0 s en la primera medición, por la redirección de Clerk y la animación del primer paso (Q-51); después del arreglo (versión `5af8a8c6`), 1,9 s y 1,7 s, frente a los 2,5 s de RNF-01. CPU después del arreglo: 250 a 280 ms por render con el isolate recién arrancado y 36 a 41 ms con el isolate ya caliente.
 
 ---
 

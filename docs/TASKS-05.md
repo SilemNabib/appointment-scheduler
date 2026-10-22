@@ -274,7 +274,7 @@
       * El dueño mueve una cita a otra hora del mismo día y a otro día. El historial muestra la hora anterior y la nueva, y la hora anterior vuelve a ofrecerse en la página pública (RN-14).
       * Con el detalle abierto en dos pestañas, mover en una y después en la otra muestra el aviso de que la cita cambió, sin mover nada (Q-55).
 
-* [ ] T5.22: Cancelar y marcar la asistencia
+* [x] T5.22: Cancelar y marcar la asistencia
    * Objetivo: Agregar al detalle las acciones de PAN-06 y PAN-07: "Cancelar cita" con la confirmación en dos pasos de DESIGN §3 ("¿Cancelar la cita?" y "Sí, cancelar"), y, desde el inicio, "Asistió" y "No asistió", con la corrección entre las dos (S-09). Después de cada acción, el foco va al aviso del resultado.
    * Archivos: `src/app/(panel)/panel/citas/[id]/page.tsx`, `src/app/(panel)/panel/citas/[id]/acciones-estado.tsx`, `src/app/(panel)/panel/citas/[id]/acciones.ts`
    * Depende de: T5.09, T5.10, T5.17

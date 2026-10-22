@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { accion } from "@/servidor/accion";
 import { requireEscritura, requireMiembro } from "@/servidor/auth/sesion";
+import { cancelarCita } from "@/servidor/casos-uso/cancelar-cita";
 import { consultarHorasDueno } from "@/servidor/casos-uso/horas-dueno";
+import { marcarAsistencia } from "@/servidor/casos-uso/marcar-asistencia";
 import { moverCita } from "@/servidor/casos-uso/mover-cita";
 
 // Server Actions del detalle de la cita (PAN-05 a PAN-07). Adaptadores delgados (ARCH §4):
@@ -29,3 +31,21 @@ export const moverCitaPanel = accion(async (entrada: { citaId: string; inicio: s
   if (resultado.ok) revalidar(entrada.citaId);
   return resultado;
 });
+
+/** Cancelar la cita, sin plazo para el dueño (PAN-06; RN-15). */
+export const cancelarCitaPanel = accion(async (citaId: string) => {
+  const ctx = await requireEscritura();
+  const resultado = await cancelarCita(ctx, { citaId }, new Date());
+  if (resultado.ok) revalidar(citaId);
+  return resultado;
+});
+
+/** Marcar o corregir la asistencia, con el estado que vio el dueño (PAN-07; S-09; Q-55). */
+export const marcarAsistenciaPanel = accion(
+  async (entrada: { citaId: string; estado: string; estadoEsperado: string }) => {
+    const ctx = await requireEscritura();
+    const resultado = await marcarAsistencia(ctx, entrada, new Date());
+    if (resultado.ok) revalidar(entrada.citaId);
+    return resultado;
+  },
+);

@@ -12,7 +12,7 @@ import { formatearDiaLocal, formatearHora } from "@/dominio/formato";
 import { fechaLocal } from "@/dominio/tiempo";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { detalleCita } from "@/servidor/casos-uso/detalle-cita";
-import { MoverCita } from "./mover";
+import { AccionesCita } from "./acciones-estado";
 
 export const metadata: Metadata = { title: "Detalle de la cita" };
 
@@ -47,8 +47,6 @@ export default async function PaginaCita({ params }: { params: Promise<{ id: str
   const zona = cita.zonaHoraria;
   const dia = fechaLocal(cita.inicio, zona);
   const contactos = contactosDe(cita.cliente);
-  const { acciones } = cita;
-  const conAcciones = acciones.mover || acciones.cancelar || acciones.marcar;
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -95,22 +93,20 @@ export default async function PaginaCita({ params }: { params: Promise<{ id: str
         )}
       </Seccion>
 
-      {conAcciones && (
-        <Seccion titulo="Acciones">
-          {acciones.mover && (
-            <MoverCita
-              citaId={cita.id}
-              servicioId={cita.servicioId}
-              version={cita.version}
-              inicioActual={cita.inicio.toISOString()}
-              fechaActual={dia}
-              hoy={fechaLocal(ahora, zona)}
-              zonaHoraria={zona}
-            />
-          )}
-          {/* Cancelar y marcar la asistencia llegan con T5.22. */}
-        </Seccion>
-      )}
+      {/* Siempre en el mismo lugar: el aviso de una acción sigue a la vista después de recargar. */}
+      <AccionesCita
+        citaId={cita.id}
+        estado={cita.estado}
+        acciones={cita.acciones}
+        mover={{
+          servicioId: cita.servicioId,
+          version: cita.version,
+          inicioActual: cita.inicio.toISOString(),
+          fechaActual: dia,
+          hoy: fechaLocal(ahora, zona),
+          zonaHoraria: zona,
+        }}
+      />
 
       <Seccion titulo="Historial">
         <HistorialCita lineas={cita.historial} />

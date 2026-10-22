@@ -188,7 +188,7 @@
       * Un evento `reprogramada` del dueño con `inicio_anterior` e `inicio_nuevo` da una línea con las dos horas en hora de Colombia y formato de 12 horas (RN-03, RNF-02).
       * Un evento `completada` del sistema con `{ "automatica": true }` dice que se marcó automáticamente (F-08). Un evento de un tipo que no conoce no rompe el historial.
 
-* [ ] T5.14: Caso de uso `detalleCita`
+* [x] T5.14: Caso de uso `detalleCita`
    * Objetivo: Implementar `detalleCita(ctx, citaId, ahora)` (PAN-03): la cita con su código, servicio, hora, estado y `version`; el nombre, el teléfono y el correo con que se reservó (RN-18.3); el historial (T5.13); y las acciones que permite en ese momento: mover y cancelar si está `confirmada`, marcar la asistencia desde el inicio (T5.01, T5.02), y ninguna con el negocio suspendido (D-14). Solo lee.
    * Archivos: `src/servidor/casos-uso/detalle-cita.ts`, `src/servidor/db/repositorios/citas.ts`, `tests/integracion/casos-uso/detalle-cita.test.ts`
    * Depende de: T5.10, T5.13

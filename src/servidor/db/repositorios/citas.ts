@@ -288,3 +288,59 @@ export async function delRango(negocioId: string, rango: Intervalo, conexion: Co
     .orderBy(asc(cita.inicio), asc(cita.id));
   return filas.map(({ nombre, apellido, ...resto }) => ({ ...resto, cliente: `${nombre} ${apellido}`.trim() }));
 }
+
+/** Una cita con lo que su detalle muestra (PAN-03): la instantánea con que se reservó (RN-18.3). */
+export type DetalleDeCita = {
+  id: string;
+  codigo: string;
+  servicioId: string;
+  servicio: string;
+  inicio: Date;
+  fin: Date;
+  estado: EstadoCita;
+  version: number;
+  origen: "publico" | "panel";
+  cliente: { nombre: string; apellido: string; telefono: string | null; correo: string | null };
+};
+
+/** La cita del negocio para su detalle, o `null` si no existe o es de otro negocio (ARCH §6). */
+export async function detalle(negocioId: string, citaId: string, conexion: Conexion = db()): Promise<DetalleDeCita | null> {
+  const [fila] = await conexion
+    .select({
+      id: cita.id,
+      codigo: cita.codigo,
+      servicioId: cita.servicioId,
+      servicio: cita.servicioNombre,
+      inicio: cita.inicio,
+      fin: cita.fin,
+      estado: cita.estado,
+      version: cita.version,
+      origen: cita.origen,
+      nombre: cita.clienteNombre,
+      apellido: cita.clienteApellido,
+      telefono: cita.clienteTelefono,
+      correo: cita.clienteCorreo,
+    })
+    .from(cita)
+    .where(and(eq(cita.negocioId, negocioId), eq(cita.id, citaId)));
+  if (!fila) return null;
+  const { nombre, apellido, telefono, correo, ...resto } = fila;
+  return { ...resto, cliente: { nombre, apellido, telefono, correo } };
+}
+
+/** Un evento del historial, como lo guarda `evento_cita` (ARCH §18.2). */
+export type EventoGuardado = {
+  tipo: string;
+  actor: "cliente" | "dueno" | "sistema";
+  datos: unknown;
+  creadoEn: Date;
+};
+
+/** Los eventos de la cita del negocio, en el orden en que pasaron (PAN-03). */
+export async function eventos(negocioId: string, citaId: string, conexion: Conexion = db()): Promise<EventoGuardado[]> {
+  return conexion
+    .select({ tipo: eventoCita.tipo, actor: eventoCita.actor, datos: eventoCita.datos, creadoEn: eventoCita.creadoEn })
+    .from(eventoCita)
+    .where(and(eq(eventoCita.negocioId, negocioId), eq(eventoCita.citaId, citaId)))
+    .orderBy(asc(eventoCita.creadoEn), asc(eventoCita.id));
+}

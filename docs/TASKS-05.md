@@ -160,7 +160,7 @@
 
 ### 5.C Lectura de la agenda
 
-* [ ] T5.11: Dominio: agenda
+* [x] T5.11: Dominio: agenda
    * Objetivo: Crear `dominio/agenda.ts` con lo que necesitan las vistas (Q-52, Q-58): la semana de una fecha local (de lunes a domingo) y el paso a la anterior y a la siguiente; la agrupación de las citas por día local; y los espacios libres del día (Q-56), que son los inicios alineados a la granularidad dentro de las franjas que no se solapan con citas activas ni con bloqueos. Los espacios solo ayudan a abrir "Nueva cita": la hora la confirma T5.06.
    * Archivos: `src/dominio/agenda.ts`, `tests/unit/dominio/agenda.test.ts`
    * Depende de: T4.31

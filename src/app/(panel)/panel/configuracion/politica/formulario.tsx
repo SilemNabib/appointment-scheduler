@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Aviso } from "@/componentes/aviso";
+import { Badge } from "@/componentes/badge";
 import { AreaTexto, BotonEnviar, Seccion, useEnvio } from "@/componentes/formulario";
 import { claseBoton } from "@/componentes/estilos";
 import { mensajeDeError } from "@/componentes/mensajes";
@@ -77,14 +78,18 @@ export function HistorialPolitica({
     <Seccion titulo="Historial de versiones">
       <ul className="flex flex-col gap-2">
         {versiones.map((v, i) => (
-          <li key={v.id} className="rounded-md border border-zinc-200 dark:border-zinc-800">
+          <li key={v.id} className="rounded-boton border border-borde">
             <details>
-              <summary className="cursor-pointer px-3 py-2 text-sm">
-                <span className="font-medium">Versión {v.version}</span>
-                {i === 0 && <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Vigente</span>}
-                <span className="text-zinc-600 dark:text-zinc-400"> · publicada el {v.publicada}</span>
+              <summary className="flex min-h-11 cursor-pointer flex-wrap items-center px-3 py-2 text-sm">
+                <span className="font-semibold">Versión {v.version}</span>
+                {i === 0 && (
+                  <Badge tono="exito" className="ml-2">
+                    Vigente
+                  </Badge>
+                )}
+                <span className="text-texto-muted"> · publicada el {v.publicada}</span>
               </summary>
-              <pre className="max-h-96 overflow-auto border-t border-zinc-200 px-3 py-2 text-xs whitespace-pre-wrap dark:border-zinc-800">
+              <pre className="max-h-96 overflow-auto border-t border-borde px-3 py-2 text-xs whitespace-pre-wrap">
                 {v.contenido}
               </pre>
             </details>

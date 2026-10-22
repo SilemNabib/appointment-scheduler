@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TituloPagina } from "@/componentes/panel/titulo-pagina";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { leerHorarioSemanal } from "@/servidor/casos-uso/horario";
 import { FormularioHorario } from "./formulario";
@@ -12,14 +13,11 @@ export default async function PaginaHorario() {
   const franjas = await leerHorarioSemanal(ctx);
 
   return (
-    <div className="flex max-w-2xl flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Horario</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Las horas en que atiendes cada día, en hora de Colombia. Usa varias franjas para dejar pausas, como la hora
-          del almuerzo: una cita siempre cabe completa dentro de una sola franja.
-        </p>
-      </div>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <TituloPagina
+        titulo="Horario"
+        descripcion="Las horas en que atiendes cada día, en hora de Colombia. Usa varias franjas para dejar pausas, como la hora del almuerzo: una cita siempre cabe completa dentro de una sola franja."
+      />
       <FormularioHorario franjas={franjas} soloLectura={ctx.suscripcion.estado === "suspendida"} />
     </div>
   );

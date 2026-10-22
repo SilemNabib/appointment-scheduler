@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TituloPagina } from "@/componentes/panel/titulo-pagina";
 import { formatearIntervalo } from "@/dominio/formato";
 import { fechaLocal } from "@/dominio/tiempo";
 import { requireMiembro } from "@/servidor/auth/sesion";
@@ -18,14 +19,11 @@ export default async function PaginaBloqueos() {
   const soloLectura = ctx.suscripcion.estado === "suspendida";
 
   return (
-    <div className="flex max-w-2xl flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Bloqueos</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Horas o días en que no atiendes, como un festivo o una capacitación: tus clientes no podrán reservar en ese
-          tiempo. No se puede bloquear un horario que ya tiene citas confirmadas.
-        </p>
-      </div>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <TituloPagina
+        titulo="Bloqueos"
+        descripcion="Horas o días en que no atiendes, como un festivo o una capacitación: tus clientes no podrán reservar en ese tiempo. No se puede bloquear un horario que ya tiene citas confirmadas."
+      />
       <FormularioBloqueo zonaHoraria={zona} hoy={fechaLocal(new Date(), zona)} soloLectura={soloLectura} />
       <ListaBloqueos
         bloqueos={bloqueos.map((b) => ({ id: b.id, texto: formatearIntervalo(b.inicio, b.fin, zona), motivo: b.motivo }))}

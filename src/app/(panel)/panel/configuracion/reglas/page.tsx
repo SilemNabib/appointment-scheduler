@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TituloPagina } from "@/componentes/panel/titulo-pagina";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { leerConfiguracion } from "@/servidor/casos-uso/configuracion";
 import { FormularioReglas } from "./formulario";
@@ -12,14 +13,11 @@ export default async function PaginaReglas() {
   const configuracion = await leerConfiguracion(ctx);
 
   return (
-    <div className="flex max-w-xl flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Reglas de reserva</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Cómo y cuándo pueden reservar tus clientes. Los cambios aplican a las reservas siguientes: las citas que ya
-          existen no cambian.
-        </p>
-      </div>
+    <div className="flex max-w-xl flex-col gap-6">
+      <TituloPagina
+        titulo="Reglas de reserva"
+        descripcion="Cómo y cuándo pueden reservar tus clientes. Los cambios aplican a las reservas siguientes: las citas que ya existen no cambian."
+      />
       <FormularioReglas reglas={configuracion} soloLectura={ctx.suscripcion.estado === "suspendida"} />
     </div>
   );

@@ -303,7 +303,7 @@
       * Sin servicios activos o sin horario, la lista marca "Falta" y el aviso de PAN-18 sigue apareciendo; con ambos, "Listo" (Q-22, TASKS-02).
       * La tarjeta "Hoy" lista las citas de hoy en hora de Colombia, y cada una abre su detalle.
 
-* [ ] T5.25: Pantallas de configuración y de bloqueos
+* [x] T5.25: Pantallas de configuración y de bloqueos
    * Objetivo: Revisar cada pantalla por su PAN-xx con los tokens y los componentes de DESIGN (Q-44, TASKS-04): Negocio (PAN-11), Servicios (PAN-12, sin eliminar ni profesional; con el buffer de D-02), Consultorio (PAN-13), Horario (PAN-14), Reglas de reserva (PAN-15), Recordatorios (PAN-16), Política de datos (PAN-17) y Bloqueos (PAN-08). En Bloqueos, la lista vacía dice "No hay bloqueos próximos." (DESIGN §5) y, ante `BLOQUEO_CON_CITAS`, cada cita enlaza a su detalle para moverla o cancelarla primero (F-09). No cambia ningún comportamiento.
    * Archivos: los `page.tsx` y `formulario.tsx` de `src/app/(panel)/panel/configuracion/` y de `src/app/(panel)/panel/bloqueos/`
    * Depende de: T5.17, T5.24

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TituloPagina } from "@/componentes/panel/titulo-pagina";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { leerConsultorio } from "@/servidor/casos-uso/consultorio";
 import { FormularioConsultorio } from "./formulario";
@@ -12,13 +13,11 @@ export default async function PaginaConsultorio() {
   const consultorio = await leerConsultorio(ctx);
 
   return (
-    <div className="flex max-w-xl flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Consultorio</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          El lugar donde atiendes las citas. Todos tus servicios lo usan.
-        </p>
-      </div>
+    <div className="flex max-w-xl flex-col gap-6">
+      <TituloPagina
+        titulo="Consultorio"
+        descripcion="El lugar donde atiendes las citas. Todos tus servicios lo usan."
+      />
       <FormularioConsultorio
         nombre={consultorio.nombre}
         capacidad={consultorio.capacidad}

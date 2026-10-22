@@ -89,7 +89,7 @@ export function FormularioContactos({ contactos, soloLectura }: { contactos: Con
       {estado.exito && <Aviso tipo="exito">{estado.exito}</Aviso>}
       <fieldset disabled={soloLectura} className="flex flex-col gap-4">
         {filas.length === 0 && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-texto-muted">
             Todavía no tienes contactos. Agrega al menos uno para que tus clientes puedan escribirte o llamarte.
           </p>
         )}
@@ -99,7 +99,7 @@ export function FormularioContactos({ contactos, soloLectura }: { contactos: Con
             <GrupoCampos
               key={c.clave}
               leyenda={`Contacto ${indice + 1}`}
-              className="rounded-md border border-zinc-200 p-4 dark:border-zinc-800"
+              className="rounded-boton border border-borde p-4"
             >
               <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
                 <Selector
@@ -179,7 +179,7 @@ export function FormularioContactos({ contactos, soloLectura }: { contactos: Con
           </BotonEnviar>
         </div>
         {filas.length >= MAXIMO_CONTACTOS && (
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">{ERRORES.demasiados}</p>
+          <p className="text-xs text-texto-muted">{ERRORES.demasiados}</p>
         )}
       </fieldset>
     </form>

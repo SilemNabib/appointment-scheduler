@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { Aviso, type TipoAviso } from "@/componentes/aviso";
+import { Badge } from "@/componentes/badge";
 import { AreaTexto, BotonEnviar, Entrada, Seccion } from "@/componentes/formulario";
 import { claseBoton } from "@/componentes/estilos";
 import { mensajeDeError } from "@/componentes/mensajes";
@@ -71,7 +72,7 @@ export function Servicios({
 
       <Seccion titulo="Tus servicios">
         {servicios.length === 0 ? (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-texto-muted">
             Todavía no tienes servicios. Crea el primero para empezar a recibir reservas.
           </p>
         ) : (
@@ -79,26 +80,16 @@ export function Servicios({
             {servicios.map((s) => (
               <li
                 key={s.id}
-                className={`flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-start sm:justify-between ${
-                  s.activo
-                    ? "border-zinc-200 dark:border-zinc-800"
-                    : "border-dashed border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900"
+                className={`flex flex-col gap-3 rounded-boton border p-3 sm:flex-row sm:items-start sm:justify-between ${
+                  s.activo ? "border-borde" : "border-dashed border-borde-control bg-fondo-suave"
                 }`}
               >
                 <div className="flex min-w-0 flex-col gap-1">
-                  <p className="flex flex-wrap items-center gap-2 font-medium">
-                    <span className={s.activo ? "" : "text-zinc-600 dark:text-zinc-400"}>{s.nombre}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        s.activo
-                          ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
-                          : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                      }`}
-                    >
-                      {s.activo ? "Activo" : "Inactivo"}
-                    </span>
+                  <p className="flex flex-wrap items-center gap-2 font-semibold">
+                    <span className={s.activo ? "" : "text-texto-muted"}>{s.nombre}</span>
+                    <Badge tono={s.activo ? "exito" : "neutro"}>{s.activo ? "Activo" : "Inactivo"}</Badge>
                   </p>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <p className="text-sm text-texto-muted">
                     {s.categoria && (
                       <>
                         <span className="sr-only">Categoría: </span>
@@ -107,7 +98,7 @@ export function Servicios({
                     )}
                     {duracion(s)}
                   </p>
-                  {s.descripcion && <p className="text-sm text-zinc-600 dark:text-zinc-400">{s.descripcion}</p>}
+                  {s.descripcion && <p className="text-sm text-texto-muted">{s.descripcion}</p>}
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button

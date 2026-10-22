@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Aviso, type TipoAviso } from "@/componentes/aviso";
 import { BotonEnviar, Entrada, GrupoCampos, Opcion, Seccion, useEnvio } from "@/componentes/formulario";
-import { claseBoton } from "@/componentes/estilos";
+import { ANILLO_FOCO, claseBoton } from "@/componentes/estilos";
 import { mensajeDeError } from "@/componentes/mensajes";
 import { SelectorHora } from "@/componentes/selector-hora";
 import { formatearFechaHora } from "@/dominio/formato";
@@ -42,7 +43,8 @@ export function FormularioBloqueo({
     if (resultado.ok) return { exito: "Creaste el bloqueo." };
     if (resultado.error === "BLOQUEO_CON_CITAS" && "citas" in resultado) {
       return {
-        error: "No se creó el bloqueo: estas citas confirmadas caen en ese tiempo. Cancélalas o muévelas primero.",
+        error:
+          "No se creó el bloqueo: estas citas confirmadas caen en ese tiempo. Ábrelas para moverlas o cancelarlas primero.",
         citas: resultado.citas,
       };
     }
@@ -64,7 +66,10 @@ export function FormularioBloqueo({
               <ul className="mt-2 list-disc pl-5">
                 {estado.citas.map((c) => (
                   <li key={c.id}>
-                    {formatearFechaHora(new Date(c.inicio), zonaHoraria)} · {c.servicio} · {c.cliente}
+                    {/* F-09: desde su detalle se mueve o se cancela, y después se crea el bloqueo. */}
+                    <Link href={`/panel/citas/${c.id}`} className={`rounded-sm font-semibold underline ${ANILLO_FOCO}`}>
+                      {formatearFechaHora(new Date(c.inicio), zonaHoraria)} · {c.servicio} · {c.cliente}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -148,17 +153,17 @@ export function ListaBloqueos({
     <Seccion titulo="Próximos bloqueos" descripcion="Los que ya terminaron no aparecen.">
       {mensaje && <Aviso tipo={mensaje.tipo}>{mensaje.texto}</Aviso>}
       {bloqueos.length === 0 ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">No tienes bloqueos.</p>
+        <p className="text-sm text-texto-muted">No hay bloqueos próximos.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {bloqueos.map((b) => (
             <li
               key={b.id}
-              className="flex flex-col gap-3 rounded-md border border-zinc-200 p-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800"
+              className="flex flex-col gap-3 rounded-boton border border-borde p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex flex-col gap-1">
-                <p className="font-medium">{b.texto}</p>
-                {b.motivo && <p className="text-sm text-zinc-600 dark:text-zinc-400">{b.motivo}</p>}
+                <p className="font-semibold">{b.texto}</p>
+                {b.motivo && <p className="text-sm text-texto-muted">{b.motivo}</p>}
               </div>
               {confirmando === b.id ? (
                 <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Confirmar la eliminación">

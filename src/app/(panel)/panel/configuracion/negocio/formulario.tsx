@@ -50,7 +50,7 @@ export function FormularioLogo({ logoUrl, soloLectura }: { logoUrl: string | nul
       <form action={enviar} className="flex flex-col gap-4">
         <Mensajes estado={estado} />
         <div className="flex items-center gap-4">
-          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-200 bg-white dark:border-zinc-800">
+          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-control border border-borde bg-superficie">
             {imagen ? (
               // `<img>` y no `next/image`: la vista previa es un blob local, y el logo ya se
               // sirve desde /api/media con su caché (Q-21).
@@ -61,10 +61,10 @@ export function FormularioLogo({ logoUrl, soloLectura }: { logoUrl: string | nul
                 className="size-full object-contain"
               />
             ) : (
-              <span className="text-xs text-zinc-500">Sin logo</span>
+              <span className="text-xs text-texto-muted">Sin logo</span>
             )}
           </div>
-          {vistaPrevia && <p className="text-sm text-zinc-600 dark:text-zinc-400">Vista previa: todavía no se guarda.</p>}
+          {vistaPrevia && <p className="text-sm text-texto-muted">Vista previa: todavía no se guarda.</p>}
         </div>
         <fieldset disabled={soloLectura} className="flex flex-col gap-4">
           <Entrada

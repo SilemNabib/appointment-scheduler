@@ -78,10 +78,10 @@ export function FormularioHorario({ franjas, soloLectura }: { franjas: FranjaVal
             key={dia}
             leyenda={NOMBRES[dia]}
             error={estado.dias?.includes(dia) ? "Estas franjas se cruzan." : undefined}
-            className="rounded-md border border-zinc-200 p-4 dark:border-zinc-800"
+            className="rounded-boton border border-borde p-4"
           >
             {semana[dia].length === 0 ? (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">Cerrado</p>
+              <p className="text-sm text-texto-muted">Cerrado</p>
             ) : (
               semana[dia].map((rango, indice) => (
                 <div key={indice} className="flex flex-wrap items-end gap-3">

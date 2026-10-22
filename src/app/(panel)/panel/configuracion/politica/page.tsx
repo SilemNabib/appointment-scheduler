@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TituloPagina } from "@/componentes/panel/titulo-pagina";
 import { formatearFechaHora } from "@/dominio/formato";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { listarPoliticas, plantillaPolitica } from "@/servidor/casos-uso/politica-datos";
@@ -19,13 +20,11 @@ export default async function PaginaPolitica() {
   ]);
 
   return (
-    <div className="flex max-w-3xl flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Política de datos</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          La política de tratamiento de datos personales que tus clientes aceptan al reservar (Ley 1581 de 2012).
-        </p>
-      </div>
+    <div className="flex max-w-3xl flex-col gap-6">
+      <TituloPagina
+        titulo="Política de datos"
+        descripcion="La política de tratamiento de datos personales que tus clientes aceptan al reservar (Ley 1581 de 2012)."
+      />
       <EditorPolitica
         vigente={versiones[0]?.contenido ?? ""}
         plantilla={plantilla}

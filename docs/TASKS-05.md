@@ -328,7 +328,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Una cita cancelada no se reactiva: marcarla, moverla o cancelarla otra vez devuelve `ESTADO_INVALIDO` (S-08).
       * El dueño corrige una cita de `completada` a `no_asistio` y de vuelta (S-09).
 
-* [ ] T5.27: Pruebas de la cita manual y del movimiento
+* [x] T5.27: Pruebas de la cita manual y del movimiento
    * Objetivo: Probar los criterios de RN-14, RN-15 y RN-34 con `crearCitaManual` y `moverCita`.
    * Archivos: `tests/integracion/casos-uso/cita-manual-reglas.test.ts`
    * Depende de: T5.07, T5.08

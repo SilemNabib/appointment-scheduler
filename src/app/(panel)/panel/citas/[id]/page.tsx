@@ -49,7 +49,7 @@ export default async function PaginaCita({ params }: { params: Promise<{ id: str
     <div className="flex max-w-2xl flex-col gap-6">
       <TituloPagina
         antes={
-          <Link href={`/panel/agenda?fecha=${dia}`} className={`self-start text-sm ${enlace}`}>
+          <Link href={`/panel/agenda?vista=dia&fecha=${dia}`} className={`inline-flex min-h-11 items-center self-start text-sm ${enlace}`}>
             ← Volver a la agenda
           </Link>
         }

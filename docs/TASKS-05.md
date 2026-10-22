@@ -251,7 +251,7 @@
       * Con citas en dos días de la semana, cada una aparece en su día y a su hora. Al recargar se conservan la vista y la semana (Q-58).
       * A 360 px no hay desplazamiento horizontal de la página (RNF-01).
 
-* [ ] T5.20: Nueva cita
+* [x] T5.20: Nueva cita
    * Objetivo: Crear `/panel/citas/nueva` (PAN-04, F-06), con la fecha y la hora opcionales en la URL (T5.18):
       * el cliente: buscar por teléfono o nombre (T5.05) y elegir uno, lo que llena los datos, o escribir uno nuevo, con el correo opcional y la ayuda "Sin correo, el cliente no recibe confirmación ni recordatorio" (S-05);
       * el servicio, entre los activos;

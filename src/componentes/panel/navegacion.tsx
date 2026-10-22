@@ -12,11 +12,12 @@ import { ANILLO_FOCO } from "@/componentes/estilos";
 // concepto de sede (RN-32) ni "Profesionales" (D-24). Clientes llega en la Fase 7 y "Mi
 // calendario", en la Fase 6.
 
-type Enlace = { href: string; texto: string };
+/** `tambien`: otras rutas que cuentan como esta página, como las citas para la agenda. */
+type Enlace = { href: string; texto: string; tambien?: string[] };
 
 const PRINCIPALES: Enlace[] = [
   { href: "/panel", texto: "Inicio" },
-  { href: "/panel/agenda", texto: "Agenda" },
+  { href: "/panel/agenda", texto: "Agenda", tambien: ["/panel/citas"] },
   { href: "/panel/bloqueos", texto: "Bloqueos" },
 ];
 
@@ -30,9 +31,10 @@ const CONFIGURACION: Enlace[] = [
   { href: "/panel/configuracion/politica", texto: "Política de datos" },
 ];
 
-/** Inicio solo coincide consigo mismo; las demás, también con sus subrutas. */
-function esActual(href: string, ruta: string) {
-  return href === "/panel" ? ruta === href : ruta === href || ruta.startsWith(`${href}/`);
+/** Inicio solo coincide consigo mismo; las demás, también con sus subrutas y las de `tambien`. */
+function esActual({ href, tambien = [] }: Enlace, ruta: string) {
+  if (href === "/panel") return ruta === href;
+  return [href, ...tambien].some((base) => ruta === base || ruta.startsWith(`${base}/`));
 }
 
 const CLASE_ENLACE =
@@ -52,8 +54,9 @@ export function Navegacion() {
 
   const lista = (enlaces: Enlace[], idTitulo?: string) => (
     <ul aria-labelledby={idTitulo} className="flex gap-1 min-[700px]:flex-col">
-      {enlaces.map(({ href, texto }) => {
-        const esta = esActual(href, ruta);
+      {enlaces.map((enlace) => {
+        const { href, texto } = enlace;
+        const esta = esActual(enlace, ruta);
         return (
           <li key={href} className="shrink-0">
             <Link href={href} ref={esta ? actual : undefined} aria-current={esta ? "page" : undefined} className={CLASE_ENLACE}>

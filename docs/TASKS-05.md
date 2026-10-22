@@ -341,7 +341,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Con `max_appointments_per_month` alcanzado, una cita manual devuelve `LIMITE_PLAN` y no crea nada (RN-25; Q-54).
       * Ninguna acción del dueño encola avisos `dueno_*` (S-06), y una cita sin correo no encola notificaciones al cliente (S-05).
 
-* [ ] T5.28: Pruebas de la ocupación y de las notificaciones
+* [x] T5.28: Pruebas de la ocupación y de las notificaciones
    * Objetivo: Probar con las operaciones reales, y ya no por SQL (T3.24), la ocupación de D-06, y probar las notificaciones de los cambios.
    * Archivos: `tests/integracion/casos-uso/cambios-dueno.test.ts`
    * Depende de: T5.06, T5.08, T5.09, T5.10

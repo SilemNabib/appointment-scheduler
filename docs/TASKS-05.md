@@ -51,7 +51,7 @@
 
 ### 5.A Dominio y núcleo de agendamiento
 
-* [ ] T5.01: Dominio: estados de la cita
+* [x] T5.01: Dominio: estados de la cita
    * Objetivo: Crear `dominio/estados-cita.ts` con las transiciones de PRD §7: qué estados se pueden cancelar, mover y marcar, y qué tipo de evento deja cada cambio (`cancelada`, `reprogramada`, `completada`, `no_asistio` o `estado_corregido`; ARCH §18.2). `cancelada` no pasa a ningún otro estado (S-08), y ningún flujo del MVP llega a `pendiente_pago` (RN-12).
    * Archivos: `src/dominio/estados-cita.ts`, `tests/unit/dominio/estados-cita.test.ts`
    * Depende de: T4.31

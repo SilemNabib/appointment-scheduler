@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import {
   diaSemana,
+  esFechaLocal,
   fechaLocal,
   fechasDelRango,
   instanteAVencimiento,
@@ -233,4 +234,17 @@ describe.each(ZONAS_DEL_PROCESO)("dominio/tiempo con TZ=$tz", ({ tz, horaEnProce
       expect(() => vencimientoAInstante("2026-10-09", "America/No_Existe")).toThrow(RangeError);
     });
   });
+});
+
+describe("esFechaLocal", () => {
+  test("acepta una fecha YYYY-MM-DD que existe, también el 29 de febrero de un año bisiesto", () => {
+    expect(["2026-10-22", "2028-02-29", "2026-12-31"].every(esFechaLocal)).toBe(true);
+  });
+
+  test.each(["2026-02-29", "2026-04-31", "2026-13-01", "22/10/2026", "2026-10-2", "", null, undefined, 20261022])(
+    "rechaza %s",
+    (valor) => {
+      expect(esFechaLocal(valor)).toBe(false);
+    },
+  );
 });

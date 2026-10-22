@@ -227,7 +227,7 @@
       * Una cita reservada en la página pública muestra su código, su hora en hora de Colombia y la línea "Reservada por el cliente" en el historial.
       * El id de una cita de otro negocio responde 404 (RN-01). El enlace de WhatsApp abre `https://wa.me/…` con el teléfono de la cita.
 
-* [ ] T5.18: Vista de día
+* [x] T5.18: Vista de día
    * Objetivo: Crear `/panel/agenda` con la vista de día (PAN-02; Q-52, Q-58) y agregar "Agenda" a la navegación:
       * la fecha en la URL, con "Anterior", "Hoy" y "Siguiente";
       * las citas del día por hora, con su código, servicio, cliente y badge de estado, y cada una con enlace a su detalle;

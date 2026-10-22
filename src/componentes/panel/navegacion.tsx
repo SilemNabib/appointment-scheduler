@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { ANILLO_FOCO } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 
 // Navegación del panel (DESIGN §4.3 y §7; Q-57). Desde 700 px queda fija a un lado; en
 // el celular es una fila horizontal que se desplaza dentro de su propio contenedor, sin
@@ -16,6 +16,7 @@ type Enlace = { href: string; texto: string };
 
 const PRINCIPALES: Enlace[] = [
   { href: "/panel", texto: "Inicio" },
+  { href: "/panel/agenda", texto: "Agenda" },
   { href: "/panel/bloqueos", texto: "Bloqueos" },
 ];
 

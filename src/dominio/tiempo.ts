@@ -33,6 +33,17 @@ function partesDeFecha(fecha: FechaLocal) {
   throw new RangeError(`Fecha local inválida: "${fecha}" (se espera YYYY-MM-DD).`);
 }
 
+/** Si el valor es una fecha local `YYYY-MM-DD` que existe (por ejemplo, la de una URL). */
+export function esFechaLocal(valor: unknown): valor is FechaLocal {
+  if (typeof valor !== "string") return false;
+  try {
+    partesDeFecha(valor);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function partesDeHora(hora: HoraLocal) {
   const m = FORMATO_HORA.exec(hora);
   if (m) {

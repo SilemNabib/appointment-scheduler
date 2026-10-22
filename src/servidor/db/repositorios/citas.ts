@@ -34,6 +34,12 @@ export async function codigoOcupado(negocioId: string, codigo: string, tx: Trans
   return fila !== undefined;
 }
 
+/** Consentimiento de la reserva pública (RN-17): la versión de la política que vio el cliente y cuándo la aceptó. */
+export type Consentimiento = { politicaDatosId: string; politicaAceptadaEn: Date };
+
+/** Quién deja el evento `creada`: el cliente, o el dueño con su `clerk_user_id` (Q-55). */
+export type ActorEvento = { actor: "cliente" } | { actor: "dueno"; actorId: string };
+
 export type NuevaCita = {
   /** Código de reserva (D-28; ARCH §11.4). */
   codigo: string;
@@ -49,19 +55,21 @@ export type NuevaCita = {
   /** Instantánea del servicio y del cliente con que se reservó (RN-18.3, ADR-13). */
   servicioNombre: string;
   cliente: { nombre: string; apellido: string; telefono: string | null; correo: string | null };
-  /** Consentimiento (RN-17): la versión de la política que vio el cliente y cuándo la aceptó. */
-  politicaDatosId: string;
-  politicaAceptadaEn: Date;
   /** Instante de creación: el `ahora` del caso de uso, que cuenta para el mes del límite (Q-29). */
   creadaEn: Date;
-};
+  creadaPor: ActorEvento;
+} & (
+  | { origen: "publico"; consentimiento: Consentimiento }
+  // El `CHECK` de `cita` solo exime del consentimiento a las del panel (RN-17).
+  | { origen: "panel"; consentimiento?: never }
+);
 
 /**
- * Inserta una cita pública `confirmada` (RN-12) y su evento `creada`, con el cliente
- * como actor y sin datos personales (ARCH §18.2), dentro de la transacción de la
- * reserva. Devuelve el id de la cita.
+ * Inserta una cita `confirmada` (RN-12) y su evento `creada`, sin datos personales
+ * (ARCH §18.2), dentro de la transacción del núcleo de agendamiento. La cita pública
+ * lleva el consentimiento; la del panel, no (RN-17). Devuelve el id de la cita.
  */
-export async function crearPublica(negocioId: string, datos: NuevaCita, tx: Transaccion): Promise<string> {
+export async function crear(negocioId: string, datos: NuevaCita, tx: Transaccion): Promise<string> {
   const [{ id }] = await tx
     .insert(cita)
     .values({
@@ -76,17 +84,23 @@ export async function crearPublica(negocioId: string, datos: NuevaCita, tx: Tran
       fin: datos.fin,
       ocupadoHasta: datos.ocupadoHasta,
       estado: "confirmada",
-      origen: "publico",
+      origen: datos.origen,
       servicioNombre: datos.servicioNombre,
       clienteNombre: datos.cliente.nombre,
       clienteApellido: datos.cliente.apellido,
       clienteTelefono: datos.cliente.telefono,
       clienteCorreo: datos.cliente.correo,
-      politicaDatosId: datos.politicaDatosId,
-      politicaAceptadaEn: datos.politicaAceptadaEn,
+      politicaDatosId: datos.consentimiento?.politicaDatosId ?? null,
+      politicaAceptadaEn: datos.consentimiento?.politicaAceptadaEn ?? null,
       creadoEn: datos.creadaEn,
     })
     .returning({ id: cita.id });
-  await tx.insert(eventoCita).values({ negocioId, citaId: id, tipo: "creada", actor: "cliente" });
+  await tx.insert(eventoCita).values({
+    negocioId,
+    citaId: id,
+    tipo: "creada",
+    actor: datos.creadaPor.actor,
+    actorId: datos.creadaPor.actor === "dueno" ? datos.creadaPor.actorId : null,
+  });
   return id;
 }

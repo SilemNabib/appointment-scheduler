@@ -69,7 +69,7 @@
       * `inicio − 1 ms` no permite marcar, e `inicio` sí (ARCH §20: "en el instante exacto del borde").
       * El resultado no cambia si la suite corre con una `TZ` distinta de Bogotá (RN-03).
 
-* [ ] T5.03: Núcleo de agendamiento compartido
+* [x] T5.03: Núcleo de agendamiento compartido
    * Objetivo: Llevar la transacción de `reservarCita` (T3.19, T4.05) a `casos-uso/agendar.ts`, para que la usen también la cita manual y el movimiento: toma el bloqueo del recurso, arma el contexto con `leerAgenda` después del bloqueo, lo evalúa con el actor que recibe, resuelve el cliente, elige el código de reserva y crea la cita. `citas.crearPublica` pasa a ser `citas.crear`, que recibe el origen (`publico` o `panel`), el actor del evento `creada` (`cliente`, o `dueno` con su `actor_id`) y el consentimiento, solo en el origen público (ARCH §18.2). La reserva pública no cambia de comportamiento.
    * Archivos: `src/servidor/casos-uso/agendar.ts`, `src/servidor/casos-uso/reservar-cita.ts`, `src/servidor/db/repositorios/citas.ts`, `tests/integracion/casos-uso/reservar-cita.test.ts`
    * Depende de: T4.31

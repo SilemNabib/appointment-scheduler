@@ -1,7 +1,12 @@
 import "server-only";
-import { and, count, eq, gte, lt, sql } from "drizzle-orm";
+import { and, count, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import type { Intervalo } from "@/dominio/disponibilidad";
-import type { EstadoCita, TipoEvento } from "@/dominio/estados-cita";
+import {
+  ESTADOS_CITA,
+  sePuedeCancelar,
+  type EstadoCita,
+  type TipoEvento,
+} from "@/dominio/estados-cita";
 import { db, type Conexion, type Transaccion } from "../cliente";
 import { cita, eventoCita } from "../esquema";
 
@@ -176,6 +181,30 @@ export async function cambiarHora(
     )
     .returning({ version: cita.version });
   return fila?.version ?? null;
+}
+
+/** Los estados desde los que se cancela, según la máquina de estados (PRD §7): solo `confirmada`. */
+const CANCELABLES = ESTADOS_CITA.filter(sePuedeCancelar);
+
+/**
+ * Cancela la cita si está en un estado cancelable (`UPDATE … WHERE estado = 'confirmada'`;
+ * ARCH §18.4), con `cancelada_en` y `cancelada_por` (el `CHECK` de `cita` los exige
+ * juntos). Desde ese momento no ocupa (RN-10). Si no estaba `confirmada` o no es del
+ * negocio, no afecta ninguna fila y devuelve `null`; si no, el correo de la cita, al
+ * que va C-03 (S-15).
+ */
+export async function cancelar(
+  negocioId: string,
+  citaId: string,
+  cancelacion: { canceladaEn: Date; canceladaPor: ActorEvento["actor"] },
+  tx: Transaccion,
+): Promise<{ clienteCorreo: string | null } | null> {
+  const [fila] = await tx
+    .update(cita)
+    .set({ estado: "cancelada", canceladaEn: cancelacion.canceladaEn, canceladaPor: cancelacion.canceladaPor })
+    .where(and(eq(cita.negocioId, negocioId), eq(cita.id, citaId), inArray(cita.estado, CANCELABLES)))
+    .returning({ clienteCorreo: cita.clienteCorreo });
+  return fila ?? null;
 }
 
 /** Un evento del historial de la cita (ARCH §18.2), con los `datos` de Q-55 y nunca datos personales. */

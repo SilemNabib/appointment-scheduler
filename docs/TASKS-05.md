@@ -139,7 +139,7 @@
       * Con capacidad 1, mover 15 minutos más tarde una cita de 30 minutos se acepta: la cita no ocupa su propio cupo (RN-14).
       * Una `version` vieja devuelve `CONFLICTO_VERSION`, una cita `cancelada` devuelve `ESTADO_INVALIDO`, y una hora no disponible, `HORARIO_NO_DISPONIBLE`. En los tres casos no cambia nada.
 
-* [ ] T5.09: Caso de uso `cancelarCita` (dueño)
+* [x] T5.09: Caso de uso `cancelarCita` (dueño)
    * Objetivo: Implementar la rama del dueño de `cancelarCita` (ARCH §18.4), que empieza con `requireEscritura`, no toma el bloqueo del recurso y no tiene plazo (RN-15). Con `UPDATE … WHERE estado = 'confirmada'` deja la cita `cancelada`, con `cancelada_en` y `cancelada_por = 'dueno'`; anula el recordatorio, registra el evento `cancelada` y encola C-03 si hay correo, sin C-06 (S-06). La rama del cliente, con el token y el plazo de RN-13, llega en la Fase 6.
    * Archivos: `src/servidor/casos-uso/cancelar-cita.ts`, `src/servidor/db/repositorios/citas.ts`, `tests/integracion/casos-uso/cancelar-cita.test.ts`
    * Depende de: T5.01, T5.04

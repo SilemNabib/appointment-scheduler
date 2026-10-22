@@ -265,7 +265,7 @@
       * Con dos pestañas sobre la misma hora, la segunda en guardar ve "Esa hora ya no está disponible", con las horas actualizadas y sus datos intactos (F-06, paso 5; D-01).
       * Desde un espacio libre de la vista de día, el formulario abre en esa fecha y, si el servicio tiene libre esa hora, con ella elegida. Con el negocio suspendido, el formulario aparece deshabilitado (D-14).
 
-* [ ] T5.21: Mover la cita
+* [x] T5.21: Mover la cita
    * Objetivo: Agregar al detalle la acción "Mover" (PAN-05, F-07): el día y las horas libres del mismo servicio sin contar la propia cita (T5.06 con `citaExcluida`), y "Confirmar cambio" con `moverCita` y la `version` que se mostró. Con `CONFLICTO_VERSION` avisa que la cita cambió y recarga el detalle; con `HORARIO_NO_DISPONIBLE`, recarga las horas.
    * Archivos: `src/app/(panel)/panel/citas/[id]/page.tsx`, `src/app/(panel)/panel/citas/[id]/mover.tsx`, `src/app/(panel)/panel/citas/[id]/acciones.ts`
    * Depende de: T5.08, T5.20

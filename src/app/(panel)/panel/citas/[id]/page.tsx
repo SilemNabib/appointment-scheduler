@@ -12,13 +12,15 @@ import { formatearDiaLocal, formatearHora } from "@/dominio/formato";
 import { fechaLocal } from "@/dominio/tiempo";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { detalleCita } from "@/servidor/casos-uso/detalle-cita";
+import { MoverCita } from "./mover";
 
 export const metadata: Metadata = { title: "Detalle de la cita" };
 
 // Detalle de la cita (PAN-03; RN-01, RN-03, RNF-02, RNF-03, D-28; Q-61): el código en
 // monoespaciada, el estado, el servicio, la fecha y la hora en la zona del negocio, el
-// cliente con los datos con que reservó y sus enlaces de contacto, y el historial. Una
-// cita de otro negocio o un id inválido responden 404, como una inexistente (ARCH §6).
+// cliente con los datos con que reservó y sus enlaces de contacto, las acciones que la
+// cita permite en ese momento (PAN-05 a PAN-07) y el historial. Una cita de otro negocio
+// o un id inválido responden 404, como una inexistente (ARCH §6).
 
 const enlace = `rounded-sm font-semibold text-acento-texto underline ${ANILLO_FOCO}`;
 
@@ -38,12 +40,15 @@ function contactosDe(cliente: { telefono: string | null; correo: string | null }
 export default async function PaginaCita({ params }: { params: Promise<{ id: string }> }) {
   const ctx = await requireMiembro();
   const { id } = await params;
-  const resultado = await detalleCita(ctx, id, new Date());
+  const ahora = new Date();
+  const resultado = await detalleCita(ctx, id, ahora);
   if (!resultado.ok) notFound();
   const cita = resultado.valor;
   const zona = cita.zonaHoraria;
   const dia = fechaLocal(cita.inicio, zona);
   const contactos = contactosDe(cita.cliente);
+  const { acciones } = cita;
+  const conAcciones = acciones.mover || acciones.cancelar || acciones.marcar;
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -90,7 +95,22 @@ export default async function PaginaCita({ params }: { params: Promise<{ id: str
         )}
       </Seccion>
 
-      {/* Las acciones (mover, cancelar y marcar la asistencia) llegan con T5.21 y T5.22. */}
+      {conAcciones && (
+        <Seccion titulo="Acciones">
+          {acciones.mover && (
+            <MoverCita
+              citaId={cita.id}
+              servicioId={cita.servicioId}
+              version={cita.version}
+              inicioActual={cita.inicio.toISOString()}
+              fechaActual={dia}
+              hoy={fechaLocal(ahora, zona)}
+              zonaHoraria={zona}
+            />
+          )}
+          {/* Cancelar y marcar la asistencia llegan con T5.22. */}
+        </Seccion>
+      )}
 
       <Seccion titulo="Historial">
         <HistorialCita lineas={cita.historial} />

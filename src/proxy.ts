@@ -13,10 +13,11 @@ export default clerkMiddleware(async (auth, req) => {
   if (RUTA_PRIVADA.test(req.nextUrl.pathname)) await auth.protect(); // Sin sesión: redirige a NEXT_PUBLIC_CLERK_SIGN_IN_URL (/login)
 });
 
+// Solo las rutas que usan Clerk (Q-51 de TASKS-04): el panel, el admin y las páginas de
+// ingreso, con sus Server Actions, que son POST a la misma ruta. La página pública
+// (`/{slug}`), su política y la API no pasan por Clerk: así no hacen la redirección de
+// "handshake" a su dominio, que en cada primera visita sumaba tres viajes y la mitad del
+// LCP (RNF-01; ARCH §7.2). Ninguna de esas rutas llama a `auth()`.
 export const config = {
-  matcher: [
-    // Todo excepto los internos de Next y los archivos estáticos (patrón recomendado por Clerk)
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api)(.*)",
-  ],
+  matcher: ["/panel/:path*", "/admin/:path*", "/login/:path*", "/registro/:path*", "/sin-acceso"],
 };

@@ -52,7 +52,14 @@ export type PropsReserva = {
 
 export function Reserva(props: PropsReserva) {
   const { servicios, sede, hoy, ultimoDia, zonaHoraria } = props;
-  const [paso, setPaso] = useState(0);
+  const [paso, setPasoEstado] = useState(0);
+  // Sin animación de entrada en la primera carga: el título del primer paso es el LCP de
+  // la página, y un fundido desde opacidad 0 lo retrasa (RNF-01). Anima al cambiar de paso.
+  const [animar, setAnimar] = useState(false);
+  const setPaso = (p: number) => {
+    setAnimar(true);
+    setPasoEstado(p);
+  };
   const [servicioId, setServicioId] = useState<string | null>(null);
   const [fecha, setFecha] = useState<FechaLocal | null>(null);
   const [inicio, setInicio] = useState<string | null>(null);
@@ -161,7 +168,7 @@ export function Reserva(props: PropsReserva) {
       >
         {/* Confirmada la cita, ya no se vuelve a los pasos anteriores. */}
         <BarraPasos pasos={PASOS} actual={paso} alIr={paso === 3 ? undefined : setPaso} />
-        <div key={paso} className="flex animate-entrada flex-col gap-[18px]">
+        <div key={paso} className={`flex flex-col gap-[18px] ${animar ? "animate-entrada" : ""}`}>
           <h2 id="titulo-paso" ref={titulo} tabIndex={-1} className="m-0 text-[26px] leading-tight font-bold outline-none">
             {paso === 3 && cita ? `¡Listo, ${datos.nombre.trim()}! Tu cita está confirmada` : TITULOS[paso]}
           </h2>

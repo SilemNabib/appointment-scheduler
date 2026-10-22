@@ -317,7 +317,7 @@
 
 Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH §20 y los criterios de aceptación de las RN que esta fase hace posibles. Cada caso cita su origen.
 
-* [ ] T5.26: Pruebas de los estados y la asistencia
+* [x] T5.26: Pruebas de los estados y la asistencia
    * Objetivo: Probar con las operaciones del dueño los criterios de las RN sobre los estados de la cita.
    * Archivos: `tests/integracion/casos-uso/estados-cita-reglas.test.ts`
    * Depende de: T5.09, T5.10

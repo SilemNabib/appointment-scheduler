@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Aviso } from "@/componentes/aviso";
-import { BotonEnviar, claseBoton, GrupoCampos, useEnvio } from "@/componentes/formulario";
+import { BotonEnviar, GrupoCampos, useEnvio } from "@/componentes/formulario";
+import { claseBoton } from "@/componentes/estilos";
 import { mensajeDeError } from "@/componentes/mensajes";
 import { aMinutos, horaDe, SelectorHora } from "@/componentes/selector-hora";
 import { formatearHoraLocal } from "@/dominio/formato";

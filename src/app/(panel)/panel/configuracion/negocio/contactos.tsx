@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Aviso } from "@/componentes/aviso";
-import { BotonEnviar, claseBoton, Entrada, GrupoCampos, Selector, useEnvio } from "@/componentes/formulario";
+import { BotonEnviar, Entrada, GrupoCampos, Selector, useEnvio } from "@/componentes/formulario";
+import { claseBoton } from "@/componentes/estilos";
 import { mensajeDeError } from "@/componentes/mensajes";
 import {
   LONGITUD_MAXIMA_ETIQUETA,

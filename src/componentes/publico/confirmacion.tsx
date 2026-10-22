@@ -1,6 +1,6 @@
 "use client";
 
-import { claseBoton } from "@/componentes/formulario";
+import { claseBoton } from "@/componentes/estilos";
 import { formatearDiaLocal, formatearHora } from "@/dominio/formato";
 import { fechaLocal } from "@/dominio/tiempo";
 import type { CitaCreada } from "./api";

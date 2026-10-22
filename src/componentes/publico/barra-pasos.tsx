@@ -1,4 +1,4 @@
-import { ANILLO_FOCO } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 
 // Barra de pasos de la reserva (DESIGN §3, §6): un `nav` con su `aria-label` y una lista
 // ordenada; el paso actual lleva `aria-current="step"`. Los completados muestran una

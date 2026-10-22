@@ -1,6 +1,6 @@
 "use client";
 
-import { ANILLO_FOCO } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import { formatearHora } from "@/dominio/formato";
 import { minutosLocales } from "@/dominio/tiempo";
 

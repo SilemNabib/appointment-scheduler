@@ -1,6 +1,6 @@
 "use client";
 
-import { ANILLO_FOCO } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import { semanasDelMes, type Mes } from "@/dominio/calendario";
 import { formatearDiaLocal, formatearMesLocal } from "@/dominio/formato";
 import type { FechaLocal } from "@/dominio/tiempo";

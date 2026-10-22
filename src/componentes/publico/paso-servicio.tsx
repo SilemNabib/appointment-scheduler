@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Badge } from "@/componentes/badge";
 import { Chip } from "@/componentes/chip";
-import { ANILLO_FOCO } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import type { ServicioOfrecido } from "@/servidor/casos-uso/pagina-publica";
 
 // Paso "Servicio" (PUB-02; D-26; Q-39): chips de categoría con "Todos" primero y después

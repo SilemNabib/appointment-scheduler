@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Aviso } from "@/componentes/aviso";
-import { AreaTexto, BotonEnviar, claseBoton, Seccion, useEnvio } from "@/componentes/formulario";
+import { AreaTexto, BotonEnviar, Seccion, useEnvio } from "@/componentes/formulario";
+import { claseBoton } from "@/componentes/estilos";
 import { mensajeDeError } from "@/componentes/mensajes";
 import { publicarPoliticaPanel } from "./acciones";
 

@@ -2,25 +2,13 @@
 
 import { startTransition, useActionState, useId, type ComponentProps, type FormEvent, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
+import { ANILLO_FOCO, CLASE_CONTROL, claseBoton, type VarianteBoton } from "./estilos";
 
 // Piezas que repiten los formularios del panel y del admin (RNF-03), con los tokens, los
 // radios y las alturas de DESIGN §2.3 y §3 (Q-44): campos de 48 px, botones de al menos
 // 48 px y el anillo de foco `foco`. Solo tema claro. Cada campo asocia su etiqueta con
 // `htmlFor`, y su ayuda y su error con `aria-describedby`; el foco siempre se ve. La
 // validación vive en el servidor (Q-02): los atributos de HTML solo ayudan a escribir bien.
-
-/** Foco visible, igual en todos los controles (DESIGN §2.1: `foco`, 3 px, desfase 2 px). */
-export const ANILLO_FOCO = "focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-foco";
-
-/** Campo de texto y selector (DESIGN §3): 48 px de alto, radio de 12 px. */
-const CLASE_CONTROL =
-  "min-h-12 rounded-control border border-borde-control bg-superficie px-3.5 text-[15px] text-tinta " +
-  "aria-[invalid=true]:border-2 aria-[invalid=true]:border-error-texto " +
-  "disabled:bg-[#f3f4f1] disabled:text-deshabilitado-texto " +
-  // El campo de archivo: su botón, dentro de los 48 px.
-  "file:my-1.5 file:mr-3 file:min-h-9 file:cursor-pointer file:rounded-[10px] file:border-0 file:bg-fondo-suave " +
-  "file:px-3 file:text-sm file:font-semibold file:text-tinta " +
-  ANILLO_FOCO;
 
 /** El área de texto crece con sus filas. */
 const CLASE_AREA = "py-3";
@@ -150,22 +138,6 @@ export function Opcion({ etiqueta, className, ...props }: { etiqueta: ReactNode 
 }
 
 /**
- * Botones de DESIGN §3: el primario con el acento (y su texto, que contrasta; Q-42), el
- * secundario blanco con borde, y el destructivo, secundario con el texto `error-acción`.
- * Deshabilitados, todos en gris (`deshabilitado`).
- */
-const VARIANTES_BOTON = {
-  primario: "border border-acento bg-acento px-5 font-bold text-sobre-acento",
-  secundario: "border border-borde-control bg-superficie px-[18px] font-semibold text-tinta",
-  peligro: "border border-borde-control bg-superficie px-[18px] font-bold text-error-accion",
-};
-
-export const claseBoton = (variante: keyof typeof VARIANTES_BOTON = "primario") =>
-  "inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-boton text-[15px] no-underline " +
-  "hover:brightness-95 disabled:cursor-not-allowed disabled:border-deshabilitado disabled:bg-deshabilitado " +
-  `disabled:text-deshabilitado-texto disabled:hover:brightness-100 ${VARIANTES_BOTON[variante]} ${ANILLO_FOCO}`;
-
-/**
  * Envía un formulario a una Server Action sin el reinicio automático que React hace
  * al terminar una `<form action>`. Ese reinicio devuelve cada campo a su valor
  * inicial, también los controlados por estado (radios, casillas o listas): el
@@ -199,7 +171,7 @@ export function BotonEnviar({
   children: ReactNode;
   /** Lo que dice mientras se envía, como "Guardando…". Por defecto, "Procesando…" (DESIGN §3). */
   textoEnviando?: ReactNode;
-  variante?: keyof typeof VARIANTES_BOTON;
+  variante?: VarianteBoton;
   /** Para formularios con `useEnvio`, que `useFormStatus` no ve. */
   enviando?: boolean;
 } & Omit<ComponentProps<"button">, "type" | "children">) {

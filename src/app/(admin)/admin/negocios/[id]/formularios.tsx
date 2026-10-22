@@ -2,7 +2,8 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { Aviso, type TipoAviso } from "@/componentes/aviso";
-import { BotonEnviar, claseBoton, Entrada, Seccion } from "@/componentes/formulario";
+import { BotonEnviar, Entrada, Seccion } from "@/componentes/formulario";
+import { claseBoton } from "@/componentes/estilos";
 import { mensajeDeError } from "@/componentes/mensajes";
 import { formatearFechaLocal } from "@/dominio/formato";
 import { cambiarFinPruebaAdmin, registrarPagoAdmin, suspenderNegocioAdmin } from "./acciones";

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireSuperadmin } from "@/servidor/auth/sesion";
 import { EstadoEfectivo, ESTADOS_SUSCRIPCION, Vencimiento } from "@/componentes/admin/estado-suscripcion";
-import { ANILLO_FOCO } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import { listarNegocios } from "@/servidor/casos-uso/listar-negocios";
 
 export const metadata: Metadata = { title: "Negocios · Admin" };

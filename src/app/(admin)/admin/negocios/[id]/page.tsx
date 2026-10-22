@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EstadoEfectivo, ESTADOS_SUSCRIPCION, Vencimiento } from "@/componentes/admin/estado-suscripcion";
-import { ANILLO_FOCO } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import { requireSuperadmin } from "@/servidor/auth/sesion";
 import { detalleNegocioAdmin } from "@/servidor/casos-uso/detalle-negocio-admin";
 import { BotonSuspender, FormularioFinPrueba, FormularioPago } from "./formularios";

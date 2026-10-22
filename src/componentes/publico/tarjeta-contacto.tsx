@@ -1,4 +1,4 @@
-import { ANILLO_FOCO } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import { enlaceContacto, valorVisible, type Contacto } from "@/dominio/contactos";
 
 // Tarjeta de contacto (DESIGN §3; PUB-01, PUB-07; D-29): un botón de 48 px por contacto,

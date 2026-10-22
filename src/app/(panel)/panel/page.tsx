@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Aviso } from "@/componentes/aviso";
-import { ANILLO_FOCO, Seccion } from "@/componentes/formulario";
+import { Seccion } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { estadoConfiguracion } from "@/servidor/casos-uso/estado-configuracion";
 import { resumenNegocio } from "@/servidor/casos-uso/resumen-negocio";

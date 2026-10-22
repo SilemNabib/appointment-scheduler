@@ -1,7 +1,7 @@
 import { ClerkProvider, UserButton } from "@clerk/nextjs";
 import { esES } from "@clerk/localizations";
 import Link from "next/link";
-import { ANILLO_FOCO } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import { MosaicoLogo } from "@/componentes/mosaico-logo";
 import { AvisoSuscripcion } from "@/componentes/panel/aviso-suscripcion";
 import { Navegacion } from "@/componentes/panel/navegacion";

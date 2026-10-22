@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ANILLO_FOCO, Seccion } from "@/componentes/formulario";
+import { Seccion } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import { BadgeEstadoCita } from "@/componentes/panel/estado-cita";
 import { HistorialCita } from "@/componentes/panel/historial-cita";
 import { TituloPagina } from "@/componentes/panel/titulo-pagina";

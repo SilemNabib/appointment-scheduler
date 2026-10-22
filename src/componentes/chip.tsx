@@ -1,5 +1,5 @@
 import type { ComponentProps, ReactNode } from "react";
-import { ANILLO_FOCO } from "./formulario";
+import { ANILLO_FOCO } from "./estilos";
 
 // Chip de selección (DESIGN §3, §6): categorías y horas. Es un botón real con
 // `aria-pressed`, así que el estado no depende solo del color: el lector de pantalla

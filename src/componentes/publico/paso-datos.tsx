@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, type FormEvent } from "react";
 import { Aviso } from "@/componentes/aviso";
-import { ANILLO_FOCO, BotonEnviar, claseBoton, Entrada } from "@/componentes/formulario";
+import { BotonEnviar, Entrada } from "@/componentes/formulario";
+import { ANILLO_FOCO, claseBoton } from "@/componentes/estilos";
 
 // Paso "Tus datos" (PUB-05; RN-17; ARCH §15; Q-43, Q-45, Q-46): nombre, apellido,
 // celular con +57 por defecto, correo y la casilla obligatoria de la política con su

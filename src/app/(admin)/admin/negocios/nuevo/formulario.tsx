@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { Aviso } from "@/componentes/aviso";
-import { ANILLO_FOCO, BotonEnviar, Entrada, GrupoCampos, Opcion, Selector } from "@/componentes/formulario";
+import { BotonEnviar, Entrada, GrupoCampos, Opcion, Selector } from "@/componentes/formulario";
+import { ANILLO_FOCO } from "@/componentes/estilos";
 import { crearNegocio, type EstadoAlta } from "./acciones";
 
 // Formulario de alta (ADM-02, F-11). Valida solo en el servidor (Q-02); los atributos

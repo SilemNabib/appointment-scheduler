@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Aviso } from "@/componentes/aviso";
-import { claseBoton } from "@/componentes/formulario";
+import { claseBoton } from "@/componentes/estilos";
 import { mesDe, mesesNavegables, moverMes, rangoDelMes, siguienteDiaConCupo, type Mes } from "@/dominio/calendario";
 import { formatearDiaLocal } from "@/dominio/formato";
 import { sumarDias, type FechaLocal } from "@/dominio/tiempo";

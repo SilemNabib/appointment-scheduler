@@ -9,7 +9,7 @@ import {
   type TipoEvento,
 } from "@/dominio/estados-cita";
 import { db, type Conexion, type Transaccion } from "../cliente";
-import { cita, eventoCita } from "../esquema";
+import { cita, eventoCita, sede } from "../esquema";
 
 // Citas (RN-10, RN-12, RN-17; ARCH §11 y §18.2). Toda función recibe `negocioId` y lo
 // usa en el WHERE (ARCH §6, defensa 1). Las citas no se borran: cambian de estado.
@@ -352,4 +352,45 @@ export async function idPorCodigo(negocioId: string, codigo: string, conexion: C
     .from(cita)
     .where(and(eq(cita.negocioId, negocioId), eq(cita.codigo, codigo)));
   return fila?.id ?? null;
+}
+
+/** Lo que muestra el link de gestión (GES-01; Q-69): sin los datos de contacto del cliente (RN-24). */
+export type CitaDeGestion = {
+  id: string;
+  codigo: string;
+  sedeId: string;
+  servicioId: string;
+  servicio: string;
+  inicio: Date;
+  fin: Date;
+  estado: EstadoCita;
+  version: number;
+  /** Para verificar el token del link (ARCH §13). */
+  tokenVersion: number;
+  reprogramacionesCliente: number;
+  /** La dirección de la sede de la cita. */
+  direccion: string | null;
+};
+
+/** La cita del negocio para el link de gestión, o `null` si no existe en ese negocio (RN-01). */
+export async function deGestion(negocioId: string, citaId: string, conexion: Conexion = db()): Promise<CitaDeGestion | null> {
+  const [fila] = await conexion
+    .select({
+      id: cita.id,
+      codigo: cita.codigo,
+      sedeId: cita.sedeId,
+      servicioId: cita.servicioId,
+      servicio: cita.servicioNombre,
+      inicio: cita.inicio,
+      fin: cita.fin,
+      estado: cita.estado,
+      version: cita.version,
+      tokenVersion: cita.tokenVersion,
+      reprogramacionesCliente: cita.reprogramacionesCliente,
+      direccion: sede.direccion,
+    })
+    .from(cita)
+    .innerJoin(sede, and(eq(sede.id, cita.sedeId), eq(sede.negocioId, cita.negocioId)))
+    .where(and(eq(cita.negocioId, negocioId), eq(cita.id, citaId)));
+  return fila ?? null;
 }

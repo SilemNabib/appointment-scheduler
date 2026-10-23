@@ -213,7 +213,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
 
 ### 6.D Gestión de la cita por link (GES-01 a GES-05)
 
-* [ ] T6.17: Caso de uso `verCitaPorLink`
+* [x] T6.17: Caso de uso `verCitaPorLink`
    * Objetivo: Implementar `verCitaPorLink({ slug, citaId, token }, ahora)` (Q-69): verifica el token (T6.01) con el `token_version` de la cita y que el slug sea el de su negocio, y devuelve lo que muestra GES-01: el código, el servicio, la fecha y la hora, la dirección, el estado, las acciones de T6.03 con su motivo, las reprogramaciones que le quedan y los contactos de la sede (D-29). Solo lee, así que funciona con el negocio suspendido (GES-05).
    * Archivos: `src/servidor/casos-uso/gestion-cita.ts`, `src/servidor/db/repositorios/citas.ts`, `tests/integracion/casos-uso/gestion-cita.test.ts`
    * Depende de: T6.01, T6.03

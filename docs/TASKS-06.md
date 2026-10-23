@@ -161,7 +161,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * C-05 lleva el código de la cita y enlaza a `{APP_URL}/panel/citas/{citaId}`.
       * El C-06 de una reprogramación muestra la hora anterior y la nueva; el de una cancelación dice que el cliente la canceló (Q-68).
 
-* [ ] T6.12: Plantillas C-07 y C-08
+* [x] T6.12: Plantillas C-07 y C-08
    * Objetivo: Crear los correos de la cuenta (S-16): la suscripción vencida (C-07), con la fecha de vencimiento, la fecha límite para renovar (vencimiento más 3 días), las instrucciones de pago de Q-66 y el contacto de soporte; y la suspensión (C-08), con lo que dejó de funcionar (D-14), que los datos se conservan, las instrucciones de pago y el soporte.
    * Archivos: `src/servidor/notificaciones/plantillas/cuenta-gracia.tsx`, `src/servidor/notificaciones/plantillas/cuenta-suspension.tsx`, `tests/unit/servidor/notificaciones/plantillas-cuenta.test.ts`
    * Depende de: T6.08

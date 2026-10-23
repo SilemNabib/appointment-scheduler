@@ -186,14 +186,22 @@ export async function crearCita(
   return exito({ citaId, codigo, inicio: p.inicio, fin, recordatorioHorasAntes: leida.reglas.recordatorioHorasAntes });
 }
 
-export type PeticionCambioHora = {
+export type PeticionCambioHora<E extends string = never> = {
   negocio: { id: string; zonaHoraria: string };
   citaId: string;
   inicio: Date;
-  /** La versión que vio quien la mueve (control optimista; Q-55). */
-  version: number;
+  /**
+   * La versión que vio quien la mueve (control optimista; Q-55). El cliente no la envía
+   * (`null`; Q-69): vale la de la cita releída después del bloqueo.
+   */
+  version: number | null;
   /** El dueño la mueve sin anticipación (D-11); el cliente, desde su link, con ella (RN-14). */
   quien: { actor: "cliente" } | { actor: "dueno"; actorId: string };
+  /**
+   * Las reglas de quien la mueve, con la cita releída después del bloqueo: el plazo y el
+   * límite de reprogramaciones del cliente (RN-13, RN-34; ARCH §18.3). Un `Fallo` la rechaza.
+   */
+  validar?: (cita: citas.CitaParaCambio) => Fallo<E> | null;
 };
 
 /** La cita con su hora nueva, con lo que sus avisos necesitan. */
@@ -206,10 +214,12 @@ export type HoraCambiada = {
   fin: Date;
   /** El correo con que se reservó (S-15); `null` sin correo (S-05). */
   clienteCorreo: string | null;
+  /** El evento `reprogramada`, cuyo id lleva la clave de C-06 (ARCH §14.1; Q-68). */
+  eventoId: string;
 };
 
-export type ErrorCambioHora =
-  | Fallo<"NO_ENCONTRADO" | "ESTADO_INVALIDO" | "CONFLICTO_VERSION" | "DATOS_INVALIDOS">
+export type ErrorCambioHora<E extends string = never> =
+  | Fallo<"NO_ENCONTRADO" | "ESTADO_INVALIDO" | "CONFLICTO_VERSION" | "DATOS_INVALIDOS" | E>
   | HorarioNoDisponible;
 
 /**
@@ -219,7 +229,8 @@ export type ErrorCambioHora =
  *    ve lo que otra operación sobre ese recurso acaba de confirmar. Un recurso inactivo
  *    no se puede bloquear: `HORARIO_NO_DISPONIBLE`;
  * 2. comprueba que esté `confirmada` (`ESTADO_INVALIDO`; Q-55) y en la `version` esperada
- *    (`CONFLICTO_VERSION`). La hora que ya tiene no es un cambio: `DATOS_INVALIDOS`;
+ *    (`CONFLICTO_VERSION`), si quien la mueve la envió, y aplica `validar` a la cita
+ *    releída. La hora que ya tiene no es un cambio: `DATOS_INVALIDOS`;
  * 3. evalúa la nueva hora con el actor de `quien`, con el mismo servicio (S-07) y sin
  *    contar la propia cita (RN-14). Si no pasa, `HORARIO_NO_DISPONIBLE` con sus motivos;
  *    sin motivos si el servicio ya no se ofrece (RN-05);
@@ -230,11 +241,11 @@ export type ErrorCambioHora =
  *
  * Los avisos del cambio (C-04, y C-06 cuando es el cliente) los encola quien llama.
  */
-export async function cambiarHora(
-  p: PeticionCambioHora,
+export async function cambiarHora<E extends string = never>(
+  p: PeticionCambioHora<E>,
   ahora: Date,
   tx: Transaccion,
-): Promise<Exito<HoraCambiada> | ErrorCambioHora> {
+): Promise<Exito<HoraCambiada> | ErrorCambioHora<E>> {
   // 1 y 2. El recurso de la cita no cambia al moverla: se lee sin bloqueo, se bloquea y se
   // relee. Un estado que no se mueve o una versión distinta ya son definitivos en la
   // primera lectura: una cita no vuelve a `confirmada` (S-08) y la versión solo sube.
@@ -244,6 +255,8 @@ export async function cambiarHora(
   const releida = citaMovible(await citas.paraCambio(p.negocio.id, p.citaId, tx), p.version);
   if (!releida.ok) return releida;
   const cita = releida.valor;
+  const rechazo = p.validar?.(cita);
+  if (rechazo) return rechazo;
   if (cita.inicio.getTime() === p.inicio.getTime()) return fallo("DATOS_INVALIDOS");
 
   // 3. La nueva hora, con el mismo servicio y sin la propia cita.
@@ -271,7 +284,7 @@ export async function cambiarHora(
     p.negocio.id,
     {
       citaId: cita.id,
-      versionEsperada: p.version,
+      versionEsperada: p.version ?? cita.version,
       inicio: p.inicio,
       fin,
       ocupadoHasta: new Date(fin.getTime() + servicio.bufferMinutos * MS_POR_MINUTO),
@@ -285,7 +298,7 @@ export async function cambiarHora(
   await notificaciones.anularRecordatorios(p.negocio.id, cita.id, tx);
   const c02 = recordatorio({ citaId: cita.id, inicio: p.inicio, version }, leida.reglas.recordatorioHorasAntes, ahora);
   if (c02 && cita.clienteCorreo !== null) await notificaciones.encolar(p.negocio.id, cita.clienteCorreo, [c02], tx);
-  await citas.registrarEvento(
+  const eventoId = await citas.registrarEvento(
     p.negocio.id,
     cita.id,
     {
@@ -303,17 +316,18 @@ export async function cambiarHora(
     inicio: p.inicio,
     fin,
     clienteCorreo: cita.clienteCorreo,
+    eventoId,
   });
 }
 
-/** La cita, si existe, está `confirmada` (Q-55) y sigue en la versión esperada. */
+/** La cita, si existe, está `confirmada` (Q-55) y sigue en la versión esperada, si la hay. */
 function citaMovible(
   cita: citas.CitaParaCambio | null,
-  version: number,
+  version: number | null,
 ): Exito<citas.CitaParaCambio> | Fallo<"NO_ENCONTRADO" | "ESTADO_INVALIDO" | "CONFLICTO_VERSION"> {
   if (!cita) return fallo("NO_ENCONTRADO");
   if (!sePuedeMover(cita.estado)) return fallo("ESTADO_INVALIDO");
-  if (cita.version !== version) return fallo("CONFLICTO_VERSION");
+  if (version !== null && cita.version !== version) return fallo("CONFLICTO_VERSION");
   return exito(cita);
 }
 

@@ -233,7 +233,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Fuera del plazo devuelve `FUERA_DE_PLAZO`; con el negocio suspendido, `NEGOCIO_SUSPENDIDO`; y cancelada otra vez, `ESTADO_INVALIDO`. En los tres casos no cambia nada (RN-13, D-14, S-08).
       * Pasan sin cambios las pruebas de la rama del dueño (T5.09).
 
-* [ ] T6.19: Caso de uso `reprogramarCita`
+* [x] T6.19: Caso de uso `reprogramarCita`
    * Objetivo: Implementar `reprogramarCita({ slug, citaId, token, inicio }, ahora)` (ARCH §18.4) con el cambio de hora del núcleo (`cambiarHora`, T5.08) y actor `cliente`, con el negocio no suspendido: después del bloqueo, aplica T6.03 a la cita releída (plazo de RN-13 y límite de RN-34), evalúa la nueva hora con la anticipación del cliente y sin contar la propia cita, y suma 1 a `reprogramaciones_cliente` en la misma transacción (ARCH §18.3). Encola C-04 (`reprogramacion:{citaId}:v{version}`), C-06 y el recordatorio de la versión nueva.
    * Archivos: `src/servidor/casos-uso/reprogramar-cita.ts`, `src/servidor/casos-uso/agendar.ts`, `tests/integracion/casos-uso/reprogramar-cita.test.ts`
    * Depende de: T6.18

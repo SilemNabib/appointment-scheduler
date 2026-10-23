@@ -7,6 +7,7 @@ import { requireEscritura, requireMiembro } from "@/servidor/auth/sesion";
 import { crearCitaManual } from "@/servidor/casos-uso/cita-manual";
 import { buscarClientes } from "@/servidor/casos-uso/clientes";
 import { consultarHorasDueno } from "@/servidor/casos-uso/horas-dueno";
+import { despacharSiSalioBien } from "@/servidor/notificaciones/despacho";
 
 // Server Actions de la cita manual (PAN-04, F-06). Adaptadores delgados (ARCH §4): el
 // negocio sale de la sesión; las lecturas usan `requireMiembro` y crear, `requireEscritura`
@@ -24,10 +25,10 @@ export const horasDuenoPanel = accion(async (entrada: { servicioId: string; fech
   return consultarHorasDueno(ctx, entrada, new Date());
 });
 
-/** Guarda la cita manual y, si sale bien, lleva a su detalle (F-06). */
+/** Guarda la cita manual y, si sale bien, envía C-01 (si tiene correo) y lleva a su detalle (F-06; ARCH §14.4). */
 export const crearCitaManualPanel = accion(async (datos: FormData) => {
   const ctx = await requireEscritura();
-  const resultado = await crearCitaManual(ctx, Object.fromEntries(datos), new Date());
+  const resultado = despacharSiSalioBien(await crearCitaManual(ctx, Object.fromEntries(datos), new Date()));
   if (!resultado.ok) return resultado;
   revalidatePath("/panel/agenda");
   // Fuera de cualquier try: `redirect` funciona lanzando un error que Next debe recibir.

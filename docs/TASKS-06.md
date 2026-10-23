@@ -202,7 +202,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Si el proveedor falla, la notificación vuelve a `pendiente` con su espera, y el reintento envía la misma clave de idempotencia (ARCH §14.3, pasos 4 y 5).
       * Con `max_emails_per_month` alcanzado por una excepción, un C-01 queda `fallida` con `LIMITE_PLAN` y un C-08 sale igual (ARCH §14.1, §16.3).
 
-* [ ] T6.16: Envío inmediato después de un cambio
+* [x] T6.16: Envío inmediato después de un cambio
    * Objetivo: Crear `servidor/notificaciones/despacho.ts`, que después del `COMMIT` pide procesar las notificaciones de una cita sin que la respuesta espere al correo, con `after()` de Next o con `getCloudflareContext().ctx.waitUntil` (ARCH §14.4; se elige según la guía de Next y lo que OpenNext soporte en Workers), y llamarlo desde la ruta de reservas y las Server Actions de la cita manual, mover y cancelar. Si el envío inmediato falla, la notificación sigue pendiente y la recoge el cron (ARCH §14.4).
    * Archivos: `src/servidor/notificaciones/despacho.ts`, `src/app/api/publico/[slug]/reservas/route.ts`, `src/app/(panel)/panel/citas/nueva/acciones.ts`, `src/app/(panel)/panel/citas/[id]/acciones.ts`, `tests/unit/servidor/notificaciones/despacho.test.ts`
    * Depende de: T6.15

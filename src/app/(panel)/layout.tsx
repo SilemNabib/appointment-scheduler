@@ -16,6 +16,9 @@ import { encabezadoPanel } from "@/servidor/casos-uso/resumen-negocio";
 // (ARCH §7.4). Cada página lo repite, porque un layout no se vuelve a renderizar al
 // navegar. Por lo mismo, el aviso de la suscripción (PAN-19) se actualiza al recargar,
 // no en cada cambio de página.
+/** Al menos 44 × 44 px (DESIGN §6; RNF-01), con el avatar centrado. */
+const AREA_TACTIL = { minWidth: "2.75rem", minHeight: "2.75rem", justifyContent: "center" };
+
 export default async function PanelLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -26,12 +29,13 @@ export default async function PanelLayout({
     <ClerkProvider localization={esES} afterSignOutUrl="/login">
       <header className="border-b border-borde bg-superficie">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/panel" className={`flex min-w-0 items-center gap-3 rounded-control ${ANILLO_FOCO}`}>
+          <Link href="/panel" className={`flex min-h-11 min-w-0 items-center gap-3 rounded-control ${ANILLO_FOCO}`}>
             <MosaicoLogo nombre={negocio.nombre} logoUrl={negocio.logoUrl} tamano={42} />
             <span className="truncate font-titulos text-lg font-bold">{negocio.nombre}</span>
           </Link>
-          {/* Cambiar la contraseña y cerrar sesión (PAN-01). */}
-          <UserButton />
+          {/* Cambiar la contraseña y cerrar sesión (PAN-01). El botón, de 44 px como todo control
+              táctil (DESIGN §6): con un objeto de estilo, que Clerk aplica sobre los suyos. */}
+          <UserButton appearance={{ elements: { userButtonTrigger: AREA_TACTIL } }} />
         </div>
       </header>
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-4 min-[700px]:flex-row min-[700px]:gap-8 min-[700px]:py-6">

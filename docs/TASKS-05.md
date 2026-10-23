@@ -373,7 +373,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Con el negocio suspendido, crear una cita manual, moverla, cancelarla o marcarla devuelve `NEGOCIO_SUSPENDIDO` y no cambia nada (RN-04, D-14).
       * Con el negocio suspendido, la agenda, el detalle, la búsqueda de clientes y las horas libres se siguen leyendo (ARCH §20: "se puede consultar").
 
-* [ ] T5.31: Revisión de accesibilidad y móvil del panel
+* [x] T5.31: Revisión de accesibilidad y móvil del panel
    * Objetivo: Recorrer la agenda, el detalle, la cita manual y el inicio en móvil y con el teclado, y corregir lo que falle. Los arreglos van en el commit de esta tarea.
    * Archivos: los que haya que corregir en `src/app/(panel)/` y `src/componentes/panel/`
    * Depende de: T5.23, T5.25

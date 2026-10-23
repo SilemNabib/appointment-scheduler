@@ -67,7 +67,9 @@ export function AgendaMes({
   );
 
   return (
-    <table className="w-full table-fixed border-separate border-spacing-0.5 sm:border-spacing-1">
+    // En el celular la tabla ocupa también los márgenes laterales: cada día mide al menos 44 px
+    // de ancho aunque el navegador reserve espacio para la barra de desplazamiento (DESIGN §6).
+    <table className="-mx-2 w-[calc(100%+1rem)] table-fixed border-separate border-spacing-0.5 sm:mx-0 sm:w-full sm:border-spacing-1">
       <caption className="sr-only">Citas activas por día; cada día abre su agenda</caption>
       <thead>
         <tr>

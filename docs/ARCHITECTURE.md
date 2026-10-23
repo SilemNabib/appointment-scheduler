@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Versión** | 0.13 (borrador) |
-| **Fecha** | 2026-10-22 |
-| **Fuentes** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 · [PRD.md](PRD.md) v0.9 · [TASKS-04.md](TASKS-04.md) · [TASKS-05.md](TASKS-05.md) |
+| **Versión** | 0.14 (borrador) |
+| **Fecha** | 2026-10-23 |
+| **Fuentes** | [alcance-y-reglas-de-negocio.md](alcance-y-reglas-de-negocio.md) v0.1 · [PRD.md](PRD.md) v0.9 · [TASKS-04.md](TASKS-04.md) · [TASKS-05.md](TASKS-05.md) · [TASKS-06.md](TASKS-06.md) |
 
 > Este documento describe **cómo** se construye el producto del [PRD](PRD.md). Las referencias `RN-xx`, `D-xx`, `S-xx` y `P-xx` remiten a ese documento. Lo marcado como **propuesto** es una decisión de este documento que la fuente dejó abierta y que aún no se ha aceptado. Lo **aceptado** quedó confirmado en el PRD (D-06 a D-23).
 
@@ -25,6 +25,7 @@
 | 0.11 | 2026-10-18 | **Límites de Workers** (Q-36 de TASKS-03): la documentación vigente de Cloudflare no tiene límite comprimido; el tamaño se mide sin comprimir, con 64 MiB en los dos planes. La cuenta sigue en el plan gratuito, y el límite que importa es el de CPU, 10 ms por solicitud. Workers Paid se decide antes del primer cliente (§21.4, §23). |
 | 0.12 | 2026-10-20 | **Modelo de D-26 a D-29** (PRD v0.9; Q-38 a Q-41 y Q-46 de TASKS-04):<br>• **D-27:** `negocio.rubro`, `eslogan`, `frase_banner` y `descripcion`.<br>• **D-26:** `servicio.categoria`, sin tabla aparte.<br>• **D-29:** enum `tipo_contacto` y tabla `contacto_sede`. `sede.telefono` deja de usarse, pero no se borra.<br>• **D-28:** `cita.codigo`, único por negocio, y cómo se genera en la reserva (§11.4).<br>• **Contratos:** la reserva responde también `codigo`, y `DATOS_INVALIDOS` puede traer `campos` (§18.5).<br>• **Operaciones:** `listarContactos`, `guardarContactos` y `listarCategorias`; cambian `guardarNegocio`, `guardarServicio` y `altaNegocio` (§18.4).<br>• **Color de marca (Q-42):** el valor por defecto de `negocio.color_primario` pasa de `#0f766e` a `#2b3fd6`, el acento de DESIGN.md, solo para los negocios nuevos.<br>Afecta a §11, §17, §18 y §19.1. |
 | 0.13 | 2026-10-22 | **Panel de la Fase 5** (Q-53 a Q-56 y Q-58 a Q-60 de [TASKS-05](TASKS-05.md)):<br>• **Cita manual (Q-54):** lleva código de reserva y exige cupo de `max_appointments_per_month`; `crearCitaManual` suma `DATOS_INVALIDOS`, `NO_ENCONTRADO` y `LIMITE_PLAN`.<br>• **Estados (Q-55):** solo se mueven y se cancelan citas `confirmada`, aunque ya hayan empezado; `moverCita` suma `NO_ENCONTRADO` y `ESTADO_INVALIDO`; `marcarAsistencia` recibe el estado que vio el dueño; qué lleva `evento_cita.datos` en cada tipo.<br>• **Horas del dueño (Q-56):** nueva operación `consultarHorasDueno`.<br>• **Notificaciones (Q-60):** qué encolan la cita manual, el movimiento y la cancelación, y los `datos` de C-04.<br>• **Lecturas del panel:** `listarAgenda`, `detalleCita`, `buscarCitaPorCodigo` y `buscarClientes`.<br>Afecta a §14.1, §18.2 y §18.4. |
+| 0.14 | 2026-10-23 | **Correos, gestión y calendario de la Fase 6** (Q-62 a Q-64, Q-66 a Q-69 y Q-71 a Q-75 de [TASKS-06](TASKS-06.md)):<br>• **Envío (Q-62, Q-64, Q-66):** Resend por su API REST, sin SDK, con plantillas de React Email; el remitente de pruebas de Resend hasta la Fase 9; y la variable nueva `NOMBRE_PRODUCTO`.<br>• **Respuestas (Q-63):** el orden del `reply_to` de los correos de citas.<br>• **Revalidación (Q-67):** también C-01 y C-04; y los `datos` de C-06 (Q-68).<br>• **Gestión por link (Q-69):** las operaciones nuevas `verCitaPorLink` y `consultarDisponibilidadGestion`, y las respuestas de cancelar y reprogramar.<br>• **iCalendar (Q-71):** `UID` con un sufijo fijo, el tipo del adjunto, `ATTENDEE` solo si hace falta y el contenido del enlace del dueño.<br>• **Panel y admin (Q-72, Q-73):** `leerEnlaceCalendario`, `listarNotificacionesConProblemas`, `reintentarNotificacion` y `reenviarInvitacion`; una notificación `fallida` vuelve a `pendiente` si el admin la reintenta.<br>• **Cron (Q-75):** las sentencias reciben `ahora`; cada tarea corre aunque falle la anterior, y hasta 4 lotes por corrida.<br>• **Workers Paid desde la Fase 6 (Q-74).**<br>Afecta a §3, §7.6, §14, §18.4, §18.5, §21 y §23. |
 
 ---
 
@@ -78,7 +79,7 @@ flowchart LR
 | Base de datos | Neon (Postgres) con `@neondatabase/serverless`: HTTP para consultas sueltas y WebSocket para transacciones | Decidido |
 | ORM | **Drizzle** (ADR-02) | Aceptado (D-07) |
 | Autenticación | Clerk (`@clerk/nextjs`, `@clerk/localizations`) | Decidido |
-| Correo | Resend + plantillas con React Email | Decidido / propuesto |
+| Correo | Resend, por su API REST con `fetch` (sin el SDK), y plantillas con React Email (Q-64 de [TASKS-06](TASKS-06.md)) | Decidido |
 | Tareas programadas | Cloudflare Cron Triggers | Decidido |
 | Límite de frecuencia | Binding de Rate Limiting de Workers (ADR-10) | Aceptado (D-08). Umbrales en D-10. |
 | Archivos | Cloudflare R2 (logos y fotos de empleados) | Propuesto |
@@ -398,6 +399,7 @@ SELECT s.id, 'dueno_suspension', m.correo,
 - C-08 se crea en la misma sentencia que suspende, así que no se duplica: una vez suspendido, el `UPDATE` ya no lo selecciona.
 - `suspenderNegocio` (admin, §18.4) hace lo mismo con una suspensión manual.
 - Si el cron no corrió durante toda la gracia, no se envía C-07, pero sí C-08.
+- Las sentencias de esta sección, de §14.3 y de §14.4 se escriben con `now()` para leerse mejor. El código pasa `ahora` como parámetro, para el reloj inyectado de §20 (Q-75 de [TASKS-06](TASKS-06.md)).
 
 **Fechas en el admin.** "Pagado hasta" y "fin de prueba" se eligen como **fecha local inclusiva**. Se guardan como las 00:00 locales del día siguiente. Por ejemplo, "pagado hasta el 9 de octubre" se guarda como `2026-10-10T05:00:00Z`.
 
@@ -718,6 +720,7 @@ Los tipos `dueno_gracia` y `dueno_suspension` son **correos de la cuenta** (S-16
 - La **restricción `UNIQUE (clave_idempotencia)`** impide crear dos veces el mismo mensaje (RN-20).
 - **Reprogramar o mover** anula el recordatorio pendiente (`estado = 'cancelada'`) e inserta uno nuevo con la nueva `version` y `{ "version" }` en `datos`, salvo que su momento ya haya pasado (S-12). C-04 lleva en `datos` `{ "version", "inicio_anterior" }` (Q-60 de [TASKS-05](TASKS-05.md)).
 - **Cancelar**, lo haga el cliente o el dueño, anula el recordatorio pendiente.
+- **C-06** lleva en `datos` `{ "cambio": "cancelada" }` o `{ "cambio": "reprogramada", "inicio_anterior", "inicio_nuevo" }`, en ISO UTC. Su clave usa el id del evento que registra el cambio en la misma transacción (Q-68 de [TASKS-06](TASKS-06.md)).
 - **Cambiar `recordatorio_horas_antes`** recalcula `programada_para` de los recordatorios pendientes de citas futuras.
 - **Acciones del dueño:** encolan los correos al cliente (C-01 y C-02 en la cita manual, C-04 al mover y C-03 al cancelar), pero no generan `dueno_*` (S-06; Q-60).
 - **Destinatario:** los correos al cliente van al correo con que se reservó la cita (S-15). Las citas sin correo (manuales, S-05) no generan notificaciones al cliente.
@@ -733,10 +736,13 @@ stateDiagram-v2
     enviando --> fallida: 5.º intento fallido
     enviando --> pendiente: arriendo vencido (proceso interrumpido)
     pendiente --> cancelada: la cita se canceló o reprogramó
+    fallida --> pendiente: el admin la reintenta (ADM-05)
     enviada --> [*]
     fallida --> [*]
     cancelada --> [*]
 ```
+
+Reintentar una notificación `fallida` desde `/admin` (`reintentarNotificacion`, §18.4) la devuelve a `pendiente` con `intentos = 0`, `programada_para = now()` y sin `ultimo_error`. Sale en la siguiente corrida, revalidada como cualquier otra y con la misma clave de idempotencia (Q-73 de [TASKS-06](TASKS-06.md)).
 
 ### 14.3 Reclamar y enviar
 
@@ -759,21 +765,23 @@ Para cada notificación reclamada:
 1. **Revalidar:** se marca `cancelada` y no se envía si se cumple cualquiera de estas condiciones:
    - es un correo de citas (C-01 a C-06, C-09 o C-10) y el negocio está suspendido según `estadoEfectivo()` (D-14), en cuyo caso se registra `ultimo_error = 'NEGOCIO_SUSPENDIDO'`;
    - es un `recordatorio` y la cita ya no está `confirmada`, o su `version` no coincide;
+   - es una `confirmacion` y la cita ya está cancelada;
+   - es una `reprogramacion` y la cita ya no está `confirmada`, o su `version` es mayor que la de `datos`: el C-04 o el C-03 siguiente lo reemplaza (Q-67 de [TASKS-06](TASKS-06.md));
    - es `dueno_gracia` y el negocio ya no está `en_gracia` (pagó o ya fue suspendido);
    - es `dueno_suspension` y el negocio ya no está suspendido (se reactivó antes del envío).
 
    Las notificaciones aún no vencidas siguen `pendiente`. Si el negocio se reactiva antes de su hora, salen con normalidad.
 2. **Comprobar el límite** `max_emails_per_month` (§16), solo para los correos de citas. Si se superó, se marca `fallida` con el error `LIMITE_PLAN`.
-3. **Renderizar** la plantilla (React Email) con los datos actuales y la zona del negocio.
-4. **Enviar** con Resend, pasando `clave_idempotencia` como clave de idempotencia de la API. Si el proceso muere después de enviar y antes de marcar, el reintento no duplica el correo.
+3. **Renderizar** la plantilla (React Email) con los datos actuales y la zona del negocio. La hora anterior de C-04 y lo que cambió en C-06 salen de `datos` (Q-67).
+4. **Enviar** con la API REST de Resend, con `clave_idempotencia` en el encabezado `Idempotency-Key`. Si el proceso muere después de enviar y antes de marcar, el reintento no duplica el correo.
 5. **Marcar:** si sale bien, `enviada`, con `proveedor_mensaje_id` y `enviada_en`. Si falla, vuelve a `pendiente` con `programada_para = now() + 2^intentos minutos`, y pasa a `fallida` en el 5.º intento.
 
 **Remitente:**
 
-- Correos de citas: `"{nombre del negocio}" <citas@tuapp.com>`, con `reply_to` igual al correo de contacto del negocio.
-- Correos de la cuenta (C-07 y C-08): `"{nombre del producto}" <cuenta@tuapp.com>`, con `reply_to` igual a `CORREO_SOPORTE`. Las instrucciones de pago (transferencia o Nequi) son texto fijo de la plantilla.
+- Correos de citas: `"{nombre del negocio}" <CORREO_REMITENTE>` (`citas@tuapp.com`). El `reply_to` es el primero que exista de: `negocio.correo_contacto`, el primer contacto `correo` de la sede principal (D-29) y el correo del miembro `dueno` (Q-63 de [TASKS-06](TASKS-06.md)).
+- Correos de la cuenta (C-07 y C-08): `"{NOMBRE_PRODUCTO}" <CORREO_CUENTA>` (`cuenta@tuapp.com`), con `reply_to` igual a `CORREO_SOPORTE`. Las instrucciones de pago (transferencia o Nequi) son texto fijo de la plantilla; mientras no estén definidas, la plantilla pide responder el correo para recibirlas (Q-66).
 
-El dominio se verifica en Resend con SPF, DKIM y DMARC.
+El dominio se verifica en Resend con SPF, DKIM y DMARC en la Fase 9, junto con el dominio propio. Hasta entonces, `CORREO_REMITENTE` y `CORREO_CUENTA` usan el remitente de pruebas de Resend, que solo entrega a la dirección de la cuenta; los correos a cualquier otra quedan `fallida` (Q-62).
 
 ### 14.4 Envío inmediato y envío programado
 
@@ -782,6 +790,8 @@ El dominio se verifica en Resend con SPF, DKIM y DMARC.
   1. `aplicarVencimientos`: persiste las suspensiones por fin de gracia (§7.6, RN-31). Va primero, para que los pasos siguientes ya vean el estado actualizado.
   2. `aplicarAsistenciaPorDefecto` (D-21): marca las citas `confirmada` que ya terminaron y que el dueño no marcó (ver abajo).
   3. `procesarNotificaciones`: procesa todo lo vencido, es decir, recordatorios, reintentos y arriendos vencidos (RN-21).
+
+  Cada tarea corre aunque falle la anterior: la ruta registra el resultado de cada una, sin datos personales, y responde 500 si alguna falló. `procesarNotificaciones` reclama de a 25 y sigue mientras haya vencidas, hasta 4 lotes por corrida; lo que quede sale en la siguiente (Q-75 de [TASKS-06](TASKS-06.md)).
 
 ```sql
 -- aplicarAsistenciaPorDefecto (D-21): una sola sentencia, con su evento de auditoría
@@ -837,18 +847,19 @@ export default {
 
 ### 14.6 Invitaciones de calendario (RN-35)
 
-C-01, C-03 y C-04 (y, con el módulo de empleados, C-09 y C-10) llevan una invitación **iCalendar** (RFC 5545). Se genera al enviar el correo y se adjunta como `invitacion.ics`. Si Resend lo permite, también va como parte `text/calendar; method=…`, que es lo que hace que Gmail y Outlook muestren sus botones; esto se verifica el día que se implemente.
+C-01, C-03 y C-04 (y, con el módulo de empleados, C-09 y C-10) llevan una invitación **iCalendar** (RFC 5545). Se genera al enviar el correo y se adjunta como `invitacion.ics`, de tipo `text/calendar; method=REQUEST` (o `CANCEL`) con `charset=utf-8` (Q-71 de [TASKS-06](TASKS-06.md)). Si con eso Gmail y Outlook no muestran sus botones, se agrega `ATTENDEE` (ver la tabla); esto se verifica el día que se implemente.
 
 | Campo | Valor |
 |---|---|
-| `UID` | `{citaId}@tuapp.com`. Es estable, así que cada actualización **reemplaza** el evento en lugar de duplicarlo. |
+| `UID` | `{citaId}@` más un sufijo fijo en código, que no depende de `APP_URL` ni del dominio, para que el cambio de dominio de la Fase 9 no duplique eventos (Q-71). Es estable, así que cada actualización **reemplaza** el evento en lugar de duplicarlo. |
 | `SEQUENCE` | `cita.version`, que sube con cada cambio de hora. En la cancelación, `version + 1`. |
 | `METHOD` / `STATUS` | `REQUEST` / `CONFIRMED` en C-01, C-04 y C-09; `CANCEL` / `CANCELLED` en C-03, y en C-10 cuando la cita se cancela o se le quita al empleado. |
 | `DTSTART` / `DTEND` | `inicio` y `fin` en UTC (`…Z`). Cada calendario los muestra en la zona de su usuario, así que no hace falta `VTIMEZONE`. |
 | `SUMMARY` | Cliente: `{servicio} — {negocio}`. Empleado: `{servicio} — {nombre del cliente}`. |
 | `LOCATION` | Dirección de la sede. |
 | `DESCRIPTION` | Cliente: link de gestión. Empleado: enlace al panel. Nunca teléfonos ni correos de terceros. |
-| `ORGANIZER` | `citas@tuapp.com`, con el nombre del negocio. Las respuestas "Aceptar" o "Rechazar" que lleguen a ese buzón se descartan. |
+| `ORGANIZER` | `CORREO_REMITENTE` (`citas@tuapp.com`), con el nombre del negocio. Las respuestas "Aceptar" o "Rechazar" que lleguen a ese buzón se descartan. |
+| `ATTENDEE` | Solo si Gmail u Outlook lo necesitan para mostrar sus botones: el correo del propio destinatario, con `RSVP=FALSE` (Q-71). |
 
 - C-02 (recordatorio) **no** lleva invitación, para no duplicar el evento.
 - **Reasignación** a otro empleado (módulo posterior): el anterior recibe C-10 con `CANCEL` y el nuevo recibe C-09 con `REQUEST`, con el mismo `UID`.
@@ -860,7 +871,8 @@ C-01, C-03 y C-04 (y, con el módulo de empleados, C-09 y C-10) llevan una invit
 - **Respuesta:** `text/calendar`, sin `METHOD`, con un `VEVENT` por cita **no cancelada** del alcance, desde hace 30 días hasta dentro de 365 días. Usa los mismos `UID` y `SEQUENCE` que §14.6.
 - **Token:** `base64url(HMAC-SHA256(CALENDARIO_SECRET, "cal." + enlaceId))`. Igual que en §13, no se guarda: se puede volver a mostrar en el panel cuando se quiera.
 - **Regenerar:** se marca `revocado_en` en la fila vigente y se crea otra. El enlace anterior responde 404.
-- **Contenido mínimo:** servicio, nombre del cliente, sede y, con empleados, quién atiende. Sin teléfonos ni correos (RN-24).
+- **Contenido mínimo:** servicio, nombre del cliente, sede y, con empleados, quién atiende. Sin teléfonos ni correos (RN-24). El calendario lleva `X-WR-CALNAME` con el nombre del negocio, y cada evento, `SUMMARY` `{servicio} — {nombre y apellido del cliente}`, `LOCATION` con la dirección y `DESCRIPTION` con el código y el enlace a la cita en el panel (Q-71 de [TASKS-06](TASKS-06.md)).
+- **En el panel:** `/panel/calendario` ("Mi calendario"). Sin enlace, el dueño lo crea con "Crear mi enlace", porque leer no escribe; después se muestra siempre, con "Regenerar enlace" en dos pasos (Q-72).
 - **Encabezados:** `Cache-Control: private, max-age=300` y `X-Robots-Tag: noindex`. Tiene límite de frecuencia `RL_CALENDARIO` (§15).
 - **Acceso:** `ultimo_acceso_en` se actualiza como máximo una vez por hora.
 - **Negocio suspendido:** el enlace se sigue sirviendo, porque es una consulta (D-14).
@@ -1779,7 +1791,7 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 |---|---|---|---|---|---|
 | `reservarCita` | Cliente | Sí: el recurso elegido o todos los candidatos, ordenados por `id` (§10.3) | Negocio no suspendido; servicio, sede y recurso activos; si viene `recursoId`, debe estar en `servicio_sede_recurso` y el servicio debe tener `cliente_elige`; política del negocio; `evaluarInicio` sin motivos; `max_appointments_per_month` | Cliente (§12); cita `confirmada` con el recurso elegido o asignado y su código de reserva (§11.4); evento `creada`; notificaciones C-01, C-02 y C-05 | `NO_ENCONTRADO`, `NEGOCIO_SUSPENDIDO`, `HORARIO_NO_DISPONIBLE`, `LIMITE_PLAN` |
 | `crearCitaManual` | Dueño | Sí | Nombre, apellido, teléfono normalizable y correo opcional (S-05); servicio activo en la sede principal; `max_appointments_per_month` (Q-54 de [TASKS-05](TASKS-05.md)); `evaluarInicio` con `actor: 'dueno'` sin motivos (RN-09 sin la anticipación, D-11) | Igual: cliente (§12) y cita `confirmada` con su código de reserva (§11.4), con `origen = 'panel'`, sin consentimiento y con el evento `creada` del dueño. C-01 y C-02 si hay correo. Sin C-05 (S-06). | `DATOS_INVALIDOS` (con `campos`, como en §18.5), `NO_ENCONTRADO`, `HORARIO_NO_DISPONIBLE` (con los motivos), `LIMITE_PLAN`, `NEGOCIO_SUSPENDIDO` |
-| `reprogramarCita` | Cliente (token) | Sí | Token válido; estado `confirmada`; `ahora ≤ inicio − plazo`; `reprogramaciones_cliente < max_reprogramaciones_cliente`, o límite `NULL` (RN-34); negocio no suspendido (D-14); `evaluarInicio` excluyendo la propia cita | `inicio`, `fin` y `ocupado_hasta` nuevos; `version + 1`; `reprogramaciones_cliente + 1`; recordatorio anulado y creado de nuevo; evento `reprogramada`; C-04 (con la invitación actualizada) y C-06 | `NO_ENCONTRADO`, `NEGOCIO_SUSPENDIDO`, `FUERA_DE_PLAZO`, `LIMITE_REPROGRAMACIONES`, `ESTADO_INVALIDO`, `HORARIO_NO_DISPONIBLE` |
+| `reprogramarCita` | Cliente (token) | Sí | Token válido; estado `confirmada`; `ahora ≤ inicio − plazo`; `reprogramaciones_cliente < max_reprogramaciones_cliente`, o límite `NULL` (RN-34); negocio no suspendido (D-14); `evaluarInicio` excluyendo la propia cita. El cliente no envía `version`: el plazo y el límite se comprueban con la cita leída después del bloqueo (Q-69 de [TASKS-06](TASKS-06.md)) | `inicio`, `fin` y `ocupado_hasta` nuevos; `version + 1`; `reprogramaciones_cliente + 1`; recordatorio anulado y creado de nuevo; evento `reprogramada`; C-04 (con la invitación actualizada) y C-06 | `NO_ENCONTRADO`, `NEGOCIO_SUSPENDIDO`, `FUERA_DE_PLAZO`, `LIMITE_REPROGRAMACIONES`, `ESTADO_INVALIDO`, `HORARIO_NO_DISPONIBLE` |
 | `moverCita` | Dueño | Sí | Estado `confirmada`, aunque ya haya empezado (Q-55 de TASKS-05); `version` esperada (control optimista); nueva hora ≥ `ahora` y `evaluarInicio` con `actor: 'dueno'`, excluyendo la propia cita (D-11) | Igual que reprogramar, pero **sin** sumar `reprogramaciones_cliente` (D-20); evento `reprogramada` del dueño; C-04, sin C-06 (S-06) | `NO_ENCONTRADO`, `ESTADO_INVALIDO`, `CONFLICTO_VERSION`, `HORARIO_NO_DISPONIBLE`, `NEGOCIO_SUSPENDIDO` |
 | `cancelarCita` | Cliente (token) o dueño | No | Estado `confirmada`, aunque ya haya empezado (Q-55 de TASKS-05); negocio no suspendido (D-14); el cliente además debe estar dentro del plazo | `estado = 'cancelada'`, `cancelada_en` y `cancelada_por`; recordatorio anulado; evento; C-03 (y C-06 si canceló el cliente) | `NEGOCIO_SUSPENDIDO`, `FUERA_DE_PLAZO`, `ESTADO_INVALIDO` |
 | `marcarAsistencia` | Dueño | No | `ahora ≥ inicio`; estado `confirmada`, `completada` o `no_asistio` (S-09), y todavía el que vio el dueño (`estadoEsperado`; Q-55 de TASKS-05) | Estado nuevo; evento `completada`, `no_asistio` o `estado_corregido` (§18.2) | `ANTES_DEL_INICIO`, `ESTADO_INVALIDO`, `NEGOCIO_SUSPENDIDO` |
@@ -1795,6 +1807,7 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 | `aplicarVencimientos` | Sistema (cron) | No | — | Encola C-07 a los negocios en gracia. Pasa a `suspendida` los negocios cuya gracia terminó y encola C-08, con `app.actor = 'sistema'` (§7.6, RN-31, S-16). | — |
 | `aplicarAsistenciaPorDefecto` | Sistema (cron) | No | — | Marca con el valor por defecto las citas `confirmada` cuyo `fin` ya pasó, salvo `manual` o negocio suspendido; evento con actor `sistema` (§14.4, D-21) | — |
 | `generarEnlaceCalendario` | Dueño | No | — | Revoca el enlace vigente del alcance y crea otro; devuelve la URL (§14.7) | `NEGOCIO_SUSPENDIDO` |
+| `leerEnlaceCalendario` | Dueño | No | — | Solo lee: las URL `https://` y `webcal://` del enlace vigente del negocio, o ninguna. Funciona con el negocio suspendido (D-14; Q-72 de TASKS-06). | — |
 | `servirCalendario` | Calendario externo (token) | No | Enlace existente, no revocado y con firma válida | Genera el iCalendar (§14.7) | `NO_ENCONTRADO` |
 | `altaNegocio` | Admin | No | Slug válido y no reservado; plan existente; `fin_prueba` si el estado es `prueba`, o `pagado_hasta` si es `activa` | Negocio, configuración con los valores de D-09, "Sede principal" con su dirección y, si se indica, su teléfono como contacto `telefono` (D-29), recurso "Consultorio" (capacidad 1) en esa sede, política v1 y miembro pendiente; invitación de Clerk **después** del `COMMIT` | `SLUG_NO_DISPONIBLE`, `DATOS_INVALIDOS` |
 | `suspenderNegocio` | Admin | No | Negocio no suspendido | `estado_suscripcion = 'suspendida'` y C-08, en la misma transacción, auditada con el admin como autor | `ESTADO_INVALIDO` |
@@ -1815,8 +1828,13 @@ reservarCita(e: EntradaReserva, ahora: Date): Promise<Resultado<{ citaId: string
 | `listarAgenda` | Dueño | No | Rango de fechas locales de hasta 42 días | Solo lee: las citas del rango, también las canceladas; los bloqueos que se solapan; y las franjas de la sede principal con la granularidad (PAN-02; Q-58 de TASKS-05) | `DATOS_INVALIDOS` |
 | `detalleCita` y `buscarCitaPorCodigo` | Dueño | No | Cita del negocio; código normalizado (D-28) | Solo leen: la cita con su instantánea, su historial y las acciones que permite en ese momento (PAN-03), o el id de la cita del negocio con ese código (Q-59 de TASKS-05) | `NO_ENCONTRADO` |
 | `buscarClientes` | Dueño | No | Texto de al menos 2 caracteres | Solo lee: hasta 10 clientes del negocio por teléfono exacto o por nombre o apellido, sin los anonimizados (PAN-04, F-06; Q-53 de TASKS-05) | — |
+| `verCitaPorLink` | Cliente (token) | No | Token válido; el slug es el del negocio de la cita | Solo lee: el código, el servicio, la fecha y la hora, la dirección, el estado, las acciones que permite con su motivo (`dominio/plazos.ts`), las reprogramaciones que le quedan y los contactos de la sede, sin los datos de contacto del cliente. Funciona con el negocio suspendido (GES-01, GES-05; Q-69 de TASKS-06). | `NO_ENCONTRADO` |
+| `consultarDisponibilidadGestion` | Cliente (token) | No | Token válido; la cita admite reprogramar | Solo lee: las horas libres del servicio y la sede de la cita, con actor `cliente`, hasta 31 días recortados a hoy y a la anticipación máxima, sin contar la propia cita (F-03, RN-14; Q-69) | `NO_ENCONTRADO`, `DATOS_INVALIDOS`, `NEGOCIO_SUSPENDIDO`, `FUERA_DE_PLAZO`, `LIMITE_REPROGRAMACIONES`, `ESTADO_INVALIDO` |
+| `listarNotificacionesConProblemas` | Admin | No | — | Solo lee: las notificaciones `fallida` y las `pendiente` con más de 15 minutos de atraso, sin el destinatario (ADM-05, §21.4; Q-73) | — |
+| `reintentarNotificacion` | Admin | No | Notificación `fallida` | Con `UPDATE … WHERE estado = 'fallida'`, la devuelve a `pendiente` con `intentos = 0`, `programada_para = now()` y sin `ultimo_error` (§14.2; Q-73) | `NO_ENCONTRADO`, `ESTADO_INVALIDO` |
+| `reenviarInvitacion` | Admin | No | Dueño sin vincular (`clerk_user_id IS NULL`) | Vuelve a invitar al dueño con Clerk (§7.4; Q-08 de TASKS-01, Q-73) | `NO_ENCONTRADO`, `ESTADO_INVALIDO` |
 
-Las operaciones de las filas de `cambiarFinPrueba` en adelante se agregaron al implementar la Fase 2 (Q-19 de [TASKS-02](TASKS-02.md)). Las del dueño en el MVP actúan sobre la sede principal y su consultorio (Q-20). `listarContactos`, `guardarContactos` y `listarCategorias` se agregaron con la Fase 4 (Q-39 y Q-40 de [TASKS-04](TASKS-04.md)). `consultarHorasDueno`, `listarAgenda`, `detalleCita`, `buscarCitaPorCodigo` y `buscarClientes` se agregaron con la Fase 5 ([TASKS-05](TASKS-05.md)); como solo leen, funcionan con el negocio suspendido (D-14).
+Las operaciones de las filas de `cambiarFinPrueba` en adelante se agregaron al implementar la Fase 2 (Q-19 de [TASKS-02](TASKS-02.md)). Las del dueño en el MVP actúan sobre la sede principal y su consultorio (Q-20). `listarContactos`, `guardarContactos` y `listarCategorias` se agregaron con la Fase 4 (Q-39 y Q-40 de [TASKS-04](TASKS-04.md)). `consultarHorasDueno`, `listarAgenda`, `detalleCita`, `buscarCitaPorCodigo` y `buscarClientes` se agregaron con la Fase 5 ([TASKS-05](TASKS-05.md)); como solo leen, funcionan con el negocio suspendido (D-14). `leerEnlaceCalendario`, `verCitaPorLink`, `consultarDisponibilidadGestion`, `listarNotificacionesConProblemas`, `reintentarNotificacion` y `reenviarInvitacion` se agregaron con la Fase 6 ([TASKS-06](TASKS-06.md)).
 
 Las transiciones de estado se escriben como `UPDATE cita SET estado = $nuevo … WHERE id = $id AND negocio_id = $n AND estado = $esperado`. Si no afecta ninguna fila, la operación devuelve `ESTADO_INVALIDO`. Esto hace idempotentes los dobles clics y los reintentos.
 
@@ -1878,6 +1896,8 @@ POST /api/publico/{slug}/citas/{citaId}/disponibilidad   { "token": "…", "desd
 POST /api/publico/{slug}/citas/{citaId}/reprogramar      { "token": "…", "inicio": "…" }
 POST /api/publico/{slug}/citas/{citaId}/cancelar         { "token": "…" }
 ```
+
+La disponibilidad responde igual que `GET …/disponibilidad`. Cancelar y reprogramar responden `200` con `{ "citaId": "…", "estado": "confirmada", "inicio": "…", "fin": "…", "reprogramacionesRestantes": 2 }` (`null` si no hay límite). `LIMITE_REPROGRAMACIONES` dice el límite del negocio: "Ya reprogramaste esta cita 3 veces. Para otro cambio, comunícate con el negocio" (RN-34; Q-69 de [TASKS-06](TASKS-06.md)).
 
 **Enlace de calendario del dueño** (RN-35)
 
@@ -1972,7 +1992,7 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 | App | `next dev` (con `initOpenNextCloudflareForDev()` para los bindings) y `opennextjs-cloudflare preview` | Worker con dominio propio (`tuapp.com`) |
 | Base de datos | Rama `development` de Neon | Rama `production` de Neon |
 | Clerk | Instancia de desarrollo | Instancia de producción |
-| Resend | Clave de prueba | Dominio verificado (SPF, DKIM y DMARC) |
+| Resend | Clave de prueba, con el remitente de pruebas | Remitente de pruebas hasta la Fase 9; después, dominio verificado (SPF, DKIM y DMARC; Q-62 de [TASKS-06](TASKS-06.md)) |
 
 ### 21.2 `wrangler.jsonc` (esqueleto)
 
@@ -2012,6 +2032,7 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 | `CORREO_REMITENTE` | Variable | `citas@tuapp.com` (correos de citas) |
 | `CORREO_CUENTA` | Variable | `cuenta@tuapp.com` (C-07 y C-08) |
 | `CORREO_SOPORTE` | Variable | Destino de las respuestas a C-07 y C-08 |
+| `NOMBRE_PRODUCTO` | Variable | Nombre del remitente de C-07 y C-08; por ahora, "Agenda de citas" (Q-66 de [TASKS-06](TASKS-06.md)) |
 
 **Dónde vive cada valor** (ningún archivo con valores se versiona; RNF-04):
 
@@ -2032,9 +2053,9 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 - **Scripts contra `production`:** `npm run db:migrate:prod` y `npm run db:semilla:prod` cargan `.env.production.local` con `node --env-file=.env.production.local` (fallan si el archivo no existe) y usan su `DATABASE_URL_DIRECTA` (Q-07). `drizzle.config.ts` y `scripts/semilla.ts` cargan después los `.env` con `@next/env` en modo desarrollo, que lee `.env.local` y nunca `.env.production.local`, y no reemplaza lo que ya está en `process.env`. Así, `db:migrate` y `db:semilla` nunca apuntan a `production` por accidente. La semilla muestra el host al que se conecta.
 - **Copias de seguridad:** restauración a un punto en el tiempo de Neon, con la ventana que dé el plan. Además, un `pg_dump` cifrado semanal (recomendado, porque hay datos de salud).
 - **Observabilidad:** Workers Logs. El panel de `/admin` (ADM-05) muestra las notificaciones `fallida` y las `pendiente` con más de 15 minutos de atraso. Esta última es la señal de que el cron no está corriendo.
-- **Costo:** Workers en el plan gratuito (Q-36 de [TASKS-03](TASKS-03.md)). Workers Paid (≈ USD 5/mes) se decide antes del primer cliente real, según el CPU que se mida en cada despliegue. Neon, Clerk y Resend caben en sus planes gratuitos con este volumen. Los límites vigentes se verifican en la documentación de Cloudflare antes de cada decisión.
+- **Costo:** Workers Paid (≈ USD 5/mes) desde la Fase 6 (Q-74 de [TASKS-06](TASKS-06.md)), después del error 1102 de T5.32 y antes de sumar los correos y el cron. Hasta la Fase 5 se usó el plan gratuito (Q-36 de [TASKS-03](TASKS-03.md)). Neon, Clerk y Resend caben en sus planes gratuitos con este volumen. Los límites vigentes se verifican en la documentación de Cloudflare antes de cada decisión.
 - **Tamaño del Worker:** la documentación vigente de Cloudflare (consultada el 2026-10-18) mide el tamaño sin comprimir: 64 MiB en los dos planes, sin límite comprimido. El `gzip` que informa `wrangler` es solo de referencia. T3.21 informó 15.629 KiB (3429 KiB comprimidos). Casi todo es el runtime de Next.js y de React: el servidor pesa unos 1460 KiB comprimidos, y el proxy (§7.3), que se empaqueta aparte con su propia copia del runtime y de Clerk, unos 675 KiB. Además, cada ruta de `/api/publico/…` lleva su propia copia del driver de Neon, Drizzle y los casos de uso, unos 690 KiB sin comprimir cada una. Un Worker más grande tarda más en arrancar, y el arranque tiene un límite de 1 s. Cada despliegue sigue anotando en su commit el tamaño que informa `wrangler` (§23).
-- **CPU por solicitud:** el plan gratuito permite 10 ms de CPU por solicitud (Paid: 30 s por defecto); la espera de la base de datos no cuenta. Cada isolate tolera pasarse de vez en cuando, pero si el Worker pasa el límite de forma constante, Cloudflare corta la ejecución con el error 1102. El motor (§10) convierte una vez por franja y día, no en cada hora candidata, y gasta menos de 1 ms en una semana (T3.32 de TASKS-03). T3.33 midió el CPU real con `wrangler tail`: 12 a 44 ms en la consulta de una semana con el isolate caliente, de 200 a 480 ms en un arranque en frío, y unos 80 ms en la página raíz. Casi todo es Next.js, OpenNext y el proxy de Clerk, no el código propio. Es decir, el Worker pasa los 10 ms del plan gratuito en cada solicitud; por ahora Cloudflare no rechazó ninguna (Q-36). Cada despliegue mide el CPU de la consulta y de la reserva.
+- **CPU por solicitud:** el plan gratuito permite 10 ms de CPU por solicitud (Paid: 30 s por defecto); la espera de la base de datos no cuenta. Cada isolate tolera pasarse de vez en cuando, pero si el Worker pasa el límite de forma constante, Cloudflare corta la ejecución con el error 1102. El motor (§10) convierte una vez por franja y día, no en cada hora candidata, y gasta menos de 1 ms en una semana (T3.32 de TASKS-03). T3.33 midió el CPU real con `wrangler tail`: 12 a 44 ms en la consulta de una semana con el isolate caliente, de 200 a 480 ms en un arranque en frío, y unos 80 ms en la página raíz. Casi todo es Next.js, OpenNext y el proxy de Clerk, no el código propio. Es decir, el Worker pasa los 10 ms del plan gratuito en cada solicitud; Cloudflare no rechazó ninguna hasta T5.32, que registró el primer error 1102 en el panel; por eso la cuenta pasa a Workers Paid (30 s) en la Fase 6 (Q-74). Cada despliegue mide el CPU de la consulta y de la reserva.
 
 ## 22. Decisiones de diseño (ADR)
 
@@ -2064,7 +2085,7 @@ Se usa un **reloj inyectado** (`ahora`) en el dominio y los casos de uso, sin de
 |---|---|---|
 | Incompatibilidades entre Next.js, OpenNext y Clerk | Bloqueo en los días 1 y 2 | Desplegar el día 1 un esqueleto con Clerk y Neon funcionando (ya está en el plan). Fijar las versiones. |
 | `src/proxy.ts` en Workers: Next.js 16 lo ejecuta siempre en Node.js, y `@opennextjs/cloudflare` 1.20.9 lo empaqueta para Workers solo como función experimental ("Node.js middleware support is experimental") | Si deja de funcionar al actualizar Next u OpenNext, `/panel` y `/admin` pierden la redirección a `/login` y Clerk puede dejar de leer la sesión en el servidor | Funciona desplegado (T1.57). Versiones fijadas; después de actualizar, comprobar con `npm run preview` que `/panel` y `/admin` redirigen sin sesión. Si falla, la alternativa es `middleware.ts` (obsoleto en Next.js 16) con runtime Edge (§7.3). |
-| Las solicitudes superan el CPU del plan gratuito de Workers (10 ms) | Error 1102: la consulta, la reserva o el panel fallan | T3.33 midió de 12 a 44 ms por solicitud con el isolate caliente, casi todo del framework (§21.4). Cada despliegue mide el CPU real; la cuenta pasa a Workers Paid (30 s) antes del primer cliente (Q-36 de [TASKS-03](TASKS-03.md)), o antes si aparece un error 1102. |
+| Las solicitudes superan el CPU del plan gratuito de Workers (10 ms) | Error 1102: la consulta, la reserva o el panel fallan | T3.33 midió de 12 a 44 ms por solicitud con el isolate caliente, casi todo del framework (§21.4). T5.32 registró un error 1102 en el panel, así que la cuenta pasa a Workers Paid (30 s) antes del despliegue de la Fase 6 (Q-74 de [TASKS-06](TASKS-06.md)), en lugar de esperar al primer cliente (Q-36 de [TASKS-03](TASKS-03.md)). Cada despliegue sigue midiendo el CPU real. |
 | El Worker crece hasta afectar el arranque (1 s) o pasa los 64 MiB sin comprimir | El despliegue se rechaza | T3.21 midió 15.629 KiB sin comprimir (§21.4), y cada despliegue sigue anotando su tamaño. |
 | Clerk en `http://localhost`: las cookies del *handshake* llegan con `SameSite=None` sin `Secure`, Chrome las descarta y Clerk registra "Refreshing the session token resulted in an infinite redirect loop" | Solo en desarrollo: el servidor trata la solicitud como sin sesión y el Clerk del navegador devuelve al usuario pasando por `/login`. En https (`*.workers.dev`) no ocurre. | Si aparece, probar los flujos con sesión en el Worker desplegado. Solución posible: `next dev --experimental-https`, que sirve la app local en https con un certificado autofirmado. |
 | Errores de zona horaria | Citas en la hora o el día equivocados | §9; pruebas obligatorias del caso de las 7:00 p. m.; formato siempre con la zona del negocio |

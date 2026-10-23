@@ -1,6 +1,6 @@
 {
   "name": "agenda-citas",
-  "version": "0.38.158",
+  "version": "0.38.159",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -27,6 +27,8 @@
     "@date-fns/tz": "1.5.0",
     "@neondatabase/serverless": "1.2.0",
     "@opennextjs/cloudflare": "1.20.9",
+    "@react-email/components": "1.0.12",
+    "@react-email/render": "2.0.6",
     "date-fns": "4.4.0",
     "drizzle-orm": "0.45.4",
     "libphonenumber-js": "1.13.14",

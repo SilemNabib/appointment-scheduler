@@ -32,6 +32,10 @@ const CSP = [
 const SLUG = ":slug((?!panel|admin|login|registro|sin-acceso|api|_next)[^/.]+)";
 
 const nextConfig: NextConfig = {
+  // @react-email/render importa prettier (solo para su opción `pretty`, que no se usa), y
+  // Next lo deja externo por defecto: el build de OpenNext lo enlaza aparte y en Windows
+  // falla (EPERM). Así se empaqueta con el resto del servidor (T6.08; Q-64).
+  transpilePackages: ["prettier"],
   async headers() {
     const reglas = [{ source: "/:ruta*", headers: SEGURIDAD }];
     // En `next dev` la recarga en caliente usa `eval`, que esta CSP bloquea: se aplica en

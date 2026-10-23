@@ -124,7 +124,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * La solicitud lleva `Authorization: Bearer …`, `Idempotency-Key` igual a la clave de la notificación y el adjunto `.ics` en base64 con su tipo (ARCH §14.3, paso 4).
       * Una respuesta 200 devuelve el id del mensaje; un 4xx, un 5xx o una falla de red devuelven un error. Ningún error ni registro incluye el destinatario (ARCH §19.2).
 
-* [ ] T6.08: Base de las plantillas
+* [x] T6.08: Base de las plantillas
    * Objetivo: Instalar React Email con versión exacta (Q-64) y crear lo común a todos los correos: el encabezado con el nombre y el logo del negocio (o el nombre del producto en C-07 y C-08), el botón principal con el acento y el color de texto de `dominio/color.ts` (Q-42 de TASKS-04), el pie con los contactos del negocio y la función que produce el HTML y el texto plano de cada plantilla. Crear `remitente.ts`, que arma el remitente y elige el `reply_to` (ARCH §14.3; Q-63).
    * Archivos: `src/servidor/notificaciones/plantillas/diseno.tsx`, `src/servidor/notificaciones/plantillas/render.ts`, `src/servidor/notificaciones/remitente.ts`, `tests/unit/servidor/notificaciones/plantillas.test.ts`, `package.json`
    * Depende de: T6.07

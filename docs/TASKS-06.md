@@ -115,11 +115,11 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * El panel de Resend muestra la cuenta y la API key, y `RESEND_API_KEY` está en `.env.local` y en `.dev.vars`.
       * Un `curl` a `https://api.resend.com/emails` con esa clave y el remitente de pruebas entrega un correo a la dirección de la cuenta, y uno dirigido a otra dirección se rechaza (Q-62).
 
-* [ ] T6.07: Proveedor de correo
-   * Objetivo: Crear `servidor/notificaciones/proveedor.ts` con el tipo `ProveedorCorreo` (remitente, destinatario, `reply_to`, asunto, HTML, texto, adjuntos y clave de idempotencia) y su implementación con la API REST de Resend por `fetch`, con el encabezado `Idempotency-Key` (Q-64). Devuelve el id del mensaje o un error, sin el cuerpo ni el destinatario. Declarar en los `vars` de `wrangler.jsonc` `CORREO_REMITENTE` y `CORREO_CUENTA`, con el remitente de pruebas de Resend (Q-62); `CORREO_SOPORTE`; y `NOMBRE_PRODUCTO`, con "Agenda de citas" (Q-66).
+* [x] T6.07: Proveedor de correo
+   * Objetivo: Crear `servidor/notificaciones/proveedor.ts` con el tipo `ProveedorCorreo` (remitente, destinatario, `reply_to`, asunto, HTML, texto, adjuntos y clave de idempotencia) y su implementación con la API REST de Resend por `fetch`, con el encabezado `Idempotency-Key` (Q-64). Devuelve el id del mensaje o un error, sin el cuerpo ni el destinatario. Declarar en los `vars` de `wrangler.jsonc` `CORREO_REMITENTE` y `CORREO_CUENTA`, con el remitente de pruebas de Resend (Q-62), y `NOMBRE_PRODUCTO`, con "Agenda de citas" (Q-66). `CORREO_SOPORTE` es un secreto, en `.env.local` y `.dev.vars` (Q-77).
    * Archivos: `src/servidor/notificaciones/proveedor.ts`, `tests/unit/servidor/notificaciones/proveedor.test.ts`, `wrangler.jsonc`, `cloudflare-env.d.ts`, `.env.example`
    * Depende de: T6.06
-   * Refs: RN-20, ARCH §14.3 (pasos 4 y 5), §19.2, §21.3; Q-62, Q-64, Q-66
+   * Refs: RN-20, ARCH §14.3 (pasos 4 y 5), §19.2, §21.3; Q-62, Q-64, Q-66, Q-77
    * Aceptación (con `fetch` simulado):
       * La solicitud lleva `Authorization: Bearer …`, `Idempotency-Key` igual a la clave de la notificación y el adjunto `.ics` en base64 con su tipo (ARCH §14.3, paso 4).
       * Una respuesta 200 devuelve el id del mensaje; un 4xx, un 5xx o una falla de red devuelven un error. Ningún error ni registro incluye el destinatario (ARCH §19.2).
@@ -478,12 +478,12 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Cada correo, de C-01 a C-08, se lee bien en Gmail y en Outlook desde el celular, con las horas en formato de 12 horas (RNF-02), y su texto plano trae la misma información.
 
 * [ ] T6.42: [manual] Plan y secretos del Worker
-   * Objetivo: Pasar la cuenta de Cloudflare a Workers Paid (Q-74) y cargar en el Worker los secretos de la fase: `RESEND_API_KEY`, y `GESTION_CITA_SECRET` y `CALENDARIO_SECRET` con 32 bytes al azar cada uno.
+   * Objetivo: Pasar la cuenta de Cloudflare a Workers Paid (Q-74) y cargar en el Worker los secretos de la fase: `RESEND_API_KEY`; `GESTION_CITA_SECRET` y `CALENDARIO_SECRET`, con 32 bytes al azar cada uno; y `CORREO_SOPORTE` (Q-77).
    * Archivos: —
    * Depende de: T6.06
-   * Refs: RNF-04, RNF-08, ARCH §21.3, §21.4, §23; Q-36 (TASKS-03), Q-74
+   * Refs: RNF-04, RNF-08, ARCH §21.3, §21.4, §23; Q-36 (TASKS-03), Q-74, Q-77
    * Aceptación:
-      * `npx wrangler secret list` muestra los tres secretos nuevos, además de los de T1.55.
+      * `npx wrangler secret list` muestra los cuatro secretos nuevos, además de los de T1.55.
       * El Dashboard de Cloudflare muestra la cuenta en Workers Paid (Q-74).
 
 * [ ] T6.43: Despliegue y verificación de la fase
@@ -521,3 +521,4 @@ Puntos que el PRD, ARCHITECTURE y DESIGN no definían. Todas quedaron resueltas 
 | Q-74 | Q-36 (TASKS-03) dejó Workers Paid para la Fase 9, "o antes si aparece un error 1102". T5.32 vio uno en `/panel/citas/nueva`, y esta fase suma el render de los correos y un cron con más trabajo, que en el plan gratuito también tiene 10 ms de CPU. | **Resuelta (2026-10-23):** la cuenta pasa a Workers Paid (≈ USD 5/mes, 30 s de CPU) antes del despliegue de esta fase (T6.42), como prevé la mitigación de ARCH §23. Revisa Q-36 (TASKS-03), que dejaba la decisión para la Fase 9. T6.43 sigue midiendo el CPU. | T6.42, T6.43 |
 | Q-75 | Las sentencias de ARCH §7.6, §14.3 y §14.4 usan `now()`, pero ARCH §20 pide el reloj inyectado en los casos de uso. Tampoco se fija qué hace la ruta del cron si una tarea falla, ni cuánto procesa por corrida. | **Resuelta (2026-10-23):** **Reloj:** las sentencias reciben `ahora` como parámetro, con la misma lógica. **Cron:** cada tarea corre aunque falle la anterior, en el orden de ARCH §14.4; la ruta registra cada resultado y responde 500 si alguna falló. **Lote:** `procesarNotificaciones` reclama de a 25 (ARCH §14.3) y sigue mientras haya vencidas, hasta 4 lotes por corrida; lo que quede sale en la siguiente. | T6.13, T6.15, T6.24–T6.26 |
 | Q-76 | ARCH §4 ubica `notificaciones/` y `gestion-cita/`, pero no los archivos ni todas las rutas nuevas. | **Resuelta (2026-10-23):** Rutas: `/{slug}/cita/{citaId}/{token}` (ARCH §4), `/api/publico/{slug}/citas/{citaId}/{disponibilidad, reprogramar, cancelar}` (ARCH §18.5), `/api/calendario/{enlaceId}/{token}` (ARCH §5), `/panel/calendario` y `/admin/notificaciones`. Archivos: `src/dominio/{icalendar, envios}.ts`; `src/servidor/firmas.ts`, `src/servidor/gestion-cita/firma.ts` y `src/servidor/calendario/firma.ts`; `src/servidor/notificaciones/{proveedor, remitente, mensajes, procesar, despacho}.ts` y `src/servidor/notificaciones/plantillas/`; `src/servidor/casos-uso/{gestion-cita, reprogramar-cita, vencimientos, asistencia-por-defecto, cron, enlace-calendario, notificaciones-admin, invitacion-admin}.ts`; `src/servidor/db/repositorios/enlaces-calendario.ts`; y los componentes de la gestión en `src/componentes/publico/`. | Casi todas las tareas |
+| Q-77 | ARCH §21.3 deja `CORREO_SOPORTE` como variable de `wrangler.jsonc`, pero hasta la Fase 9 no hay un buzón de soporte del producto, y el repositorio es público: un correo personal en `vars` quedaría a la vista. | **Resuelta (2026-10-23, al implementar T6.07):** hasta la Fase 9, `CORREO_SOPORTE` es el correo del desarrollador, como **secreto** del Worker (`wrangler secret put`, T6.42) y en `.env.local` y `.dev.vars`, nunca en un archivo versionado. ARCH §21.3 lo pasa de variable a secreto. Con el dominio propio, puede volver a `vars` con la dirección de soporte del producto. | T6.07, T6.08, T6.42 |

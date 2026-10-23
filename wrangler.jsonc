@@ -11,11 +11,17 @@
   // Logos y fotos (§2, §19.2). El bucket no es público: se sirven con /api/media/{clave} (Q-21).
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "agenda-media" }],
   // Variables del Worker que no son secretas (ARCH §21.3). Los secretos (DATABASE_URL,
-  // CLERK_SECRET_KEY y CRON_SECRET) se cargan con `wrangler secret put`. En `npm run
-  // preview`, .dev.vars las reemplaza.
+  // CLERK_SECRET_KEY, CRON_SECRET, RESEND_API_KEY, GESTION_CITA_SECRET, CALENDARIO_SECRET
+  // y CORREO_SOPORTE, Q-77) se cargan con `wrangler secret put`. En `npm run preview`,
+  // .dev.vars las reemplaza.
   "vars": {
     "APP_URL": "https://agenda-citas.silemnabib.workers.dev", // Q-06: *.workers.dev hasta la Fase 9
-    "SUPERADMIN_CLERK_USER_IDS": "user_3KhaunZa71brNOGSPViLEHeGABo" // ADR-07; instancia de desarrollo de Clerk (Q-06)
+    "SUPERADMIN_CLERK_USER_IDS": "user_3KhaunZa71brNOGSPViLEHeGABo", // ADR-07; instancia de desarrollo de Clerk (Q-06)
+    // Remitente de pruebas de Resend hasta la Fase 9: solo entrega a la dirección de la
+    // cuenta (Q-62). Con el dominio propio pasan a citas@ y cuenta@ (ARCH §14.3).
+    "CORREO_REMITENTE": "onboarding@resend.dev",
+    "CORREO_CUENTA": "onboarding@resend.dev",
+    "NOMBRE_PRODUCTO": "Agenda de citas" // remitente de C-07 y C-08 (Q-66)
   },
   "observability": { "enabled": true }
 }

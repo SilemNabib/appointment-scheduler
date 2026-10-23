@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Agenda de citas//Citas//ES
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:6f1c1d0e-2b3a-4c5d-8e9f-0a1b2c3d4e5f@agenda-citas
+SEQUENCE:2
+DTSTAMP:20261001T150000Z
+DTSTART:20261015T000000Z
+DTEND:20261015T003000Z
+STATUS:CONFIRMED
+SUMMARY:Limpieza dental — Consultorio Ana
+LOCATION:Calle 10 # 5-20\, Bogotá
+DESCRIPTION:Para ver\, cambiar o cancelar tu cita: https://agenda.example.c
+ om/consultorio-ana/cita/6f1c1d0e-2b3a-4c5d-8e9f-0a1b2c3d4e5f/Xk3pQ9vZ2mN8r
+ T4wY7bC1dF6gH0jL5sA9eU2iO3qW8z
+ORGANIZER;CN="Consultorio Ana":mailto:citas@agenda.example.com
+END:VEVENT
+END:VCALENDAR

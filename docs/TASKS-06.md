@@ -82,7 +82,7 @@ Funciones puras o sin estado, con su prueba unitaria en la misma tarea.
       * Con el límite en 3, después de 3 reprogramaciones solo se puede cancelar; con 0, nunca se reprograma; con `null`, no hay límite (RN-34; ARCH §20).
       * Una cita cancelada, ya empezada, `completada` o `no_asistio` no admite acciones, y con el negocio suspendido tampoco, cada una con su motivo (F-02, pasos 6 y 7; D-14). El resultado no cambia si la suite corre con otra `TZ` (RN-03).
 
-* [ ] T6.04: Dominio: iCalendar
+* [x] T6.04: Dominio: iCalendar
    * Objetivo: Crear `dominio/icalendar.ts`, que arma un `VCALENDAR` (RFC 5545) con uno o varios `VEVENT`: con `METHOD:REQUEST` o `METHOD:CANCEL` para las invitaciones, y sin `METHOD` para el enlace del dueño (ARCH §14.6, §14.7). Cada evento lleva `UID`, `SEQUENCE`, `DTSTAMP`, `DTSTART` y `DTEND` en UTC, `STATUS`, `SUMMARY`, `LOCATION`, `DESCRIPTION` y `ORGANIZER`, según Q-71. Escapa `\`, `;`, `,` y los saltos de línea, pliega las líneas a 75 octetos y usa CRLF.
    * Archivos: `src/dominio/icalendar.ts`, `tests/unit/dominio/icalendar.test.ts`, `tests/unit/dominio/fixtures/invitacion.ics`
    * Depende de: T5.32

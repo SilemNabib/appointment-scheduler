@@ -6,7 +6,7 @@ import { claseBoton } from "@/componentes/estilos";
 import { mesDe, mesesNavegables, moverMes, rangoDelMes, siguienteDiaConCupo, type Mes } from "@/dominio/calendario";
 import { formatearDiaLocal } from "@/dominio/formato";
 import { sumarDias, type FechaLocal } from "@/dominio/tiempo";
-import { consultarDisponibilidad, type CodigoApi, type DiaDisponible } from "./api";
+import { consultarDisponibilidad, type CodigoApi, type DiaDisponible, type Disponibilidad as DisponibilidadApi, type ResultadoApi } from "./api";
 import { Calendario, type EstadoDia } from "./calendario";
 import { HorasLibres } from "./horas-libres";
 
@@ -21,13 +21,24 @@ type EstadoMes = { estado: "cargando" } | { estado: "listo"; dias: DiaDisponible
 /** Igualdad de meses. */
 const mismoMes = (a: Mes, b: Mes) => a.anio === b.anio && a.mes === b.mes;
 
+/** Consulta las horas libres de un rango; por defecto, la consulta pública (`GET …/disponibilidad`). */
+export type Consulta = (rango: { desde: FechaLocal; hasta: FechaLocal }) => Promise<ResultadoApi<DisponibilidadApi>>;
+
 /**
  * La disponibilidad de un servicio por mes, guardada mientras dure el flujo (la usa
  * `Reserva`, para que sobreviva a los cambios de paso). `invalidar` la borra, para
- * volver a consultar después de una hora ocupada (F-01).
+ * volver a consultar después de una hora ocupada (F-01). La gestión por link pasa su
+ * propia `consulta`, con el token y sin contar la propia cita (T6.23); debe ser estable.
  */
-export function useDisponibilidad(c: { slug: string; sedeId: string; servicioId: string | null; hoy: FechaLocal; ultimoDia: FechaLocal }) {
-  const { slug, sedeId, servicioId, hoy, ultimoDia } = c;
+export function useDisponibilidad(c: {
+  slug: string;
+  sedeId: string;
+  servicioId: string | null;
+  hoy: FechaLocal;
+  ultimoDia: FechaLocal;
+  consulta?: Consulta;
+}) {
+  const { slug, sedeId, servicioId, hoy, ultimoDia, consulta } = c;
   const [meses, setMeses] = useState<Record<string, EstadoMes>>({});
   /** Las solicitudes hechas o en curso, por mes: una sola por mes (Q-48). */
   const pedidas = useRef(new Map<string, Promise<DiaDisponible[] | null>>());
@@ -42,7 +53,8 @@ export function useDisponibilidad(c: { slug: string; sedeId: string; servicioId:
       const rango = rangoDelMes(m, hoy, ultimoDia);
       if (!rango) return Promise.resolve([]);
       setMeses((p) => ({ ...p, [k]: { estado: "cargando" } }));
-      const promesa = consultarDisponibilidad({ slug, sedeId, servicioId, ...rango }).then((r) => {
+      const solicitud = consulta ? consulta(rango) : consultarDisponibilidad({ slug, sedeId, servicioId, ...rango });
+      const promesa = solicitud.then((r) => {
         if (r.ok) {
           setMeses((p) => ({ ...p, [k]: { estado: "listo", dias: r.valor.dias } }));
           return r.valor.dias;
@@ -54,7 +66,7 @@ export function useDisponibilidad(c: { slug: string; sedeId: string; servicioId:
       pedidas.current.set(k, promesa);
       return promesa;
     },
-    [clave, hoy, sedeId, servicioId, slug, ultimoDia],
+    [clave, consulta, hoy, sedeId, servicioId, slug, ultimoDia],
   );
 
   const invalidar = useCallback(() => {
@@ -87,6 +99,9 @@ export function PasoHorario({
   alSuspender,
   alContinuar,
   alVolver,
+  textoContinuar = "Continuar",
+  textoVolver = "Atrás",
+  procesando = false,
 }: {
   disponibilidad: Disponibilidad;
   hoy: FechaLocal;
@@ -101,6 +116,11 @@ export function PasoHorario({
   alSuspender: () => void;
   alContinuar: () => void;
   alVolver: () => void;
+  /** "Confirmar cambio" en la reprogramación por link (GES-03). */
+  textoContinuar?: string;
+  textoVolver?: string;
+  /** Mientras se envía: "Procesando…", sin admitir un segundo envío. */
+  procesando?: boolean;
 }) {
   const { cargar, estadoMes } = disponibilidad;
   // El aviso del flujo (la hora ocupada) recibe el foco al aparecer (RNF-03).
@@ -244,11 +264,17 @@ export function PasoHorario({
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-borde pt-[18px]">
-        <button type="button" className={claseBoton("secundario")} onClick={alVolver}>
-          Atrás
+        <button type="button" className={claseBoton("secundario")} disabled={procesando} onClick={alVolver}>
+          {textoVolver}
         </button>
-        <button type="button" className={`${claseBoton("primario")} min-h-[52px] px-[26px] text-base`} disabled={!inicio} onClick={alContinuar}>
-          Continuar
+        <button
+          type="button"
+          className={`${claseBoton("primario")} min-h-[52px] px-[26px] text-base`}
+          disabled={!inicio || procesando}
+          aria-busy={procesando}
+          onClick={alContinuar}
+        >
+          {procesando ? "Procesando…" : textoContinuar}
         </button>
       </div>
     </div>

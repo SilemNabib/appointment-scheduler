@@ -272,7 +272,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * `curl -I` muestra `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex`, un `Cache-Control` con `private` y `no-store`, y la CSP de las páginas públicas (ARCH §13; Q-47, TASKS-04). La página no carga scripts de Clerk (ARCH §7.2).
       * Con el negocio suspendido, se ven la cita y los contactos, sin acciones (GES-05).
 
-* [ ] T6.23: Página de gestión: cancelar y reprogramar
+* [x] T6.23: Página de gestión: cancelar y reprogramar
    * Objetivo: Agregar las acciones a la página (DESIGN §4.2):
       * "Cancelar cita", con la confirmación en dos pasos ("¿Cancelar la cita?" y "Sí, cancelar mi cita") y, después, "Esta cita fue cancelada y su cupo quedó libre.";
       * "Reprogramar", con el calendario y las horas libres de la Fase 4 sobre T6.20, "Confirmar cambio" y "Te quedan X de Y reprogramaciones" (Q-70);

@@ -1,6 +1,8 @@
-// Cliente de la API pública para el navegador (PUB-04, PUB-06, PUB-08; F-01; ARCH
-// §18.5; Q-49). Consulta la disponibilidad y reserva con los contratos HTTP, no con
-// Server Actions, para que el límite de frecuencia de la Fase 8 los cubra sin cambios.
+// Cliente de la API pública para el navegador (PUB-04, PUB-06, PUB-08, GES-02, GES-03; F-01,
+// F-02, F-03; ARCH §18.5; Q-49, Q-69). Consulta la disponibilidad, reserva y gestiona la
+// cita por link con los contratos HTTP, no con Server Actions, para que el límite de
+// frecuencia de la Fase 8 los cubra sin cambios. El token de la gestión va en el cuerpo,
+// nunca en la URL de la API (ARCH §18.5).
 // Nunca lanza: una falla de red o una respuesta que no es el JSON esperado se convierten
 // en el error `CONEXION`, para que la página ofrezca reintentar sin perder los datos.
 
@@ -11,6 +13,9 @@ export type CodigoApi =
   | "NEGOCIO_SUSPENDIDO"
   | "LIMITE_PLAN"
   | "HORARIO_NO_DISPONIBLE"
+  | "FUERA_DE_PLAZO"
+  | "LIMITE_REPROGRAMACIONES"
+  | "ESTADO_INVALIDO"
   | "DEMASIADAS_SOLICITUDES"
   | "CONEXION";
 
@@ -23,6 +28,19 @@ export type DiaDisponible = { fecha: string; inicios: string[] };
 export type Disponibilidad = { zonaHoraria: string; dias: DiaDisponible[] };
 
 export type CitaCreada = { citaId: string; codigo: string; inicio: string; fin: string };
+
+/** Lo que responden cancelar y reprogramar por el link (Q-69). */
+export type CitaGestionada = {
+  citaId: string;
+  estado: string;
+  inicio: string;
+  fin: string;
+  /** `null` si el negocio no tiene límite (RN-34). */
+  reprogramacionesRestantes: number | null;
+};
+
+/** El link de gestión: lo que identifica la cita en las tres rutas (ARCH §18.5). */
+export type LinkGestion = { slug: string; citaId: string; token: string };
 
 export type ConsultaDisponibilidad = {
   slug: string;
@@ -54,6 +72,9 @@ const CODIGOS: readonly CodigoApi[] = [
   "NEGOCIO_SUSPENDIDO",
   "LIMITE_PLAN",
   "HORARIO_NO_DISPONIBLE",
+  "FUERA_DE_PLAZO",
+  "LIMITE_REPROGRAMACIONES",
+  "ESTADO_INVALIDO",
   "DEMASIADAS_SOLICITUDES",
 ];
 
@@ -130,4 +151,41 @@ export function reservar(slug: string, datos: DatosReserva): Promise<ResultadoAp
     201,
     esCitaCreada,
   );
+}
+
+const esCitaGestionada = (x: unknown): x is CitaGestionada =>
+  esObjeto(x) &&
+  ["citaId", "estado", "inicio", "fin"].every((k) => typeof x[k] === "string") &&
+  (x.reprogramacionesRestantes === null || typeof x.reprogramacionesRestantes === "number");
+
+/** `POST` JSON a una de las rutas de la gestión, con el token en el cuerpo. */
+function gestionar<T>(link: LinkGestion, accion: string, datos: Record<string, unknown>, esValor: (x: unknown) => x is T) {
+  return pedir(
+    `/api/publico/${encodeURIComponent(link.slug)}/citas/${encodeURIComponent(link.citaId)}/${accion}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ ...datos, token: link.token }),
+    },
+    200,
+    esValor,
+  );
+}
+
+/** Las horas libres para reprogramar la cita del link, sin contar la propia cita (GES-03; RN-14). */
+export function consultarDisponibilidadGestion(
+  link: LinkGestion,
+  rango: { desde: string; hasta: string },
+): Promise<ResultadoApi<Disponibilidad>> {
+  return gestionar(link, "disponibilidad", rango, esDisponibilidad);
+}
+
+/** Reprograma la cita del link a otra hora libre (GES-03, F-03). */
+export function reprogramarPorLink(link: LinkGestion, inicio: string): Promise<ResultadoApi<CitaGestionada>> {
+  return gestionar(link, "reprogramar", { inicio }, esCitaGestionada);
+}
+
+/** Cancela la cita del link (GES-02, F-02). */
+export function cancelarPorLink(link: LinkGestion): Promise<ResultadoApi<CitaGestionada>> {
+  return gestionar(link, "cancelar", {}, esCitaGestionada);
 }

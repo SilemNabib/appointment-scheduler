@@ -12,9 +12,10 @@ import { TarjetaContacto } from "./tarjeta-contacto";
 
 // Detalle de la cita en la página de gestión (GES-01, GES-04, GES-05; RN-03, D-14, D-28,
 // D-29, D-30; DESIGN §3 y §4.2; Q-70): el código en monoespaciada, el estado, el servicio,
-// la fecha y la hora en la zona del negocio, la dirección con "Cómo llegar" y, cuando el
-// cliente no puede actuar, el mensaje de Q-70 con la tarjeta de contactos. Sin historial
-// (Q-70: prevalece el PRD). Las acciones (T6.23) llegan como `children`.
+// la fecha y la hora en la zona del negocio y la dirección con "Cómo llegar". Sin
+// historial (Q-70: prevalece el PRD). Debajo van `children`: las acciones (T6.23), que
+// también muestran el mensaje de Q-70 con la tarjeta de contactos cuando el cliente no
+// puede actuar (`mensajeSinAccion`).
 
 /**
  * El texto de Q-70 para un motivo, o `null` si no lleva mensaje: con el límite en 0, el
@@ -60,21 +61,9 @@ function Dato({ etiqueta, children, codigo = false }: { etiqueta: string; childr
   );
 }
 
-export function DetalleGestion({
-  datos,
-  aviso,
-  children,
-}: {
-  datos: CitaPorLink;
-  /** Un aviso que reemplaza el de Q-70, por ejemplo justo después de cancelar (T6.23). */
-  aviso?: ReactNode;
-  /** Las acciones de T6.23. */
-  children?: ReactNode;
-}) {
-  const { cita, acciones, marca, sede, limiteReprogramaciones } = datos;
+export function DetalleGestion({ datos, children }: { datos: Pick<CitaPorLink, "cita" | "marca">; children?: ReactNode }) {
+  const { cita, marca } = datos;
   const zona = marca.zonaHoraria;
-  const motivo = motivoVisible(acciones);
-  const mensaje = motivo ? mensajeSinAccion(motivo, limiteReprogramaciones) : null;
 
   return (
     <Tarjeta como="section" aria-labelledby="titulo-cita">
@@ -109,7 +98,6 @@ export function DetalleGestion({
         )}
       </dl>
 
-      {aviso ?? (mensaje && <AvisoConContactos mensaje={mensaje} contactos={sede.contactos} />)}
       {children}
     </Tarjeta>
   );

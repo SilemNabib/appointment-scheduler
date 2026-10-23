@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { consultarDisponibilidad, reservar, type DatosReserva } from "@/componentes/publico/api";
+import {
+  cancelarPorLink,
+  consultarDisponibilidad,
+  consultarDisponibilidadGestion,
+  reprogramarPorLink,
+  reservar,
+  type DatosReserva,
+} from "@/componentes/publico/api";
 
 // Cliente de la API pública (PUB-04, PUB-06, PUB-08; ARCH §18.5), con fetch simulado.
 
@@ -111,5 +118,73 @@ describe("error de conexión, sin lanzar excepciones", () => {
     expect(await consultarDisponibilidad(CONSULTA)).toEqual({ ok: false, error: { codigo: "CONEXION" } });
     simular(error(500, "ALGO_RARO"));
     expect(await reservar("optica", DATOS)).toEqual({ ok: false, error: { codigo: "CONEXION" } });
+  });
+});
+
+// ─── Gestión por link (GES-02, GES-03; ARCH §18.5; Q-69) ──────────────────────
+
+describe("gestión por link", () => {
+  const LINK = { slug: "optica", citaId: "c-1", token: "t".repeat(43) };
+  const GESTIONADA = { citaId: "c-1", estado: "confirmada", inicio: "2026-10-23T13:00:00.000Z", fin: "2026-10-23T13:30:00.000Z", reprogramacionesRestantes: 2 };
+  const DISPONIBILIDAD = { zonaHoraria: "America/Bogota", dias: [{ fecha: "2026-10-23", inicios: ["2026-10-23T13:00:00.000Z"] }] };
+  const llamadas = {
+    disponibilidad: () => consultarDisponibilidadGestion(LINK, { desde: "2026-10-23", hasta: "2026-10-31" }),
+    reprogramar: () => reprogramarPorLink(LINK, "2026-10-23T13:00:00.000Z"),
+    cancelar: () => cancelarPorLink(LINK),
+  };
+
+  test("cada ruta va por POST con el token en el cuerpo, nunca en la URL (ARCH §18.5)", async () => {
+    for (const [ruta, llamar] of Object.entries(llamadas)) {
+      const fetch = simular(json(200, ruta === "disponibilidad" ? DISPONIBILIDAD : GESTIONADA));
+      await llamar();
+      const [url, opciones] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe(`/api/publico/optica/citas/c-1/${ruta}`);
+      expect(url).not.toContain(LINK.token);
+      expect(opciones.method).toBe("POST");
+      expect(new Headers(opciones.headers).get("content-type")).toBe("application/json");
+      expect(JSON.parse(String(opciones.body))).toEqual(expect.objectContaining({ token: LINK.token }));
+    }
+  });
+
+  test("200 da la respuesta de Q-69 o la disponibilidad", async () => {
+    simular(json(200, DISPONIBILIDAD));
+    expect(await llamadas.disponibilidad()).toEqual({ ok: true, valor: DISPONIBILIDAD });
+    simular(json(200, GESTIONADA));
+    expect(await llamadas.reprogramar()).toEqual({ ok: true, valor: GESTIONADA });
+    simular(json(200, { ...GESTIONADA, estado: "cancelada", reprogramacionesRestantes: null }));
+    expect(await llamadas.cancelar()).toEqual({ ok: true, valor: { ...GESTIONADA, estado: "cancelada", reprogramacionesRestantes: null } });
+  });
+
+  test.each<[number, string]>([
+    [404, "NO_ENCONTRADO"],
+    [403, "NEGOCIO_SUSPENDIDO"],
+    [409, "HORARIO_NO_DISPONIBLE"],
+    [409, "FUERA_DE_PLAZO"],
+    [409, "LIMITE_REPROGRAMACIONES"],
+    [409, "ESTADO_INVALIDO"],
+    [422, "DATOS_INVALIDOS"],
+  ])("un %i con %s da ese código en las tres rutas", async (estado, codigo) => {
+    for (const llamar of Object.values(llamadas)) {
+      simular(error(estado, codigo));
+      expect(await llamar()).toEqual({ ok: false, error: { codigo } });
+    }
+  });
+
+  test("un 429, aunque no traiga el JSON de §18.5, da DEMASIADAS_SOLICITUDES", async () => {
+    for (const llamar of Object.values(llamadas)) {
+      simular(new Response("Too Many Requests", { status: 429 }));
+      expect(await llamar()).toEqual({ ok: false, error: { codigo: "DEMASIADAS_SOLICITUDES" } });
+    }
+  });
+
+  test("una falla de red, un 200 con otro cuerpo o un error desconocido dan CONEXION, sin lanzar", async () => {
+    for (const llamar of Object.values(llamadas)) {
+      simular(new TypeError("Failed to fetch"));
+      await expect(llamar()).resolves.toEqual({ ok: false, error: { codigo: "CONEXION" } });
+      simular(json(200, { otra: "cosa" }));
+      await expect(llamar()).resolves.toEqual({ ok: false, error: { codigo: "CONEXION" } });
+      simular(error(500, "ERROR_RARO"));
+      await expect(llamar()).resolves.toEqual({ ok: false, error: { codigo: "CONEXION" } });
+    }
   });
 });

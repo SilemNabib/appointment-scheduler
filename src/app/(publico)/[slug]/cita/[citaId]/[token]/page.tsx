@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache, type CSSProperties } from "react";
 import { Encabezado } from "@/componentes/publico/encabezado";
+import { AccionesGestion } from "@/componentes/publico/gestion-acciones";
 import { DetalleGestion } from "@/componentes/publico/gestion-cita";
 import { coloresMarca } from "@/dominio/color";
 import { verCitaPorLink } from "@/servidor/casos-uso/gestion-cita";
@@ -42,8 +43,18 @@ export default async function PaginaGestion({ params }: Props) {
     <div style={variables} className="flex flex-1 flex-col">
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-6 pb-16">
         <Encabezado marca={datos.marca} sede={datos.sede} />
-        {/* Las acciones de cancelar y reprogramar llegan en T6.23. */}
-        <DetalleGestion datos={datos} />
+        <DetalleGestion datos={datos}>
+          <AccionesGestion
+            link={{ slug, citaId, token }}
+            sedeId={datos.sede.id}
+            acciones={datos.acciones}
+            limite={datos.limiteReprogramaciones}
+            zonaHoraria={datos.marca.zonaHoraria}
+            hoy={datos.hoy}
+            ultimoDia={datos.ultimoDia}
+            contactos={datos.sede.contactos}
+          />
+        </DetalleGestion>
       </main>
     </div>
   );

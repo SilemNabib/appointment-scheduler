@@ -4,6 +4,7 @@ import type { EstadoCita } from "@/dominio/estados-cita";
 import { accionesDelCliente, type AccionesCliente } from "@/dominio/plazos";
 import { exito, fallo, type Fallo, type Resultado } from "@/dominio/resultado";
 import { estadoEfectivo, type DatosSuscripcion } from "@/dominio/suscripcion";
+import { fechaLocal, sumarDias, type FechaLocal } from "@/dominio/tiempo";
 import * as citas from "@/servidor/db/repositorios/citas";
 import * as configuracion from "@/servidor/db/repositorios/configuracion";
 import * as contactos from "@/servidor/db/repositorios/contactos";
@@ -75,6 +76,9 @@ export type CitaPorLink = {
   acciones: AccionesCliente;
   /** `max_reprogramaciones_cliente`: `null` sin límite (RN-34; "Te quedan X de Y"). */
   limiteReprogramaciones: number | null;
+  /** Los días que el calendario de reprogramar puede mostrar: de hoy a la anticipación máxima (Q-32). */
+  hoy: FechaLocal;
+  ultimoDia: FechaLocal;
 };
 
 /**
@@ -116,6 +120,8 @@ export async function verCitaPorLink(e: EntradaLink, ahora: Date): Promise<Resul
     },
     acciones: accionesDe(v, ahora),
     limiteReprogramaciones: reglas.maxReprogramacionesCliente,
+    hoy: fechaLocal(ahora, negocio.zonaHoraria),
+    ultimoDia: sumarDias(fechaLocal(ahora, negocio.zonaHoraria), reglas.anticipacionMaximaDias),
   });
 }
 

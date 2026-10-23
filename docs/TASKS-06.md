@@ -53,7 +53,7 @@
 
 Funciones puras o sin estado, con su prueba unitaria en la misma tarea.
 
-* [ ] T6.01: Firma de los links de gestión
+* [x] T6.01: Firma de los links de gestión
    * Objetivo: Crear `servidor/firmas.ts`, con la firma HMAC-SHA256 en base64url y su verificación con `crypto.subtle.verify` (tiempo constante), y `servidor/gestion-cita/firma.ts`, que firma `"{citaId}.{token_version}"` con `GESTION_CITA_SECRET`, acepta también `GESTION_CITA_SECRET_ANTERIOR` durante una rotación y arma la URL `{APP_URL}/{slug}/cita/{citaId}/{token}` (ARCH §13). El token no se guarda (ADR-09).
    * Archivos: `src/servidor/firmas.ts`, `src/servidor/gestion-cita/firma.ts`, `tests/unit/servidor/gestion-cita/firma.test.ts`
    * Depende de: T5.32

@@ -262,7 +262,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Con el límite en 3, la cuarta reprogramación responde 409 con "Ya reprogramaste esta cita 3 veces. Para otro cambio, comunícate con el negocio" (RN-34).
       * Un cuerpo que no es JSON responde 422 `DATOS_INVALIDOS` (Q-33, TASKS-03), y ninguna respuesta repite el token (ARCH §19.2).
 
-* [ ] T6.22: Página de gestión: detalle y estados
+* [x] T6.22: Página de gestión: detalle y estados
    * Objetivo: Crear `/{slug}/cita/{citaId}/{token}` (ARCH §4, §5) con `verCitaPorLink`: el encabezado del negocio (T4.18), el código en monoespaciada, el badge de estado, el servicio, la fecha y la hora en hora de Colombia, la dirección con "Cómo llegar" y los mensajes de Q-70 para la cita cancelada, pasada, fuera del plazo o sin reprogramaciones y para el negocio suspendido, con la tarjeta de contactos (GES-04, GES-05). Responde 404 con `NO_ENCONTRADO`. Agrega en `next.config.ts` los encabezados de ARCH §13 para esta ruta, después de los generales para que los reemplacen. Deja el lugar de las acciones de T6.23.
    * Archivos: `src/app/(publico)/[slug]/cita/[citaId]/[token]/page.tsx`, `src/componentes/publico/gestion-cita.tsx`, `next.config.ts`
    * Depende de: T6.17

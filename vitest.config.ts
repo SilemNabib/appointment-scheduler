@@ -11,7 +11,10 @@ const ruta = (relativa: string) =>
  * en su propio proyecto, con su propia rama efímera, después de las demás y de a un
  * archivo (T6.15).
  */
-const PRUEBAS_GLOBALES = ["tests/integracion/notificaciones/procesar.test.ts"];
+const PRUEBAS_GLOBALES = [
+  "tests/integracion/notificaciones/procesar.test.ts",
+  "tests/integracion/casos-uso/vencimientos.test.ts",
+];
 
 const integracion = {
   environment: "node",

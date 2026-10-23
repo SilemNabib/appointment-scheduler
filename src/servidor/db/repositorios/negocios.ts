@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, eq, isNull, lt, ne, or, sql } from "drizzle-orm";
 import type { Contacto } from "@/dominio/contactos";
-import type { DatosSuscripcion } from "@/dominio/suscripcion";
+import { DIAS_GRACIA, type DatosSuscripcion } from "@/dominio/suscripcion";
 import { db, type Transaccion } from "../cliente";
 import {
   configuracionNegocio,
@@ -333,4 +333,63 @@ export async function crear(negocioId: string, datos: DatosNuevoNegocio, tx: Tra
   await tx.insert(politicaDatos).values({ negocioId, version: 1, contenido: datos.politica });
 
   await tx.insert(miembroNegocio).values({ negocioId, correo: datos.correoDueno, rol: "dueno" });
+}
+
+// ─── Vencimientos (ARCH §7.6; RN-31, S-16; Q-75) ──────────────────────────────
+// Las dos sentencias de `aplicarVencimientos`, con `ahora` en lugar de `now()`. Van en la
+// transacción del cron, con `app.actor = 'sistema'` para la auditoría (RN-30).
+
+/** El vencimiento según el estado: `fin_prueba` en `prueba` y `pagado_hasta` en `activa`. */
+const vence = sql`CASE ${negocio.estadoSuscripcion} WHEN 'prueba' THEN ${negocio.finPrueba} ELSE ${negocio.pagadoHasta} END`;
+const gracia = sql`${DIAS_GRACIA} * interval '1 day'`;
+
+/**
+ * Encola C-07 a los dueños de los negocios en gracia (`vence ≤ ahora < vence + 3 días`),
+ * una vez por vencimiento: la clave lleva el vencimiento, así que correrlo varias veces
+ * durante la gracia no lo repite, y un vencimiento nuevo después de un pago da otro aviso
+ * (ARCH §7.6). `datos` lleva `vence` y `suspende_en` para la plantilla. Devuelve cuántos encoló.
+ */
+export async function encolarAvisosDeGracia(ahora: Date, tx: Transaccion): Promise<number> {
+  const instante = sql`${ahora.toISOString()}::timestamptz`;
+  const filas = await tx.execute(sql`
+    INSERT INTO ${notificacion} (negocio_id, tipo, destinatario, datos, clave_idempotencia, programada_para)
+    SELECT n.id, 'dueno_gracia', m.correo,
+           jsonb_build_object('vence', v.vence, 'suspende_en', v.vence + ${gracia}),
+           'dueno_gracia:' || m.id || ':' || extract(epoch FROM v.vence)::bigint,
+           ${instante}
+      FROM ${negocio} n
+     CROSS JOIN LATERAL (SELECT CASE n.estado_suscripcion WHEN 'prueba' THEN n.fin_prueba ELSE n.pagado_hasta END AS vence) v
+      JOIN ${miembroNegocio} m ON m.negocio_id = n.id AND m.rol = 'dueno'
+     WHERE n.estado_suscripcion IN ('prueba', 'activa')
+       AND v.vence <= ${instante} AND ${instante} < v.vence + ${gracia}
+    ON CONFLICT (clave_idempotencia) DO NOTHING
+    RETURNING id`);
+  return filas.rows.length;
+}
+
+/**
+ * Suspende los negocios cuya gracia terminó (`vence + 3 días ≤ ahora`; RN-31) y encola su
+ * C-08 en la misma sentencia (S-16): una vez suspendido, el `UPDATE` ya no lo selecciona,
+ * así que el aviso no se repite. Devuelve los ids suspendidos.
+ */
+export async function suspenderPorFinDeGracia(ahora: Date, tx: Transaccion): Promise<string[]> {
+  const instante = sql`${ahora.toISOString()}::timestamptz`;
+  const filas = await tx.execute<{ id: string }>(sql`
+    WITH suspendidos AS (
+      UPDATE ${negocio}
+         SET estado_suscripcion = 'suspendida'
+       WHERE ${negocio.estadoSuscripcion} IN ('prueba', 'activa')
+         AND ${vence} + ${gracia} <= ${instante}
+      RETURNING id
+    ), avisos AS (
+      INSERT INTO ${notificacion} (negocio_id, tipo, destinatario, clave_idempotencia, programada_para)
+      SELECT s.id, 'dueno_suspension', m.correo,
+             'dueno_suspension:' || m.id || ':' || extract(epoch FROM ${instante})::bigint,
+             ${instante}
+        FROM suspendidos s
+        JOIN ${miembroNegocio} m ON m.negocio_id = s.id AND m.rol = 'dueno'
+      RETURNING id
+    )
+    SELECT id FROM suspendidos`);
+  return filas.rows.map((f) => f.id);
 }

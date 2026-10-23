@@ -289,7 +289,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
 
 ### 6.E Tareas del cron
 
-* [ ] T6.24: Caso de uso `aplicarVencimientos`
+* [x] T6.24: Caso de uso `aplicarVencimientos`
    * Objetivo: Implementar `aplicarVencimientos(ahora)` con las dos sentencias de ARCH §7.6, en una transacción con `app.actor = 'sistema'`: encola C-07 a los negocios en gracia, una vez por vencimiento, y suspende los que terminaron la gracia, con su C-08 en la misma sentencia (RN-31, S-16).
    * Archivos: `src/servidor/casos-uso/vencimientos.ts`, `src/servidor/db/repositorios/negocios.ts`, `tests/integracion/casos-uso/vencimientos.test.ts`
    * Depende de: T5.32

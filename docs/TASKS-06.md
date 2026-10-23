@@ -63,7 +63,7 @@ Funciones puras o sin estado, con su prueba unitaria en la misma tarea.
       * Un token firmado con el secreto anterior se acepta mientras exista `GESTION_CITA_SECRET_ANTERIOR`, y deja de aceptarse cuando se quita. Sin `GESTION_CITA_SECRET`, firmar lanza un error.
       * El token tiene 43 caracteres base64url (256 bits), sin `=`, `+` ni `/`.
 
-* [ ] T6.02: Firma del enlace de calendario
+* [x] T6.02: Firma del enlace de calendario
    * Objetivo: Crear `servidor/calendario/firma.ts`, que firma `"cal." + enlaceId` con `CALENDARIO_SECRET` usando `servidor/firmas.ts`, y arma las dos URL del enlace: `https://…/api/calendario/{enlaceId}/{token}`, para "Desde URL" en Google, y `webcal://…`, para Outlook y Apple (ARCH §14.7).
    * Archivos: `src/servidor/calendario/firma.ts`, `tests/unit/servidor/calendario/firma.test.ts`
    * Depende de: T6.01

@@ -331,3 +331,48 @@ export async function citaDelMensaje(negocioId: string, citaId: string, conexion
     .where(and(eq(cita.negocioId, negocioId), eq(cita.id, citaId)));
   return fila ?? null;
 }
+
+// ─── Recálculo de los recordatorios (PAN-16; ARCH §14.1; Q-23 de TASKS-02) ──────
+
+/**
+ * Recalcula, en la transacción que cambia `recordatorio_horas_antes`, los recordatorios
+ * de las citas futuras `confirmada` con correo del negocio (RN-21, S-05):
+ *
+ * - con "ninguno" (`null`), anula los pendientes;
+ * - con un número de horas, anula los pendientes cuyo momento nuevo ya pasó (S-12) y crea
+ *   o mueve el de la versión actual de cada cita a `inicio − horas`, con su clave de
+ *   siempre (`recordatorio:{citaId}:v{version}`; RN-20). Como la clave es única, uno
+ *   anulado de la misma versión se reactiva en lugar de insertar otro. Los ya enviados (o
+ *   saliendo) no cambian, ni los de citas pasadas o canceladas.
+ */
+export async function recalcularRecordatorios(
+  negocioId: string,
+  horasAntes: number | null,
+  ahora: Date,
+  tx: Transaccion,
+): Promise<void> {
+  const instante = sql`${ahora.toISOString()}::timestamptz`;
+  const momento = horasAntes === null ? null : sql`c.inicio - ${horasAntes} * interval '1 hour'`;
+  // Los pendientes que se quedan sin recordatorio: todos con "ninguno", o los que ya no llegan a tiempo.
+  await tx.execute(sql`
+    UPDATE ${notificacion} n
+       SET estado = 'cancelada'
+      FROM ${cita} c
+     WHERE n.cita_id = c.id AND n.negocio_id = c.negocio_id
+       AND n.negocio_id = ${negocioId} AND n.tipo = 'recordatorio' AND n.estado = 'pendiente'
+       AND c.estado = 'confirmada' AND c.inicio > ${instante}
+       ${momento === null ? sql`` : sql`AND ${momento} <= ${instante}`}`);
+  if (momento === null) return;
+  await tx.execute(sql`
+    INSERT INTO ${notificacion} AS n (negocio_id, cita_id, tipo, destinatario, datos, clave_idempotencia, programada_para)
+    SELECT c.negocio_id, c.id, 'recordatorio', c.cliente_correo, jsonb_build_object('version', c.version),
+           'recordatorio:' || c.id || ':v' || c.version, ${momento}
+      FROM ${cita} c
+     WHERE c.negocio_id = ${negocioId} AND c.estado = 'confirmada' AND c.inicio > ${instante}
+       AND c.cliente_correo IS NOT NULL AND ${momento} > ${instante}
+    ON CONFLICT (clave_idempotencia) DO UPDATE
+       SET programada_para = EXCLUDED.programada_para,
+           estado = 'pendiente',
+           ultimo_error = CASE WHEN n.estado = 'cancelada' THEN NULL ELSE n.ultimo_error END
+     WHERE n.estado IN ('pendiente', 'cancelada')`);
+}

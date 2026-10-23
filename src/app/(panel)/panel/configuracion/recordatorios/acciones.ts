@@ -10,7 +10,7 @@ import { guardarRecordatorio } from "@/servidor/casos-uso/configuracion";
 
 export const guardarRecordatorioPanel = accion(async (datos: FormData) => {
   const ctx = await requireEscritura();
-  const resultado = await guardarRecordatorio(ctx, Object.fromEntries(datos));
+  const resultado = await guardarRecordatorio(ctx, Object.fromEntries(datos), new Date());
   if (resultado.ok) revalidatePath("/panel/configuracion/recordatorios");
   return resultado;
 });

@@ -320,7 +320,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
 
 ### 6.F Panel: recordatorios y "Mi calendario"
 
-* [ ] T6.27: Recálculo de los recordatorios
+* [x] T6.27: Recálculo de los recordatorios
    * Objetivo: Hacer que `guardarRecordatorio` recalcule, en la misma transacción, los recordatorios de las citas futuras `confirmada` con correo (ARCH §14.1; Q-23 de TASKS-02): con otro número de horas, mueve `programada_para` de los pendientes; con "ninguno", los anula; y de "ninguno" a un valor, los crea para la versión actual de cada cita. Si el nuevo momento ya pasó, la cita queda sin recordatorio (S-12). Como la clave es única, un recordatorio anulado de la misma versión se reactiva en lugar de insertar otro.
    * Archivos: `src/servidor/casos-uso/configuracion.ts`, `src/servidor/db/repositorios/notificaciones.ts`, `tests/integracion/casos-uso/configuracion.test.ts`
    * Depende de: T6.13

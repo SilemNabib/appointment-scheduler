@@ -2,14 +2,16 @@ import "server-only";
 import { z } from "zod";
 import { exito, fallo, type Resultado } from "@/dominio/resultado";
 import type { ContextoMiembro } from "@/servidor/auth/sesion";
+import { enTransaccion } from "@/servidor/db/cliente";
 import * as configuracion from "@/servidor/db/repositorios/configuracion";
+import * as notificaciones from "@/servidor/db/repositorios/notificaciones";
 
 // Reglas de reserva y recordatorio (PAN-15, PAN-16; RN-08, RN-09, RN-13, RN-16, RN-21,
 // RN-34; D-09, D-20, D-21). Los rangos son los de los `CHECK` de
 // `configuracion_negocio` (ARCH §18.2), más un tope para no aceptar valores absurdos.
 // Cambiar una regla solo afecta a las reservas siguientes (Q-24). Cambiar el
-// recordatorio no recalcula los ya programados: eso llega en la Fase 6 (Q-23). La
-// Server Action ya llamó a `requireEscritura`.
+// recordatorio recalcula, en la misma transacción, los pendientes de las citas futuras
+// (Q-23; ARCH §14.1). La Server Action ya llamó a `requireEscritura`.
 
 type Ctx = Pick<ContextoMiembro, "negocioId">;
 
@@ -58,11 +60,19 @@ export async function guardarReglasReserva(ctx: Ctx, entrada: unknown): Promise<
   return exito(undefined);
 }
 
-export async function guardarRecordatorio(ctx: Ctx, entrada: unknown): Promise<Resultado<void, "DATOS_INVALIDOS">> {
+/**
+ * Cambia el momento del recordatorio (PAN-16) y recalcula en la misma transacción los
+ * pendientes de las citas futuras (`recalcularRecordatorios`; Q-23 de TASKS-02).
+ */
+export async function guardarRecordatorio(ctx: Ctx, entrada: unknown, ahora: Date): Promise<Resultado<void, "DATOS_INVALIDOS">> {
   const leida = esquemaRecordatorio.safeParse(entrada);
   if (!leida.success) return fallo("DATOS_INVALIDOS");
-  if (!(await configuracion.actualizarRecordatorio(ctx.negocioId, leida.data.recordatorio))) {
-    throw new Error(`El negocio ${ctx.negocioId} del contexto no tiene configuración.`);
-  }
+  const horas = leida.data.recordatorio;
+  await enTransaccion(async (tx) => {
+    if (!(await configuracion.actualizarRecordatorio(ctx.negocioId, horas, tx))) {
+      throw new Error(`El negocio ${ctx.negocioId} del contexto no tiene configuración.`);
+    }
+    await notificaciones.recalcularRecordatorios(ctx.negocioId, horas, ahora, tx);
+  });
   return exito(undefined);
 }

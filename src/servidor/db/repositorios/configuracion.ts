@@ -52,8 +52,8 @@ export async function actualizarReglas(negocioId: string, reglas: ReglasReserva)
 }
 
 /** Cambia el momento del recordatorio (PAN-16). Devuelve si encontró la fila. */
-export async function actualizarRecordatorio(negocioId: string, horasAntes: number | null): Promise<boolean> {
-  const filas = await db()
+export async function actualizarRecordatorio(negocioId: string, horasAntes: number | null, conexion: Conexion = db()): Promise<boolean> {
+  const filas = await conexion
     .update(configuracionNegocio)
     .set({ recordatorioHorasAntes: horasAntes })
     .where(eq(configuracionNegocio.negocioId, negocioId))

@@ -172,7 +172,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
 
 ### 6.C Procesador de la bandeja de salida
 
-* [ ] T6.13: Repositorio: reclamar y marcar
+* [x] T6.13: Repositorio: reclamar y marcar
    * Objetivo: Ampliar `repositorios/notificaciones.ts` con lo que necesita el procesador (ARCH §14.3): reclamar un lote de hasta 25 con `FOR UPDATE SKIP LOCKED` (las pendientes vencidas y los arriendos vencidos; con `citaId`, solo las de esa cita); marcar `enviada` con `proveedor_mensaje_id` y `enviada_en`; devolver a `pendiente` con una espera de `2^intentos` minutos; marcar `fallida` en el 5.º intento; anular con su `ultimo_error`; y contar las enviadas del mes local para `max_emails_per_month`, sin las de la cuenta (ARCH §16.3).
    * Archivos: `src/servidor/db/repositorios/notificaciones.ts`, `tests/integracion/repositorios/notificaciones.test.ts`
    * Depende de: T5.32

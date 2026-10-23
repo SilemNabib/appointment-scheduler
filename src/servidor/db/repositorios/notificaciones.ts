@@ -1,6 +1,8 @@
 import "server-only";
-import { and, asc, eq, sql } from "drizzle-orm";
-import type { Transaccion } from "../cliente";
+import { and, asc, count, eq, gte, inArray, lt, lte, notInArray, or, sql } from "drizzle-orm";
+import type { Intervalo } from "@/dominio/disponibilidad";
+import type { TipoNotificacion } from "@/dominio/envios";
+import { db, type Conexion, type Transaccion } from "../cliente";
 import { miembroNegocio, notificacion } from "../esquema";
 
 // Bandeja de salida (outbox) de las notificaciones (RN-20 a RN-22; ARCH §14.1). Las filas
@@ -76,4 +78,164 @@ export async function anularRecordatorios(negocioId: string, citaId: string, tx:
     )
     .returning({ id: notificacion.id });
   return anulados.length;
+}
+
+// ─── Procesador de la bandeja de salida (ARCH §14.2 y §14.3; Q-75) ─────────────
+// El procesador es del sistema: reclama de todos los negocios, y cada notificación lleva
+// su `negocio_id`, que las marcas vuelven a usar en el WHERE (ARCH §6). Reciben `ahora`
+// en lugar de `now()`, para el reloj inyectado de ARCH §20 (Q-75).
+
+/** Cuántas reclama cada lote (ARCH §14.3). */
+export const TAMANO_LOTE = 25;
+/** Cuánto dura el arriendo de una notificación reclamada: después, otro procesador la retoma (ARCH §14.2). */
+export const ARRIENDO_MS = 2 * 60 * 1000;
+/** En el 5.º intento fallido, la notificación queda `fallida` (ARCH §14.3, paso 5). */
+export const MAXIMO_INTENTOS = 5;
+
+export type NotificacionReclamada = {
+  id: string;
+  negocioId: string;
+  /** `null` en los correos de la cuenta (C-07 y C-08; S-16). */
+  citaId: string | null;
+  tipo: TipoNotificacion;
+  destinatario: string;
+  datos: unknown;
+  claveIdempotencia: string;
+  /** Ya contado el de este reclamo. */
+  intentos: number;
+  programadaPara: Date;
+};
+
+/** La notificación que se marca: su id y su negocio (ARCH §6). */
+type Reclamada = Pick<NotificacionReclamada, "id" | "negocioId">;
+
+/**
+ * Reclama un lote de hasta 25: las `pendiente` cuya hora llegó y las `enviando` con el
+ * arriendo vencido, de la más atrasada a la más reciente (ARCH §14.3). Las pasa a
+ * `enviando`, suma un intento y les da un arriendo de 2 minutos. `FOR UPDATE SKIP LOCKED`
+ * hace que dos procesadores en paralelo (el cron y el envío inmediato) nunca reclamen la
+ * misma fila (RN-20). Con `citaId`, solo las de esa cita (el envío inmediato, ARCH §14.4).
+ */
+export async function reclamar(
+  ahora: Date,
+  { citaId }: { citaId?: string } = {},
+  conexion: Conexion = db(),
+): Promise<NotificacionReclamada[]> {
+  const vencidas = or(
+    and(eq(notificacion.estado, "pendiente"), lte(notificacion.programadaPara, ahora)),
+    and(eq(notificacion.estado, "enviando"), lt(notificacion.bloqueadaHasta, ahora)),
+  );
+  const lote = conexion
+    .select({ id: notificacion.id })
+    .from(notificacion)
+    .where(citaId ? and(vencidas, eq(notificacion.citaId, citaId)) : vencidas)
+    .orderBy(asc(notificacion.programadaPara))
+    .limit(TAMANO_LOTE)
+    .for("update", { skipLocked: true });
+  return conexion
+    .update(notificacion)
+    .set({
+      estado: "enviando",
+      intentos: sql`${notificacion.intentos} + 1`,
+      bloqueadaHasta: new Date(ahora.getTime() + ARRIENDO_MS),
+    })
+    .where(inArray(notificacion.id, lote))
+    .returning({
+      id: notificacion.id,
+      negocioId: notificacion.negocioId,
+      citaId: notificacion.citaId,
+      tipo: notificacion.tipo,
+      destinatario: notificacion.destinatario,
+      datos: notificacion.datos,
+      claveIdempotencia: notificacion.claveIdempotencia,
+      intentos: notificacion.intentos,
+      programadaPara: notificacion.programadaPara,
+    });
+}
+
+/** Solo se marca la que sigue `enviando`: si su arriendo venció y otro la retomó, la marca él. */
+const reclamadaPorMi = (n: Reclamada) =>
+  and(eq(notificacion.id, n.id), eq(notificacion.negocioId, n.negocioId), eq(notificacion.estado, "enviando"));
+
+/** El proveedor la aceptó: `enviada`, con su id y la hora (ARCH §14.3, paso 5). Devuelve si la marcó. */
+export async function marcarEnviada(n: Reclamada, mensajeId: string | null, ahora: Date, conexion: Conexion = db()): Promise<boolean> {
+  const filas = await conexion
+    .update(notificacion)
+    .set({ estado: "enviada", proveedorMensajeId: mensajeId, enviadaEn: ahora, bloqueadaHasta: null, ultimoError: null })
+    .where(reclamadaPorMi(n))
+    .returning({ id: notificacion.id });
+  return filas.length > 0;
+}
+
+/**
+ * Un envío fallido (ARCH §14.3, paso 5): vuelve a `pendiente` para dentro de `2^intentos`
+ * minutos (2, 4, 8 y 16), o queda `fallida` en el 5.º intento. Guarda el error, que nunca
+ * lleva el destinatario (ARCH §19.2). Devuelve el estado en que quedó, o `null` si ya no
+ * era suya.
+ */
+export async function registrarFallo(
+  n: Reclamada & Pick<NotificacionReclamada, "intentos">,
+  error: string,
+  ahora: Date,
+  conexion: Conexion = db(),
+): Promise<"pendiente" | "fallida" | null> {
+  const fallida = n.intentos >= MAXIMO_INTENTOS;
+  const filas = await conexion
+    .update(notificacion)
+    .set(
+      fallida
+        ? { estado: "fallida", ultimoError: error, bloqueadaHasta: null }
+        : {
+            estado: "pendiente",
+            ultimoError: error,
+            bloqueadaHasta: null,
+            programadaPara: new Date(ahora.getTime() + 2 ** n.intentos * 60 * 1000),
+          },
+    )
+    .where(reclamadaPorMi(n))
+    .returning({ id: notificacion.id });
+  if (filas.length === 0) return null;
+  return fallida ? "fallida" : "pendiente";
+}
+
+/** `fallida` sin reintentos, por ejemplo con `LIMITE_PLAN` (ARCH §14.3, paso 2). Devuelve si la marcó. */
+export async function marcarFallida(n: Reclamada, error: string, conexion: Conexion = db()): Promise<boolean> {
+  const filas = await conexion
+    .update(notificacion)
+    .set({ estado: "fallida", ultimoError: error, bloqueadaHasta: null })
+    .where(reclamadaPorMi(n))
+    .returning({ id: notificacion.id });
+  return filas.length > 0;
+}
+
+/** Anula una reclamada que ya no corresponde (`cancelada`), con su motivo (ARCH §14.3, paso 1; Q-67). */
+export async function anular(n: Reclamada, ultimoError: string, conexion: Conexion = db()): Promise<boolean> {
+  const filas = await conexion
+    .update(notificacion)
+    .set({ estado: "cancelada", ultimoError, bloqueadaHasta: null })
+    .where(reclamadaPorMi(n))
+    .returning({ id: notificacion.id });
+  return filas.length > 0;
+}
+
+/**
+ * Los correos de citas `enviada` del negocio en el periodo, para `max_emails_per_month`
+ * (ARCH §16.3): el mes calendario local (`mesLocal`, ARCH §9, regla 5), sin los de la
+ * cuenta (C-07 y C-08), que no cuentan (ARCH §14.1).
+ */
+export async function contarEnviadas(negocioId: string, periodo: Intervalo, conexion: Conexion = db()): Promise<number> {
+  const [{ total }] = await conexion
+    .select({ total: count() })
+    .from(notificacion)
+    .where(
+      and(
+        eq(notificacion.negocioId, negocioId),
+        eq(notificacion.estado, "enviada"),
+        eq(notificacion.canal, "correo"),
+        notInArray(notificacion.tipo, ["dueno_gracia", "dueno_suspension"]),
+        gte(notificacion.enviadaEn, periodo.inicio),
+        lt(notificacion.enviadaEn, periodo.fin),
+      ),
+    );
+  return total;
 }

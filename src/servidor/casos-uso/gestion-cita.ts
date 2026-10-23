@@ -1,4 +1,5 @@
 import "server-only";
+import { z } from "zod";
 import type { EstadoCita } from "@/dominio/estados-cita";
 import { accionesDelCliente, type AccionesCliente } from "@/dominio/plazos";
 import { exito, fallo, type Resultado } from "@/dominio/resultado";
@@ -10,6 +11,7 @@ import * as horarios from "@/servidor/db/repositorios/horarios";
 import * as negocios from "@/servidor/db/repositorios/negocios";
 import type { ReglasReserva } from "@/servidor/db/repositorios/configuracion";
 import { verificarTokenDeGestion } from "@/servidor/gestion-cita/firma";
+import { horasLibres, rangoValido, type Disponibilidad } from "./disponibilidad";
 import { esId } from "./esquemas";
 import type { MarcaPagina, SedePagina } from "./pagina-publica";
 
@@ -110,4 +112,54 @@ export async function verCitaPorLink(e: EntradaLink, ahora: Date): Promise<Resul
     acciones: accionesDe(v, ahora),
     limiteReprogramaciones: reglas.maxReprogramacionesCliente,
   });
+}
+
+const esquemaRango = z.object({ desde: z.iso.date(), hasta: z.iso.date() });
+
+export type ErrorDisponibilidadGestion =
+  | "NO_ENCONTRADO"
+  | "DATOS_INVALIDOS"
+  | "NEGOCIO_SUSPENDIDO"
+  | "FUERA_DE_PLAZO"
+  | "LIMITE_REPROGRAMACIONES"
+  | "ESTADO_INVALIDO";
+
+/** El error con que se rechaza reprogramar (T6.03), entre los de esta consulta (ARCH §18.4). */
+function errorDeReprogramar(error: string): ErrorDisponibilidadGestion {
+  return error === "NEGOCIO_SUSPENDIDO" || error === "FUERA_DE_PLAZO" || error === "LIMITE_REPROGRAMACIONES"
+    ? error
+    : "ESTADO_INVALIDO";
+}
+
+/**
+ * Las horas libres para reprogramar la cita del link (GES-03, F-03; Q-69): las del
+ * servicio y la sede de la cita, con las reglas de la consulta pública (actor `cliente`;
+ * hasta 31 días, recortados a hoy y a la anticipación máxima, Q-32) y sin contar la
+ * propia cita, así su hora y las que se solapan con ella aparecen libres (RN-14). Si la
+ * cita no admite reprogramar (T6.03), devuelve ese error. Responde como `GET
+ * …/disponibilidad` (ARCH §18.5). Solo lee.
+ */
+export async function consultarDisponibilidadGestion(
+  e: EntradaLink & { desde: unknown; hasta: unknown },
+  ahora: Date,
+): Promise<Resultado<Disponibilidad, ErrorDisponibilidadGestion>> {
+  const v = await verificarLink(e);
+  if (!v) return fallo("NO_ENCONTRADO");
+  const rango = esquemaRango.safeParse({ desde: e.desde, hasta: e.hasta });
+  if (!rango.success || !rangoValido(rango.data.desde, rango.data.hasta)) return fallo("DATOS_INVALIDOS");
+  const { reprogramar } = accionesDe(v, ahora);
+  if (!reprogramar.permitida) return fallo(errorDeReprogramar(reprogramar.error));
+
+  const horas = await horasLibres(
+    {
+      negocio: v.negocio,
+      sedeId: v.cita.sedeId,
+      servicioId: v.cita.servicioId,
+      desde: rango.data.desde,
+      hasta: rango.data.hasta,
+      citaExcluida: v.cita.id,
+    },
+    ahora,
+  );
+  return horas ? exito(horas) : fallo("NO_ENCONTRADO");
 }

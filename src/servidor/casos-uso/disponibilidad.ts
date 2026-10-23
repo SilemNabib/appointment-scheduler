@@ -61,34 +61,60 @@ export async function consultarDisponibilidad(
   if (!leida.success) return fallo("DATOS_INVALIDOS");
   const { slug, sedeId, servicioId, recursoId, desde, hasta } = leida.data;
   // Q-33: un rango que termina antes de empezar o que pasa de 31 días.
-  if (hasta < desde || sumarDias(desde, MAXIMO_DIAS_CONSULTA - 1) < hasta) return fallo("DATOS_INVALIDOS");
+  if (!rangoValido(desde, hasta)) return fallo("DATOS_INVALIDOS");
 
   const negocio = await negocios.porSlug(slug);
   if (!negocio) return fallo("NO_ENCONTRADO");
   if (estadoEfectivo(negocio, ahora).estado === "suspendida") return fallo("NEGOCIO_SUSPENDIDO");
   if (recursoId !== null || !esId(sedeId) || !esId(servicioId)) return fallo("NO_ENCONTRADO");
 
+  const horas = await horasLibres({ negocio, sedeId, servicioId, desde, hasta }, ahora);
+  return horas ? exito(horas) : fallo("NO_ENCONTRADO");
+}
+
+/** Un rango de fechas locales de hasta 31 días, que no termina antes de empezar (Q-33). */
+export function rangoValido(desde: FechaLocal, hasta: FechaLocal): boolean {
+  return desde <= hasta && hasta <= sumarDias(desde, MAXIMO_DIAS_CONSULTA - 1);
+}
+
+export type PeticionHoras = {
+  negocio: Parameters<typeof leerAgenda>[0]["negocio"];
+  sedeId: string;
+  servicioId: string;
+  desde: FechaLocal;
+  hasta: FechaLocal;
+  /** La cita que se reprograma: no ocupa su propio cupo (RN-14; F-03, paso 2). */
+  citaExcluida?: string;
+};
+
+/**
+ * Las horas libres para el cliente (actor `cliente`, RN-09), recortadas a hoy y a la
+ * anticipación máxima (Q-32), con el formato de ARCH §18.5. `null` si el servicio no se
+ * ofrece en la sede. La usan la consulta pública y la de la gestión por link (T6.20).
+ */
+export async function horasLibres(p: PeticionHoras, ahora: Date): Promise<Disponibilidad | null> {
   const leidaAgenda = await leerAgenda({
-    negocio,
-    sedeId,
-    servicioId,
+    negocio: p.negocio,
+    sedeId: p.sedeId,
+    servicioId: p.servicioId,
     actor: "cliente",
     ahora,
-    rango: intervaloDeDias(desde, hasta, negocio.zonaHoraria),
+    rango: intervaloDeDias(p.desde, p.hasta, p.negocio.zonaHoraria),
+    citaExcluida: p.citaExcluida ?? null,
   });
-  if (!leidaAgenda) return fallo("NO_ENCONTRADO");
+  if (!leidaAgenda) return null;
   const { contexto } = leidaAgenda;
 
-  const zona = negocio.zonaHoraria;
+  const zona = p.negocio.zonaHoraria;
   const hoy = fechaLocal(ahora, zona);
   const ultimoReservable = fechaLocal(new Date(ahora.getTime() + contexto.config.anticipacionMaximaDias * MS_POR_DIA), zona);
-  const primero = desde > hoy ? desde : hoy;
-  const ultimo = hasta < ultimoReservable ? hasta : ultimoReservable;
-  if (ultimo < primero) return exito({ zonaHoraria: zona, dias: [] });
+  const primero = p.desde > hoy ? p.desde : hoy;
+  const ultimo = p.hasta < ultimoReservable ? p.hasta : ultimoReservable;
+  if (ultimo < primero) return { zonaHoraria: zona, dias: [] };
 
   const porFecha = new Map<FechaLocal, string[]>(fechasDelRango(primero, ultimo).map((fecha) => [fecha, []]));
   for (const inicio of iniciosDisponibles(contexto, primero, ultimo)) {
     porFecha.get(fechaLocal(inicio, zona))?.push(inicio.toISOString());
   }
-  return exito({ zonaHoraria: zona, dias: [...porFecha].map(([fecha, inicios]) => ({ fecha, inicios })) });
+  return { zonaHoraria: zona, dias: [...porFecha].map(([fecha, inicios]) => ({ fecha, inicios })) };
 }

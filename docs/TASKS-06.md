@@ -243,7 +243,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Con el límite alcanzado devuelve `LIMITE_REPROGRAMACIONES`; fuera del plazo, `FUERA_DE_PLAZO`; y con una hora dentro de la anticipación mínima, `HORARIO_NO_DISPONIBLE`. En todos, no cambia nada (RN-09, RN-13, RN-34).
       * Pasan sin cambios las pruebas de `moverCita` (T5.08, T5.27–T5.29).
 
-* [ ] T6.20: Horas libres para reprogramar
+* [x] T6.20: Horas libres para reprogramar
    * Objetivo: Implementar `consultarDisponibilidadGestion({ slug, citaId, token, desde, hasta }, ahora)` (Q-69): con el token verificado, devuelve las horas libres del servicio y la sede de la cita con las reglas de la consulta pública (actor `cliente`; hasta 31 días, recortados a hoy y a la anticipación máxima, Q-32 de TASKS-03) y sin contar la propia cita (F-03, paso 2). Si la cita no admite reprogramar (T6.03), devuelve ese error.
    * Archivos: `src/servidor/casos-uso/gestion-cita.ts`, `src/servidor/casos-uso/disponibilidad.ts`, `tests/integracion/casos-uso/gestion-cita.test.ts`
    * Depende de: T6.17

@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { verCitaPorLink } from "@/servidor/casos-uso/gestion-cita";
+import { consultarDisponibilidad } from "@/servidor/casos-uso/disponibilidad";
+import { consultarDisponibilidadGestion, verCitaPorLink } from "@/servidor/casos-uso/gestion-cita";
 import { reservarCita } from "@/servidor/casos-uso/reservar-cita";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
@@ -149,5 +150,95 @@ describe("links que no corresponden: NO_ENCONTRADO, como una cita inexistente (R
     await db().update(esquema.cita).set({ tokenVersion: 2 }).where(eq(esquema.cita.id, link.citaId));
 
     expect(await verCitaPorLink(link, AHORA)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+  });
+});
+
+describe("consultarDisponibilidadGestion (GES-03, F-03; RN-14; Q-69)", () => {
+  const LUNES = "2030-03-04";
+  const MARTES = "2030-03-05";
+  const iniciosDel = (d: { dias: { fecha: string; inicios: string[] }[] }, fecha: string) =>
+    d.dias.find((x) => x.fecha === fecha)?.inicios ?? [];
+
+  test("la hora de la propia cita y las que se solapan con ella aparecen libres (RN-14)", async () => {
+    // Un servicio de una hora: la cita del lunes de 9:00 a 10:00 ocupa los inicios de 8:30, 9:00 y 9:30.
+    const n = await negocioConAgenda({ servicio: { duracionMinutos: 60 } });
+    const link = await conLink(n);
+
+    const publica = await consultarDisponibilidad(
+      { slug: n.slug, sedeId: n.sedeId, servicioId: n.servicioId, desde: LUNES, hasta: LUNES },
+      AHORA,
+    );
+    const gestion = await consultarDisponibilidadGestion({ ...link, desde: LUNES, hasta: LUNES }, AHORA);
+
+    const solapadas = ["13:30", "14:00", "14:30"].map((h) => `2030-03-04T${h}:00.000Z`);
+    expect(publica.ok && iniciosDel(publica.valor, LUNES)).toEqual(expect.not.arrayContaining(solapadas));
+    expect(gestion.ok && iniciosDel(gestion.valor, LUNES)).toEqual(expect.arrayContaining(solapadas));
+  });
+
+  test("con capacidad 1, una hora ocupada por otra cita no aparece, y la respuesta tiene el formato de GET …/disponibilidad", async () => {
+    const n = await negocioConAgenda();
+    const link = await conLink(n);
+    // Otra cita, el martes a las 10:00 (15:00 UTC).
+    const otra = await reservarCita(
+      {
+        slug: n.slug,
+        sedeId: n.sedeId,
+        servicioId: n.servicioId,
+        recursoId: null,
+        inicio: "2030-03-05T15:00:00.000Z",
+        nombre: "Luis",
+        apellido: "Gómez",
+        telefono: "311 555 0100",
+        correo: "luis@mail.com",
+        politicaDatosId: n.politicaId,
+        aceptaPolitica: true,
+        sitioWeb: "",
+      },
+      AHORA,
+    );
+    expect(otra.ok).toBe(true);
+
+    const gestion = await consultarDisponibilidadGestion({ ...link, desde: MARTES, hasta: MARTES }, AHORA);
+    const publica = await consultarDisponibilidad(
+      { slug: n.slug, sedeId: n.sedeId, servicioId: n.servicioId, desde: MARTES, hasta: MARTES },
+      AHORA,
+    );
+
+    expect(gestion.ok && iniciosDel(gestion.valor, MARTES)).not.toContain("2030-03-05T15:00:00.000Z");
+    // Un día sin la propia cita se ve igual que en la consulta pública, con su mismo formato.
+    expect(gestion).toEqual(publica);
+    expect(gestion.ok && gestion.valor).toEqual({ zonaHoraria: "America/Bogota", dias: [{ fecha: MARTES, inicios: expect.any(Array) }] });
+  });
+
+  test("si la cita no admite reprogramar, devuelve ese error (T6.03)", async () => {
+    const n = await negocioConAgenda({ reglas: { maxReprogramacionesCliente: 0 } });
+    const link = await conLink(n);
+    expect(await consultarDisponibilidadGestion({ ...link, desde: MARTES, hasta: MARTES }, AHORA)).toEqual({
+      ok: false,
+      error: "LIMITE_REPROGRAMACIONES",
+    });
+
+    const otro = await negocioConAgenda();
+    const tarde = await conLink(otro);
+    expect(
+      await consultarDisponibilidadGestion({ ...tarde, desde: MARTES, hasta: MARTES }, new Date("2030-03-03T14:00:00.001Z")),
+    ).toEqual({ ok: false, error: "FUERA_DE_PLAZO" });
+  });
+
+  test("un rango inválido devuelve DATOS_INVALIDOS, y un link alterado, NO_ENCONTRADO", async () => {
+    const n = await negocioConAgenda();
+    const link = await conLink(n);
+    for (const rango of [
+      { desde: MARTES, hasta: LUNES },
+      { desde: LUNES, hasta: "2030-04-04" },
+      { desde: "el lunes", hasta: MARTES },
+    ]) {
+      expect(await consultarDisponibilidadGestion({ ...link, ...rango }, AHORA)).toEqual({ ok: false, error: "DATOS_INVALIDOS" });
+    }
+    const alterado = (link.token[0] === "A" ? "B" : "A") + link.token.slice(1);
+    expect(await consultarDisponibilidadGestion({ ...link, token: alterado, desde: LUNES, hasta: MARTES }, AHORA)).toEqual({
+      ok: false,
+      error: "NO_ENCONTRADO",
+    });
   });
 });

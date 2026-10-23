@@ -192,7 +192,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Una cita movida antes de que salga su C-01 sale con su hora actual (ARCH §14.3, paso 3: "con los datos actuales").
       * Las lecturas filtran por el `negocio_id` de la notificación (ARCH §6).
 
-* [ ] T6.15: Caso de uso `procesarNotificaciones`
+* [x] T6.15: Caso de uso `procesarNotificaciones`
    * Objetivo: Implementar `procesarNotificaciones({ citaId? }, ahora, proveedor)` (ARCH §14.3): reclama un lote (T6.13); por cada notificación, la revalida (T6.05), comprueba `max_emails_per_month` con la función de acceso en los correos de citas (`fallida` con `LIMITE_PLAN`; RN-25), arma el mensaje (T6.14), lo envía con su clave de idempotencia (T6.07) y lo marca. Sigue con más lotes mientras haya vencidas, hasta el tope de Q-75, y registra cada resultado sin datos personales.
    * Archivos: `src/servidor/notificaciones/procesar.ts`, `tests/integracion/notificaciones/procesar.test.ts`
    * Depende de: T6.05, T6.14

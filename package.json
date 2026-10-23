@@ -1,6 +1,6 @@
 {
   "name": "agenda-citas",
-  "version": "0.38.165",
+  "version": "0.38.166",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:integracion": "vitest run --project integracion",
+    "test:integracion": "vitest run --project integracion --project integracion-global",
     "verificar": "npm run typecheck && npm run lint && npm test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

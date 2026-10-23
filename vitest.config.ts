@@ -1,8 +1,26 @@
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 const ruta = (relativa: string) =>
   fileURLToPath(new URL(relativa, import.meta.url));
+
+/**
+ * Pruebas que procesan "todo lo vencido" de todos los negocios: el procesador de la
+ * bandeja de salida sin `citaId`, el cron, los vencimientos y la asistencia por defecto
+ * (ARCH §14.3, §14.4 y §7.6). En paralelo con las demás tomarían sus filas, así que corren
+ * en su propio proyecto, con su propia rama efímera, después de las demás y de a un
+ * archivo (T6.15).
+ */
+const PRUEBAS_GLOBALES = ["tests/integracion/notificaciones/procesar.test.ts"];
+
+const integracion = {
+  environment: "node",
+  // Crea y elimina la rama efímera de Neon (ARCH §20).
+  globalSetup: ["tests/integracion/global-setup.ts"],
+  setupFiles: ["tests/integracion/setup.ts"],
+  testTimeout: 30_000,
+  hookTimeout: 60_000,
+};
 
 export default defineConfig({
   resolve: {
@@ -28,14 +46,20 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          ...integracion,
           name: "integracion",
           include: ["tests/integracion/**/*.test.ts"],
-          environment: "node",
-          // Crea y elimina la rama efímera de Neon (ARCH §20).
-          globalSetup: ["tests/integracion/global-setup.ts"],
-          setupFiles: ["tests/integracion/setup.ts"],
-          testTimeout: 30_000,
-          hookTimeout: 60_000,
+          exclude: [...configDefaults.exclude, ...PRUEBAS_GLOBALES],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          ...integracion,
+          name: "integracion-global",
+          include: PRUEBAS_GLOBALES,
+          fileParallelism: false,
+          sequence: { groupOrder: 1 },
         },
       },
     ],

@@ -134,7 +134,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * El remitente de los correos de citas es `"{nombre del negocio}" <CORREO_REMITENTE>`, con el nombre escapado, y el de la cuenta, `"{NOMBRE_PRODUCTO}" <CORREO_CUENTA>` con `reply_to` igual a `CORREO_SOPORTE`. El `reply_to` de los correos de citas sigue el orden de Q-63 (ARCH §14.3).
       * `opennextjs-cloudflare build` y `wrangler deploy --dry-run` informan el tamaño del Worker con React Email, y queda anotado en el commit (ARCH §21.4; Q-64).
 
-* [ ] T6.09: Plantillas C-01 y C-02
+* [x] T6.09: Plantillas C-01 y C-02
    * Objetivo: Crear la confirmación (C-01) y el recordatorio (C-02) con el contenido mínimo de PRD §5.4 y Q-65: el negocio, el servicio, la fecha y la hora locales, la dirección con "Cómo llegar" (D-30), el código de reserva (D-28; Q-37 de TASKS-04), el link de gestión y el enlace a la política. Sin empleado: en el MVP todo servicio se atiende por capacidad (D-17).
    * Archivos: `src/servidor/notificaciones/plantillas/confirmacion.tsx`, `src/servidor/notificaciones/plantillas/recordatorio.tsx`, `tests/unit/servidor/notificaciones/plantillas-cliente.test.ts`
    * Depende de: T6.08

@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { asuntoCancelacion, Cancelacion } from "@/servidor/notificaciones/plantillas/cancelacion";
 import { asuntoConfirmacion, Confirmacion, type DatosConfirmacion } from "@/servidor/notificaciones/plantillas/confirmacion";
 import { asuntoRecordatorio, Recordatorio } from "@/servidor/notificaciones/plantillas/recordatorio";
 import { renderizar } from "@/servidor/notificaciones/plantillas/render";
+import { asuntoReprogramacion, Reprogramacion, type DatosReprogramacion } from "@/servidor/notificaciones/plantillas/reprogramacion";
 
 // Plantillas de los correos al cliente (PRD §5.4; RN-03, RN-24, RNF-02; Q-65).
 
@@ -105,4 +107,72 @@ test("sin dirección, no hay Cómo llegar", async () => {
   const { texto } = await renderizar(Confirmacion({ ...datos, cita: { ...datos.cita, direccion: null } }));
   expect(texto).not.toContain("Cómo llegar");
   expect(texto).not.toContain("Dirección");
+});
+
+describe("C-04 (reprogramación; Q-60 de TASKS-05)", () => {
+  // De las 7:00 p. m. del miércoles 14 (el 15 en UTC) a las 9:00 a. m. del viernes 16.
+  const reprogramacion: DatosReprogramacion = {
+    negocio: datos.negocio,
+    zonaHoraria: BOGOTA,
+    cita: { ...datos.cita, inicio: new Date("2026-10-16T14:00:00Z"), fin: new Date("2026-10-16T14:30:00Z") },
+    inicioAnterior: new Date("2026-10-15T00:00:00Z"),
+    urlGestion: URL_GESTION,
+  };
+
+  test("muestra la hora anterior y la nueva en hora de Colombia, también en días distintos (RN-03)", async () => {
+    const { html, texto } = await renderizar(Reprogramacion(reprogramacion));
+    for (const salida of [plano(html), plano(texto)]) {
+      expect(salida).toContain("Miércoles, 14 de octubre de 2026, 7:00 p. m.");
+      expect(salida).toContain("Viernes, 16 de octubre de 2026, 9:00 a. m. – 9:30 a. m.");
+      expect(salida).not.toContain("15 de octubre");
+    }
+    expect(texto.indexOf("Antes")).toBeLessThan(texto.indexOf("Ahora"));
+  });
+
+  test("lleva el link de gestión, el código y la dirección, sin la política (Q-65)", async () => {
+    const { html, texto } = await renderizar(Reprogramacion(reprogramacion));
+    for (const salida of [html, texto]) {
+      expect(salida).toContain(URL_GESTION);
+      expect(salida).toContain("OV-4821");
+      expect(salida).toContain("Calle 10 # 5-20, Bogotá");
+      expect(salida).not.toContain("/politica/");
+    }
+    expect(texto).toContain("WhatsApp: 300 123 4567");
+  });
+
+  test("da lo mismo con la zona del proceso en Bogotá", async () => {
+    const enTokio = await renderizar(Reprogramacion(reprogramacion));
+    vi.stubEnv("TZ", BOGOTA);
+    expect(await renderizar(Reprogramacion(reprogramacion))).toEqual(enTokio);
+  });
+});
+
+describe("C-03 (cancelación)", () => {
+  const URL_RESERVAR = "https://agenda.example.com/consultorio-ana";
+  const cancelacion = () =>
+    Cancelacion({ negocio: datos.negocio, zonaHoraria: BOGOTA, cita: datos.cita, urlReservar: URL_RESERVAR });
+
+  test("lleva el servicio, la fecha cancelada y el enlace a {APP_URL}/{slug}", async () => {
+    const { html, texto } = await renderizar(cancelacion());
+    expect(html).toContain(`href="${URL_RESERVAR}"`);
+    for (const salida of [plano(html), plano(texto)]) {
+      expect(salida).toContain("Limpieza dental");
+      expect(salida).toContain("Miércoles, 14 de octubre de 2026, 7:00 p. m. – 7:30 p. m.");
+      expect(salida).toContain("OV-4821");
+    }
+    expect(texto).toContain("WhatsApp: 300 123 4567");
+  });
+
+  test("no lleva link de gestión", async () => {
+    const { html, texto } = await renderizar(cancelacion());
+    for (const salida of [html, texto]) {
+      expect(salida).not.toContain(URL_GESTION);
+      expect(salida).not.toContain("/cita/");
+    }
+  });
+});
+
+test("asuntos de C-03 y C-04 (Q-65)", () => {
+  expect(asuntoCancelacion("Consultorio Ana")).toBe("Tu cita en Consultorio Ana fue cancelada");
+  expect(asuntoReprogramacion("Consultorio Ana")).toBe("Tu cita en Consultorio Ana cambió de hora");
 });

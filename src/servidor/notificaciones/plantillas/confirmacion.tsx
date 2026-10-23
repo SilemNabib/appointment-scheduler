@@ -50,7 +50,12 @@ const conMayuscula = (texto: string) => texto.charAt(0).toLocaleUpperCase("es-CO
 
 /** "Miércoles, 14 de octubre de 2026", en la zona del negocio (RN-03), como la confirmación de PUB-06. */
 export function fechaDeLaCita(inicio: Date, zona: string): string {
-  return conMayuscula(formatearDiaLocal(fechaLocal(inicio, zona), true));
+  return conMayuscula(fechaEnFrase(inicio, zona));
+}
+
+/** "miércoles, 14 de octubre de 2026", para usar a mitad de una frase. */
+export function fechaEnFrase(inicio: Date, zona: string): string {
+  return formatearDiaLocal(fechaLocal(inicio, zona), true);
 }
 
 /** "7:00 p. m. – 7:30 p. m.", en la zona del negocio (RN-03, RNF-02). */
@@ -113,7 +118,7 @@ export function Confirmacion({ negocio, zonaHoraria, cita, urlGestion, urlPoliti
   return (
     <Diseno
       marca={marca}
-      vistaPrevia={`${cita.servicio}, ${fechaDeLaCita(cita.inicio, zonaHoraria)} a las ${formatearHora(cita.inicio, zonaHoraria)}.`}
+      vistaPrevia={`${cita.servicio}, el ${fechaEnFrase(cita.inicio, zonaHoraria)} a las ${formatearHora(cita.inicio, zonaHoraria)}.`}
       pie={<PieNegocio nombre={negocio.nombre} contactos={negocio.contactos} />}
     >
       <Titulo>Tu cita está confirmada</Titulo>

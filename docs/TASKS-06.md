@@ -143,7 +143,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Una cita a las 7:00 p. m. del 14 de octubre en Bogotá (`2026-10-15T00:00:00Z`) se lee como el 14 de octubre a las 7:00 p. m. en el HTML y en el texto, aunque la suite corra con otra `TZ` (RN-03, RNF-02).
       * El correo lleva el código, el link de gestión y la política de Q-65, y no lleva el teléfono ni el correo del cliente (RN-24).
 
-* [ ] T6.10: Plantillas C-03 y C-04
+* [x] T6.10: Plantillas C-03 y C-04
    * Objetivo: Crear la cancelación (C-03), con el servicio, la fecha cancelada y el enlace para reservar de nuevo, y la reprogramación (C-04), con la hora anterior de `datos` (Q-60 de TASKS-05), la hora nueva y el link de gestión (PRD §5.4).
    * Archivos: `src/servidor/notificaciones/plantillas/cancelacion.tsx`, `src/servidor/notificaciones/plantillas/reprogramacion.tsx`, `tests/unit/servidor/notificaciones/plantillas-cliente.test.ts`
    * Depende de: T6.09

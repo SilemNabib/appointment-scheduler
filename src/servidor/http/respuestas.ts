@@ -41,9 +41,18 @@ export const ERRORES_PUBLICOS: Record<CodigoPublico, { estado: number; mensaje: 
 
 /** Las respuestas de la API dependen de la agenda en ese momento: no se guardan en caché. */
 const ENCABEZADOS = { "Cache-Control": "no-store" };
+/** Las de la gestión por link son de una persona: tampoco en una caché compartida (ARCH §13). */
+const ENCABEZADOS_PRIVADOS = { "Cache-Control": "private, no-store" };
 
-export function respuestaJson(cuerpo: unknown, estado = 200): Response {
-  return Response.json(cuerpo, { status: estado, headers: ENCABEZADOS });
+export type OpcionesRespuesta = {
+  /** `Cache-Control: private, no-store` (la gestión por link). */
+  privada?: boolean;
+  /** Otro texto para el error, por ejemplo el de RN-34 con el límite del negocio. */
+  mensaje?: string;
+};
+
+export function respuestaJson(cuerpo: unknown, estado = 200, opciones: OpcionesRespuesta = {}): Response {
+  return Response.json(cuerpo, { status: estado, headers: opciones.privada ? ENCABEZADOS_PRIVADOS : ENCABEZADOS });
 }
 
 /**
@@ -51,13 +60,17 @@ export function respuestaJson(cuerpo: unknown, estado = 200): Response {
  * interno. `DATOS_INVALIDOS` puede llevar `campos`: solo nombres de `CAMPOS_RESERVA`, sin
  * repetidos (Q-46); si no queda ninguno, no lleva la clave.
  */
-export function respuestaError(codigo: CodigoPublico, campos?: readonly unknown[]): Response {
+export function respuestaError(codigo: CodigoPublico, campos?: readonly unknown[], opciones: OpcionesRespuesta = {}): Response {
   const { estado, mensaje } = ERRORES_PUBLICOS[codigo];
   const validos =
     codigo === "DATOS_INVALIDOS" && campos
       ? CAMPOS_RESERVA.filter((c) => campos.includes(c))
       : [];
-  return respuestaJson({ error: { codigo, mensaje, ...(validos.length > 0 ? { campos: validos } : {}) } }, estado);
+  return respuestaJson(
+    { error: { codigo, mensaje: opciones.mensaje ?? mensaje, ...(validos.length > 0 ? { campos: validos } : {}) } },
+    estado,
+    opciones,
+  );
 }
 
 /** El `Resultado` de un caso de uso público: el valor con `estadoExito`, o el error de §18.5. */
@@ -69,3 +82,50 @@ export function responder<T>(
   const campos = "campos" in resultado && Array.isArray(resultado.campos) ? resultado.campos : undefined;
   return respuestaError(resultado.error, campos);
 }
+
+/**
+ * El cuerpo de una solicitud POST de la API pública: solo `application/json`, que un
+ * formulario de otro sitio no puede enviar sin una petición previa de CORS (ARCH §19.2),
+ * y solo un objeto. En otro caso, `null`, y la ruta responde 422 `DATOS_INVALIDOS` (Q-33).
+ */
+export async function leerCuerpoJson(solicitud: Request): Promise<Record<string, unknown> | null> {
+  const tipo = solicitud.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
+  if (tipo !== "application/json") return null;
+  let cuerpo: unknown;
+  try {
+    cuerpo = await solicitud.json();
+  } catch {
+    return null;
+  }
+  return typeof cuerpo === "object" && cuerpo !== null && !Array.isArray(cuerpo) ? (cuerpo as Record<string, unknown>) : null;
+}
+
+/**
+ * Los textos de la gestión por link (Q-70): sin mencionar la suscripción, y con el límite
+ * del negocio en el de RN-34. Con el límite en 0, el link nunca ofrece reprogramar.
+ */
+function mensajeDeGestion(resultado: Fallo<CodigoPublico> & { limite?: number | null }): string | undefined {
+  switch (resultado.error) {
+    case "NEGOCIO_SUSPENDIDO":
+      return "Por ahora no puedes hacer cambios por aquí. Para cambios, comunícate con el negocio.";
+    case "FUERA_DE_PLAZO":
+      return "Ya no puedes cancelar ni reprogramar por aquí. Para cambios, comunícate con el negocio.";
+    case "LIMITE_REPROGRAMACIONES":
+      return resultado.limite
+        ? `Ya reprogramaste esta cita ${resultado.limite} ${resultado.limite === 1 ? "vez" : "veces"}. Para otro cambio, comunícate con el negocio.`
+        : "Esta cita no se puede reprogramar por aquí. Para cambios, comunícate con el negocio.";
+    default:
+      return undefined;
+  }
+}
+
+/** El `Resultado` de una operación de la gestión por link, privado y con los textos de Q-70 (ARCH §13 y §18.5). */
+export function responderGestion<T>(
+  resultado: Resultado<T, CodigoPublico> | (Fallo<CodigoPublico> & { limite?: number | null }),
+): Response {
+  if (resultado.ok) return respuestaJson(resultado.valor, 200, { privada: true });
+  return respuestaError(resultado.error, undefined, { privada: true, mensaje: mensajeDeGestion(resultado) });
+}
+
+/** 422 `DATOS_INVALIDOS`, privado, para un cuerpo que no es un objeto JSON en la gestión (Q-33). */
+export const datosInvalidosDeGestion = () => respuestaError("DATOS_INVALIDOS", undefined, { privada: true });

@@ -216,6 +216,7 @@ describe("consultarDisponibilidadGestion (GES-03, F-03; RN-14; Q-69)", () => {
     expect(await consultarDisponibilidadGestion({ ...link, desde: MARTES, hasta: MARTES }, AHORA)).toEqual({
       ok: false,
       error: "LIMITE_REPROGRAMACIONES",
+      limite: 0,
     });
 
     const otro = await negocioConAgenda();

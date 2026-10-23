@@ -6,7 +6,7 @@ import { estadoEfectivo } from "@/dominio/suscripcion";
 import { enTransaccion } from "@/servidor/db/cliente";
 import * as notificaciones from "@/servidor/db/repositorios/notificaciones";
 import { cambiarHora, type HorarioNoDisponible } from "./agendar";
-import { verificarLink, type CitaGestionada, type EntradaLink } from "./gestion-cita";
+import { limiteAlcanzado, verificarLink, type CitaGestionada, type EntradaLink, type LimiteAlcanzado } from "./gestion-cita";
 
 // Reprogramar desde el link (GES-03, F-03; RN-09, RN-11, RN-13, RN-14, RN-22, RN-34, D-14,
 // D-20, S-07; ARCH §11.2, §11.3, §14.1, §18.3 y §18.4; Q-68, Q-69). Usa el mismo cambio de
@@ -29,6 +29,7 @@ export type ResultadoReprogramar =
       | "LIMITE_REPROGRAMACIONES"
       | "ESTADO_INVALIDO"
     >
+  | LimiteAlcanzado
   | HorarioNoDisponible;
 
 /**
@@ -77,6 +78,7 @@ export async function reprogramarCita(entrada: EntradaReprogramar, ahora: Date):
     );
     if (!cambio.ok) {
       if ("motivos" in cambio) return cambio;
+      if (cambio.error === "LIMITE_REPROGRAMACIONES") return limiteAlcanzado(limite);
       // El cliente no envía la versión, así que no hay conflicto posible: queda por tipos.
       return fallo(cambio.error === "CONFLICTO_VERSION" ? "ESTADO_INVALIDO" : cambio.error);
     }

@@ -135,6 +135,7 @@ describe("reprogramarCita (GES-03, F-03)", () => {
     expect(await reprogramarCita({ ...link, inicio: local("2030-03-07", "10:00").toISOString() }, AHORA)).toEqual({
       ok: false,
       error: "LIMITE_REPROGRAMACIONES",
+      limite: 3,
     });
     expect(await foto(n, link.citaId)).toEqual(antes);
   });

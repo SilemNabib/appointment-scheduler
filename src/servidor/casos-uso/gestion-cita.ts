@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import type { EstadoCita } from "@/dominio/estados-cita";
 import { accionesDelCliente, type AccionesCliente } from "@/dominio/plazos";
-import { exito, fallo, type Resultado } from "@/dominio/resultado";
+import { exito, fallo, type Fallo, type Resultado } from "@/dominio/resultado";
 import { estadoEfectivo, type DatosSuscripcion } from "@/dominio/suscripcion";
 import * as citas from "@/servidor/db/repositorios/citas";
 import * as configuracion from "@/servidor/db/repositorios/configuracion";
@@ -22,6 +22,11 @@ import type { MarcaPagina, SedePagina } from "./pagina-publica";
 // decide `accionesDelCliente` (T6.03), la misma función que aplican las operaciones.
 
 export type EntradaLink = { slug: unknown; citaId: unknown; token: unknown };
+
+/** RN-34 con el límite del negocio, para el texto de la respuesta ("Ya reprogramaste esta cita 3 veces…"). */
+export type LimiteAlcanzado = Fallo<"LIMITE_REPROGRAMACIONES"> & { limite: number | null };
+
+export const limiteAlcanzado = (limite: number | null): LimiteAlcanzado => ({ ...fallo("LIMITE_REPROGRAMACIONES"), limite });
 
 /** Lo que responden cancelar y reprogramar por el link (ARCH §18.5; Q-69). */
 export type CitaGestionada = {
@@ -142,13 +147,16 @@ function errorDeReprogramar(error: string): ErrorDisponibilidadGestion {
 export async function consultarDisponibilidadGestion(
   e: EntradaLink & { desde: unknown; hasta: unknown },
   ahora: Date,
-): Promise<Resultado<Disponibilidad, ErrorDisponibilidadGestion>> {
+): Promise<Resultado<Disponibilidad, ErrorDisponibilidadGestion> | LimiteAlcanzado> {
   const v = await verificarLink(e);
   if (!v) return fallo("NO_ENCONTRADO");
   const rango = esquemaRango.safeParse({ desde: e.desde, hasta: e.hasta });
   if (!rango.success || !rangoValido(rango.data.desde, rango.data.hasta)) return fallo("DATOS_INVALIDOS");
   const { reprogramar } = accionesDe(v, ahora);
-  if (!reprogramar.permitida) return fallo(errorDeReprogramar(reprogramar.error));
+  if (!reprogramar.permitida) {
+    const error = errorDeReprogramar(reprogramar.error);
+    return error === "LIMITE_REPROGRAMACIONES" ? limiteAlcanzado(v.reglas.maxReprogramacionesCliente) : fallo(error);
+  }
 
   const horas = await horasLibres(
     {

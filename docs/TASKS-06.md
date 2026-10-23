@@ -252,7 +252,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * La hora de la propia cita y las que se solapan con ella aparecen libres (RN-14).
       * Con capacidad 1, una hora ocupada por otra cita no aparece, y la respuesta tiene el formato de `GET …/disponibilidad` (ARCH §18.5).
 
-* [ ] T6.21: Rutas HTTP de la gestión
+* [x] T6.21: Rutas HTTP de la gestión
    * Objetivo: Crear `POST /api/publico/{slug}/citas/{citaId}/disponibilidad`, `…/reprogramar` y `…/cancelar` como adaptadores delgados, con el token en el cuerpo (ARCH §18.5), solo `application/json` (ARCH §19.2) y `Cache-Control: private, no-store`. Después de un cambio, despachan sus notificaciones (T6.16). `LIMITE_REPROGRAMACIONES` responde con el texto de RN-34 y el límite del negocio.
    * Archivos: `src/app/api/publico/[slug]/citas/[citaId]/disponibilidad/route.ts`, `src/app/api/publico/[slug]/citas/[citaId]/reprogramar/route.ts`, `src/app/api/publico/[slug]/citas/[citaId]/cancelar/route.ts`, `src/servidor/http/respuestas.ts`, `tests/integracion/app/api/publico/gestion.test.ts`
    * Depende de: T6.16, T6.19, T6.20

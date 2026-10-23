@@ -308,7 +308,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Una cita terminada y no marcada queda `completada` o `no_asistio`, según el negocio, con el evento del sistema; una que todavía no termina, no cambia (D-21).
       * Con `manual`, o con el negocio suspendido, la cita sigue `confirmada` (D-21, D-14). El historial del panel la muestra como "Marcada automáticamente" (T5.13).
 
-* [ ] T6.26: Ruta del cron con sus tareas
+* [x] T6.26: Ruta del cron con sus tareas
    * Objetivo: Hacer que `POST /api/interno/cron` corra, en orden, `aplicarVencimientos`, `aplicarAsistenciaPorDefecto` y `procesarNotificaciones` con el proveedor de Resend (ARCH §14.4). Cada tarea corre aunque falle la anterior; la ruta registra el resultado de cada una sin datos personales y responde 204, o 500 si alguna falló (Q-75).
    * Archivos: `src/app/api/interno/cron/route.ts`, `src/servidor/casos-uso/cron.ts`, `tests/integracion/casos-uso/cron.test.ts`
    * Depende de: T6.15, T6.24, T6.25

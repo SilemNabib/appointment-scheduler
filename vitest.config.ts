@@ -15,6 +15,7 @@ const PRUEBAS_GLOBALES = [
   "tests/integracion/notificaciones/procesar.test.ts",
   "tests/integracion/casos-uso/vencimientos.test.ts",
   "tests/integracion/casos-uso/asistencia-por-defecto.test.ts",
+  "tests/integracion/casos-uso/cron.test.ts",
 ];
 
 const integracion = {

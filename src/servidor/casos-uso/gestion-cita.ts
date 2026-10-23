@@ -1,4 +1,5 @@
 import "server-only";
+import type { EstadoCita } from "@/dominio/estados-cita";
 import { accionesDelCliente, type AccionesCliente } from "@/dominio/plazos";
 import { exito, fallo, type Resultado } from "@/dominio/resultado";
 import { estadoEfectivo, type DatosSuscripcion } from "@/dominio/suscripcion";
@@ -19,6 +20,17 @@ import type { MarcaPagina, SedePagina } from "./pagina-publica";
 // decide `accionesDelCliente` (T6.03), la misma función que aplican las operaciones.
 
 export type EntradaLink = { slug: unknown; citaId: unknown; token: unknown };
+
+/** Lo que responden cancelar y reprogramar por el link (ARCH §18.5; Q-69). */
+export type CitaGestionada = {
+  citaId: string;
+  estado: EstadoCita;
+  /** ISO 8601 UTC. */
+  inicio: string;
+  fin: string;
+  /** `null` si el negocio no tiene límite (RN-34). */
+  reprogramacionesRestantes: number | null;
+};
 
 /** La cita del link con el negocio y la sede que la atiende, y sus reglas para el cliente. */
 export type CitaVerificada = {

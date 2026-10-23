@@ -1,17 +1,20 @@
 import "server-only";
 import { z } from "zod";
+import { accionesDelCliente, reprogramacionesRestantes } from "@/dominio/plazos";
 import { exito, fallo, type Resultado } from "@/dominio/resultado";
+import { estadoEfectivo } from "@/dominio/suscripcion";
 import type { ContextoMiembro } from "@/servidor/auth/sesion";
 import { enTransaccion } from "@/servidor/db/cliente";
 import * as citas from "@/servidor/db/repositorios/citas";
 import * as notificaciones from "@/servidor/db/repositorios/notificaciones";
 import { esId } from "./esquemas";
+import { verificarLink, type CitaGestionada, type EntradaLink } from "./gestion-cita";
 
-// Cancelar una cita (PAN-06, F-07; RN-10, RN-15, S-06, S-08; ARCH §14.1 y §18.4; Q-55,
-// Q-60). Esta fase trae la rama del dueño, que no tiene plazo (RN-15); la del cliente,
-// con el link firmado y el plazo de RN-13, llega en la Fase 6. Cancelar reduce la
-// ocupación, así que no toma el bloqueo del recurso (ARCH §11.3). La Server Action ya
-// llamó a `requireEscritura` (D-14), y el negocio sale de la sesión (ARCH §6).
+// Cancelar una cita (PAN-06, F-07, GES-02, F-02; RN-10, RN-13, RN-15, S-06, S-08; ARCH §14.1
+// y §18.4; Q-55, Q-60, Q-68, Q-69). Dos ramas: la del dueño, sin plazo (RN-15), cuya Server
+// Action ya llamó a `requireEscritura` (D-14) y cuyo negocio sale de la sesión (ARCH §6); y
+// la del cliente, con el link firmado y el plazo de RN-13. Cancelar reduce la ocupación,
+// así que no toma el bloqueo del recurso (ARCH §11.3).
 
 type Ctx = Pick<ContextoMiembro, "negocioId" | "clerkUserId">;
 
@@ -57,5 +60,68 @@ export async function cancelarCita(
       );
     }
     return exito({ citaId });
+  });
+}
+
+export type ResultadoCancelarPorLink = Resultado<
+  CitaGestionada,
+  "NO_ENCONTRADO" | "NEGOCIO_SUSPENDIDO" | "FUERA_DE_PLAZO" | "ESTADO_INVALIDO"
+>;
+
+/**
+ * El cliente cancela desde su link (GES-02, F-02). Con el link verificado (`verificarLink`)
+ * y el negocio no suspendido (D-14), en una transacción: vuelve a aplicar
+ * `accionesDelCliente` a la cita leída en ella (el plazo de RN-13; T6.03), la cancela con
+ * `UPDATE … WHERE estado = 'confirmada'` y `cancelada_por = 'cliente'`, anula su
+ * recordatorio, registra el evento `cancelada` del cliente y encola C-03 al correo de la
+ * reserva y un solo C-06 al dueño, con la clave `dueno_cambio:{citaId}:{eventoId}` y
+ * `{ "cambio": "cancelada" }` (RN-22; Q-68). Fuera del plazo devuelve `FUERA_DE_PLAZO`, y
+ * cancelada otra vez, `ESTADO_INVALIDO`, sin cambiar nada (S-08).
+ */
+export async function cancelarCitaDelCliente(entrada: EntradaLink, ahora: Date): Promise<ResultadoCancelarPorLink> {
+  const v = await verificarLink(entrada);
+  if (!v) return fallo("NO_ENCONTRADO");
+  const suscripcion = estadoEfectivo(v.negocio, ahora);
+  if (suscripcion.estado === "suspendida") return fallo("NEGOCIO_SUSPENDIDO");
+  const negocioId = v.negocio.id;
+  const citaId = v.cita.id;
+
+  return enTransaccion(async (tx): Promise<ResultadoCancelarPorLink> => {
+    const actual = await citas.paraCambio(negocioId, citaId, tx);
+    if (!actual) return fallo("NO_ENCONTRADO");
+    const { cancelar } = accionesDelCliente(actual, v.reglas, suscripcion, ahora);
+    if (!cancelar.permitida) return fallo(cancelar.error === "FUERA_DE_PLAZO" ? "FUERA_DE_PLAZO" : "ESTADO_INVALIDO");
+
+    const cancelada = await citas.cancelar(negocioId, citaId, { canceladaEn: ahora, canceladaPor: "cliente" }, tx);
+    // Otra cancelación ganó la carrera: la de un doble clic o la del dueño.
+    if (!cancelada) return fallo("ESTADO_INVALIDO");
+    await notificaciones.anularRecordatorios(negocioId, citaId, tx);
+    const eventoId = await citas.registrarEvento(negocioId, citaId, { tipo: "cancelada", actor: { actor: "cliente" } }, tx);
+    if (cancelada.clienteCorreo !== null) {
+      await notificaciones.encolar(
+        negocioId,
+        cancelada.clienteCorreo,
+        [{ citaId, tipo: "cancelacion", claveIdempotencia: `cancelacion:${citaId}`, programadaPara: ahora }],
+        tx,
+      );
+    }
+    await notificaciones.encolarAlDueno(
+      negocioId,
+      {
+        citaId,
+        tipo: "dueno_cambio",
+        claveIdempotencia: `dueno_cambio:${citaId}:${eventoId}`,
+        programadaPara: ahora,
+        datos: { cambio: "cancelada" },
+      },
+      tx,
+    );
+    return exito({
+      citaId,
+      estado: "cancelada",
+      inicio: actual.inicio.toISOString(),
+      fin: actual.fin.toISOString(),
+      reprogramacionesRestantes: reprogramacionesRestantes(actual.reprogramacionesCliente, v.reglas.maxReprogramacionesCliente),
+    });
   });
 }

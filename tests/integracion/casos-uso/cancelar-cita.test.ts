@@ -1,10 +1,12 @@
 import { asc, eq } from "drizzle-orm";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { localAUtc } from "@/dominio/tiempo";
-import { cancelarCita } from "@/servidor/casos-uso/cancelar-cita";
+import { cancelarCita, cancelarCitaDelCliente } from "@/servidor/casos-uso/cancelar-cita";
 import { crearCitaManual } from "@/servidor/casos-uso/cita-manual";
+import { reservarCita } from "@/servidor/casos-uso/reservar-cita";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
+import { tokenDeGestion } from "@/servidor/gestion-cita/firma";
 import { negocioConAgenda } from "../fixtures";
 
 // Cancelar una cita, rama del dueño (PAN-06, F-07; RN-10, RN-15, S-06, S-08; Q-55,
@@ -107,5 +109,136 @@ describe("cancelarCita del dueño (PAN-06)", () => {
     expect(await cancelarCita(ctx(n), { citaId: "x" }, AHORA)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
     expect(await cancelarCita(ctx(n), {}, AHORA)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
     expect(await citaPorId(citaId)).toMatchObject({ estado: "confirmada" });
+  });
+});
+
+// ─── Rama del cliente, desde el link (GES-02, F-02; RN-10, RN-13, RN-22, D-14, S-08; Q-68) ───
+
+describe("cancelarCitaDelCliente (GES-02)", () => {
+  // Reservada el viernes 1 a las 10:00 a. m.; ahora es el lunes 4 a las 8:35 a. m.
+  const RESERVADA_EN = localAUtc("2030-03-01", "10:00", BOGOTA);
+  const secreto = () => vi.stubEnv("GESTION_CITA_SECRET", "secreto-de-gestion-de-prueba");
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  /** Una reserva pública del cliente a esa hora local, y su link. */
+  async function reservaConLink(n: Negocio, fecha: string, hora: string) {
+    const r = await reservarCita(
+      {
+        slug: n.slug,
+        sedeId: n.sedeId,
+        servicioId: n.servicioId,
+        recursoId: null,
+        inicio: localAUtc(fecha, hora, BOGOTA).toISOString(),
+        nombre: "Ana",
+        apellido: "Pérez",
+        telefono: "310 555 0199",
+        correo: "ana.cliente@mail.com",
+        politicaDatosId: n.politicaId,
+        aceptaPolitica: true,
+        sitioWeb: "",
+      },
+      RESERVADA_EN,
+    );
+    if (!r.ok) throw new Error(`La reserva de prueba falló: ${r.error}`);
+    const citaId = r.valor.citaId;
+    return { slug: n.slug, citaId, token: await tokenDeGestion({ id: citaId, tokenVersion: 1 }) };
+  }
+
+  /** Todo lo que un rechazo no debe cambiar: la cita, su historial y su bandeja de salida. */
+  const foto = async (citaId: string) => ({
+    cita: await citaPorId(citaId),
+    eventos: await eventosDe(citaId),
+    notificaciones: (await notificacionesDe(citaId)).map((f) => [f.tipo, f.estado]).sort(),
+  });
+
+  test("dentro del plazo, queda cancelada por el cliente, su cupo se libera y quedan encolados C-03 y un solo C-06 (RN-10, RN-22)", async () => {
+    secreto();
+    const n = await negocioConAgenda();
+    // El miércoles 6 a las 9:00: faltan 48 horas, con un plazo de 24.
+    const link = await reservaConLink(n, "2030-03-06", "09:00");
+
+    const r = await cancelarCitaDelCliente(link, AHORA);
+
+    expect(r).toEqual({
+      ok: true,
+      valor: {
+        citaId: link.citaId,
+        estado: "cancelada",
+        inicio: localAUtc("2030-03-06", "09:00", BOGOTA).toISOString(),
+        fin: localAUtc("2030-03-06", "09:30", BOGOTA).toISOString(),
+        reprogramacionesRestantes: 3,
+      },
+    });
+    expect(await citaPorId(link.citaId)).toMatchObject({ estado: "cancelada", canceladaEn: AHORA, canceladaPor: "cliente" });
+    const eventos = await eventosDe(link.citaId);
+    expect(eventos.map((e) => [e.tipo, e.actor, e.actorId])).toEqual([
+      ["creada", "cliente", null],
+      ["cancelada", "cliente", null],
+    ]);
+    const filas = await notificacionesDe(link.citaId);
+    expect(filas.find((f) => f.tipo === "recordatorio")).toMatchObject({ estado: "cancelada" });
+    expect(filas.find((f) => f.tipo === "cancelacion")).toMatchObject({
+      destinatario: "ana.cliente@mail.com",
+      claveIdempotencia: `cancelacion:${link.citaId}`,
+      estado: "pendiente",
+    });
+    const avisos = filas.filter((f) => f.tipo === "dueno_cambio");
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0]).toMatchObject({
+      destinatario: n.correoDueno,
+      claveIdempotencia: `dueno_cambio:${link.citaId}:${eventos[1].id}`,
+      datos: { cambio: "cancelada" },
+    });
+
+    // El cupo quedó libre: otra reserva entra a la misma hora (RN-10).
+    const otra = await reservaConLink(n, "2030-03-06", "09:00");
+    expect(otra.citaId).not.toBe(link.citaId);
+  });
+
+  test("fuera del plazo devuelve FUERA_DE_PLAZO y no cambia nada (RN-13)", async () => {
+    secreto();
+    const n = await negocioConAgenda();
+    // El lunes 4 a las 2:00 p. m.: faltan 5 horas y media, con un plazo de 24.
+    const link = await reservaConLink(n, "2030-03-04", "14:00");
+    const antes = await foto(link.citaId);
+
+    expect(await cancelarCitaDelCliente(link, AHORA)).toEqual({ ok: false, error: "FUERA_DE_PLAZO" });
+    expect(await foto(link.citaId)).toEqual(antes);
+  });
+
+  test("con el negocio suspendido devuelve NEGOCIO_SUSPENDIDO y no cambia nada (D-14)", async () => {
+    secreto();
+    const n = await negocioConAgenda();
+    const link = await reservaConLink(n, "2030-03-06", "09:00");
+    await db().update(esquema.negocio).set({ estadoSuscripcion: "suspendida" }).where(eq(esquema.negocio.id, n.negocioId));
+    const antes = await foto(link.citaId);
+
+    expect(await cancelarCitaDelCliente(link, AHORA)).toEqual({ ok: false, error: "NEGOCIO_SUSPENDIDO" });
+    expect(await foto(link.citaId)).toEqual(antes);
+  });
+
+  test("cancelada otra vez devuelve ESTADO_INVALIDO y no cambia nada (S-08)", async () => {
+    secreto();
+    const n = await negocioConAgenda();
+    const link = await reservaConLink(n, "2030-03-06", "09:00");
+    expect((await cancelarCitaDelCliente(link, AHORA)).ok).toBe(true);
+    const antes = await foto(link.citaId);
+
+    expect(await cancelarCitaDelCliente(link, new Date(AHORA.getTime() + 1000))).toEqual({ ok: false, error: "ESTADO_INVALIDO" });
+    expect(await foto(link.citaId)).toEqual(antes);
+  });
+
+  test("con un token alterado devuelve NO_ENCONTRADO y no cambia nada (RN-13)", async () => {
+    secreto();
+    const n = await negocioConAgenda();
+    const link = await reservaConLink(n, "2030-03-06", "09:00");
+    const antes = await foto(link.citaId);
+    const alterado = (link.token[0] === "A" ? "B" : "A") + link.token.slice(1);
+
+    expect(await cancelarCitaDelCliente({ ...link, token: alterado }, AHORA)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+    expect(await foto(link.citaId)).toEqual(antes);
   });
 });

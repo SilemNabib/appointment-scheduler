@@ -11,8 +11,8 @@ import { cita, miembroNegocio, negocio, notificacion, politicaDatos, sede } from
 // dos veces. El envío llega en la Fase 6 (Q-28, Q-60). Toda función recibe `negocioId` y
 // lo usa en el WHERE o en la fila (ARCH §6, defensa 1).
 
-/** Los tipos de correo de una cita que se encolan hasta ahora: C-01 a C-05. */
-export type TipoDeCita = "confirmacion" | "recordatorio" | "cancelacion" | "reprogramacion" | "dueno_cita_nueva";
+/** Los tipos de correo de una cita del MVP: C-01 a C-06. */
+export type TipoDeCita = "confirmacion" | "recordatorio" | "cancelacion" | "reprogramacion" | "dueno_cita_nueva" | "dueno_cambio";
 
 export type NuevaNotificacion = {
   citaId: string;

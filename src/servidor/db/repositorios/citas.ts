@@ -115,6 +115,9 @@ export type CitaParaCambio = {
   estado: EstadoCita;
   version: number;
   inicio: Date;
+  fin: Date;
+  /** Las reprogramaciones que ya hizo el cliente desde su link (RN-34). */
+  reprogramacionesCliente: number;
   /** El correo con que se reservó, al que van sus avisos (S-15); `null` sin correo (S-05). */
   clienteCorreo: string | null;
 };
@@ -135,6 +138,8 @@ export async function paraCambio(negocioId: string, citaId: string, tx: Transacc
       estado: cita.estado,
       version: cita.version,
       inicio: cita.inicio,
+      fin: cita.fin,
+      reprogramacionesCliente: cita.reprogramacionesCliente,
       clienteCorreo: cita.clienteCorreo,
     })
     .from(cita)
@@ -235,21 +240,28 @@ export type NuevoEvento = {
   datos?: Record<string, unknown>;
 };
 
-/** Registra un evento de la cita en la transacción del cambio. */
+/**
+ * Registra un evento de la cita en la transacción del cambio. Devuelve su id, que lleva la
+ * clave de C-06 (`dueno_cambio:{citaId}:{eventoId}`; ARCH §14.1).
+ */
 export async function registrarEvento(
   negocioId: string,
   citaId: string,
   evento: NuevoEvento,
   tx: Transaccion,
-): Promise<void> {
-  await tx.insert(eventoCita).values({
-    negocioId,
-    citaId,
-    tipo: evento.tipo,
-    actor: evento.actor.actor,
-    actorId: evento.actor.actor === "dueno" ? evento.actor.actorId : null,
-    datos: evento.datos ?? {},
-  });
+): Promise<string> {
+  const [{ id }] = await tx
+    .insert(eventoCita)
+    .values({
+      negocioId,
+      citaId,
+      tipo: evento.tipo,
+      actor: evento.actor.actor,
+      actorId: evento.actor.actor === "dueno" ? evento.actor.actorId : null,
+      datos: evento.datos ?? {},
+    })
+    .returning({ id: eventoCita.id });
+  return String(id);
 }
 
 /** Una cita en la agenda del panel (PAN-02): su instantánea, nunca los datos actuales del cliente (RN-18.3). */

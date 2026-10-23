@@ -223,7 +223,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Con el negocio suspendido, devuelve la cita y los contactos, sin acciones (GES-05, D-14).
       * No devuelve los datos de contacto del cliente (RN-24).
 
-* [ ] T6.18: Cancelar desde el link
+* [x] T6.18: Cancelar desde el link
    * Objetivo: Agregar a `cancelarCita` la rama del cliente (ARCH §18.4): con el token verificado y el negocio no suspendido, aplica T6.03 a la cita leída en la transacción, la cancela con `WHERE estado = 'confirmada'` y `cancelada_por = 'cliente'`, anula su recordatorio, registra el evento `cancelada` del cliente y encola C-03 y C-06 (`dueno_cambio:{citaId}:{eventoId}`, con los `datos` de Q-68). `registrarEvento` pasa a devolver el id del evento.
    * Archivos: `src/servidor/casos-uso/cancelar-cita.ts`, `src/servidor/db/repositorios/citas.ts`, `src/servidor/db/repositorios/notificaciones.ts`, `tests/integracion/casos-uso/cancelar-cita.test.ts`
    * Depende de: T6.17

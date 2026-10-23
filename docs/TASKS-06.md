@@ -72,7 +72,7 @@ Funciones puras o sin estado, con su prueba unitaria en la misma tarea.
       * El token de un enlace se verifica con su id y no con otro. Un token de gestión no sirve como token de calendario, aunque se firme el mismo id: los secretos y los prefijos son distintos.
       * La URL `webcal://` es la `https://` con otro esquema.
 
-* [ ] T6.03: Dominio: plazos y acciones del cliente
+* [x] T6.03: Dominio: plazos y acciones del cliente
    * Objetivo: Completar `dominio/plazos.ts` con los plazos del cliente: RN-13 (`ahora ≤ inicio − plazo`, con el borde incluido) y RN-34 (límite `null` = sin límite; 0 = no se permite). Agregar `accionesDelCliente`, que recibe el estado de la cita, su inicio, sus reprogramaciones, las reglas del negocio y el estado efectivo de la suscripción, y decide si se puede cancelar y reprogramar y, si no, por qué (Q-69). La usan la página de gestión y los casos de uso, para que lo que no se ofrece tampoco se pueda hacer.
    * Archivos: `src/dominio/plazos.ts`, `tests/unit/dominio/plazos.test.ts`
    * Depende de: T5.32

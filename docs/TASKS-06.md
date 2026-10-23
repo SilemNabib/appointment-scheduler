@@ -182,7 +182,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Una notificación que falla por 5.ª vez queda `fallida`; antes, vuelve a `pendiente` con `programada_para = ahora + 2^intentos minutos` (ARCH §14.3, paso 5).
       * El conteo usa el mes calendario local del negocio y no cuenta C-07, C-08 ni las notificaciones de otros negocios (ARCH §9, §16.3).
 
-* [ ] T6.14: Mensaje de cada notificación
+* [x] T6.14: Mensaje de cada notificación
    * Objetivo: Crear `servidor/notificaciones/mensajes.ts`, que, para una notificación reclamada, lee los datos actuales que necesita su plantilla (la instantánea, el código, la versión y el `token_version` de la cita; la marca, el slug y la zona del negocio; la dirección y los contactos de la sede de la cita) y arma el mensaje: la plantilla, el asunto (Q-65), el remitente y el `reply_to` (T6.08), el link de gestión (T6.01) y, en C-01, C-03 y C-04, el adjunto `invitacion.ics` de T6.04 (ARCH §14.6). C-02 no lo lleva.
    * Archivos: `src/servidor/notificaciones/mensajes.ts`, `src/servidor/db/repositorios/notificaciones.ts`, `tests/integracion/notificaciones/mensajes.test.ts`
    * Depende de: T6.01, T6.04, T6.09–T6.13

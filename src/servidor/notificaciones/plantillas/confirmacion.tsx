@@ -35,8 +35,8 @@ export type DatosConfirmacion = {
   cita: CitaDelCorreo;
   /** El link de gestión (ARCH §13). */
   urlGestion: string;
-  /** La versión que aceptó el cliente o, en una cita manual, la vigente (Q-65). */
-  urlPolitica: string;
+  /** La versión que aceptó el cliente o, en una cita manual, la vigente (Q-65); `null` sin política. */
+  urlPolitica: string | null;
 };
 
 export const marcaDe = (negocio: NegocioDelCorreo): Marca => ({

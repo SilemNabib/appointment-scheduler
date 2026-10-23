@@ -1,9 +1,9 @@
 import "server-only";
-import { and, asc, count, eq, gte, inArray, lt, lte, notInArray, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lt, lte, notInArray, or, sql } from "drizzle-orm";
 import type { Intervalo } from "@/dominio/disponibilidad";
 import type { TipoNotificacion } from "@/dominio/envios";
 import { db, type Conexion, type Transaccion } from "../cliente";
-import { miembroNegocio, notificacion } from "../esquema";
+import { cita, miembroNegocio, negocio, notificacion, politicaDatos, sede } from "../esquema";
 
 // Bandeja de salida (outbox) de las notificaciones (RN-20 a RN-22; ARCH §14.1). Las filas
 // se insertan en la misma transacción que el cambio de la cita: si la transacción falla,
@@ -104,6 +104,8 @@ export type NotificacionReclamada = {
   /** Ya contado el de este reclamo. */
   intentos: number;
   programadaPara: Date;
+  /** No cambia entre reintentos: fija el `DTSTAMP` de la invitación, para que el cuerpo sea el mismo (T6.14). */
+  creadoEn: Date;
 };
 
 /** La notificación que se marca: su id y su negocio (ARCH §6). */
@@ -150,6 +152,7 @@ export async function reclamar(
       claveIdempotencia: notificacion.claveIdempotencia,
       intentos: notificacion.intentos,
       programadaPara: notificacion.programadaPara,
+      creadoEn: notificacion.creadoEn,
     });
 }
 
@@ -238,4 +241,93 @@ export async function contarEnviadas(negocioId: string, periodo: Intervalo, cone
       ),
     );
   return total;
+}
+
+// ─── Datos del mensaje (ARCH §14.3, paso 3; T6.14) ────────────────────────────
+// Lo que lee `mensajes.ts` para armar cada correo con los datos actuales. Filtran por el
+// `negocio_id` de la notificación (ARCH §6).
+
+/** El correo del miembro `dueno` más antiguo, como `encolarAlDueno` (Q-28 de TASKS-03). */
+const correoDelDueno = (negocioId: string) =>
+  sql<string | null>`(SELECT ${miembroNegocio.correo} FROM ${miembroNegocio}
+     WHERE ${miembroNegocio.negocioId} = ${negocioId} AND ${miembroNegocio.rol} = 'dueno'
+     ORDER BY ${miembroNegocio.creadoEn}, ${miembroNegocio.id} LIMIT 1)`;
+
+export type NegocioDelMensaje = {
+  nombre: string;
+  slug: string;
+  logoUrl: string | null;
+  colorPrimario: string;
+  zonaHoraria: string;
+  correoContacto: string | null;
+  correoDueno: string | null;
+};
+
+export async function negocioDelMensaje(negocioId: string, conexion: Conexion = db()): Promise<NegocioDelMensaje | null> {
+  const [fila] = await conexion
+    .select({
+      nombre: negocio.nombre,
+      slug: negocio.slug,
+      logoUrl: negocio.logoUrl,
+      colorPrimario: negocio.colorPrimario,
+      zonaHoraria: negocio.zonaHoraria,
+      correoContacto: negocio.correoContacto,
+      correoDueno: correoDelDueno(negocioId),
+    })
+    .from(negocio)
+    .where(eq(negocio.id, negocioId));
+  return fila ?? null;
+}
+
+export type CitaDelMensaje = {
+  id: string;
+  sedeId: string;
+  codigo: string;
+  estado: (typeof cita.estado.enumValues)[number];
+  version: number;
+  tokenVersion: number;
+  servicioNombre: string;
+  inicio: Date;
+  fin: Date;
+  clienteNombre: string;
+  clienteApellido: string;
+  clienteTelefono: string | null;
+  clienteCorreo: string | null;
+  /** La dirección de la sede de la cita. */
+  direccion: string | null;
+  /** La versión de la política que aceptó el cliente o, en una cita manual, la vigente (Q-65). */
+  versionPolitica: number | null;
+};
+
+/** La cita con su instantánea (RN-18.3), su sede y su política, o `null` si no es del negocio (RN-01). */
+export async function citaDelMensaje(negocioId: string, citaId: string, conexion: Conexion = db()): Promise<CitaDelMensaje | null> {
+  const vigente = conexion
+    .select({ version: politicaDatos.version })
+    .from(politicaDatos)
+    .where(eq(politicaDatos.negocioId, negocioId))
+    .orderBy(desc(politicaDatos.version))
+    .limit(1);
+  const [fila] = await conexion
+    .select({
+      id: cita.id,
+      sedeId: cita.sedeId,
+      codigo: cita.codigo,
+      estado: cita.estado,
+      version: cita.version,
+      tokenVersion: cita.tokenVersion,
+      servicioNombre: cita.servicioNombre,
+      inicio: cita.inicio,
+      fin: cita.fin,
+      clienteNombre: cita.clienteNombre,
+      clienteApellido: cita.clienteApellido,
+      clienteTelefono: cita.clienteTelefono,
+      clienteCorreo: cita.clienteCorreo,
+      direccion: sede.direccion,
+      versionPolitica: sql<number | null>`coalesce(${politicaDatos.version}, (${vigente}))`,
+    })
+    .from(cita)
+    .innerJoin(sede, and(eq(sede.id, cita.sedeId), eq(sede.negocioId, cita.negocioId)))
+    .leftJoin(politicaDatos, and(eq(politicaDatos.id, cita.politicaDatosId), eq(politicaDatos.negocioId, cita.negocioId)))
+    .where(and(eq(cita.negocioId, negocioId), eq(cita.id, citaId)));
+  return fila ?? null;
 }

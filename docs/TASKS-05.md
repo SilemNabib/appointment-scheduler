@@ -382,7 +382,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * A 360 px no hay desplazamiento horizontal en ninguna pantalla del panel, y las áreas táctiles miden al menos 44 px (RNF-01; DESIGN §6).
       * Una cita manual completa se crea solo con el teclado, con el foco visible en cada control. Lighthouse no informa errores de etiquetas, contraste ni nombres de botones en `/panel/agenda`, `/panel/citas/nueva` y el detalle de una cita (RNF-03).
 
-* [ ] T5.32: Despliegue y verificación de la fase
+* [x] T5.32: Despliegue y verificación de la fase
    * Objetivo: Desplegar la fase en el plan gratuito de Workers (Q-36, TASKS-03) y recorrer el panel en `*.workers.dev` con el negocio de prueba.
    * Archivos: — (el commit anota el tamaño del Worker y el CPU medido)
    * Depende de: T5.26–T5.31

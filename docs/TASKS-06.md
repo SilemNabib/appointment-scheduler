@@ -152,7 +152,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * C-04 muestra la hora anterior y la nueva, cada una en hora de Colombia, también cuando caen en días distintos (RN-03).
       * C-03 enlaza a `{APP_URL}/{slug}` y no lleva link de gestión.
 
-* [ ] T6.11: Plantillas C-05 y C-06
+* [x] T6.11: Plantillas C-05 y C-06
    * Objetivo: Crear los avisos al dueño: la cita nueva (C-05), con el cliente, su contacto, el servicio, la fecha y el enlace al detalle en el panel, y el cambio de cita (C-06), con lo que cambió según sus `datos` (Q-68) y el mismo enlace. No llevan invitación de calendario (RN-35).
    * Archivos: `src/servidor/notificaciones/plantillas/dueno-cita-nueva.tsx`, `src/servidor/notificaciones/plantillas/dueno-cambio.tsx`, `tests/unit/servidor/notificaciones/plantillas-dueno.test.ts`
    * Depende de: T6.08

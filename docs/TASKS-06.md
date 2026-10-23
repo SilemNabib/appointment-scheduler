@@ -92,7 +92,7 @@ Funciones puras o sin estado, con su prueba unitaria en la misma tarea.
       * La cancelación lleva `METHOD:CANCEL`, `STATUS:CANCELLED`, el mismo `UID` y `SEQUENCE` igual a la versión más 1 (ARCH §14.6).
       * Un servicio con tildes, comas y punto y coma, y una descripción de más de 75 octetos, quedan escapados y plegados sin partir ningún carácter UTF-8.
 
-* [ ] T6.05: Dominio: revalidación de un envío
+* [x] T6.05: Dominio: revalidación de un envío
    * Objetivo: Crear `dominio/envios.ts` con la decisión de ARCH §14.3 (paso 1) y de Q-67 como función pura: dados el tipo de la notificación, sus `datos`, el estado y la versión actuales de la cita y el estado efectivo de la suscripción, decide si se envía o se anula, y con qué `ultimo_error`. Distingue los correos de citas (C-01 a C-06) de los de la cuenta (C-07 y C-08), que no cuentan para `max_emails_per_month` (ARCH §14.1).
    * Archivos: `src/dominio/envios.ts`, `tests/unit/dominio/envios.test.ts`
    * Depende de: T5.32

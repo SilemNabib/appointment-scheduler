@@ -299,7 +299,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Correrlo tres veces durante la gracia deja un solo C-07; después de un pago y un nuevo vencimiento, sale otro (ARCH §7.6).
       * Un negocio al día, uno ya suspendido y uno en prueba con el fin de la prueba en el futuro no cambian.
 
-* [ ] T6.25: Caso de uso `aplicarAsistenciaPorDefecto`
+* [x] T6.25: Caso de uso `aplicarAsistenciaPorDefecto`
    * Objetivo: Implementar `aplicarAsistenciaPorDefecto(ahora)` con la sentencia de ARCH §14.4: marca con el valor por defecto del negocio las citas `confirmada` cuyo `fin` ya pasó, salvo con `manual` o con el negocio suspendido, y deja el evento del sistema con `{ "automatica": true }` (D-21; Q-55 de TASKS-05).
    * Archivos: `src/servidor/casos-uso/asistencia-por-defecto.ts`, `src/servidor/db/repositorios/citas.ts`, `tests/integracion/casos-uso/asistencia-por-defecto.test.ts`
    * Depende de: T5.32

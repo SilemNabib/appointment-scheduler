@@ -9,7 +9,7 @@ import {
   type TipoEvento,
 } from "@/dominio/estados-cita";
 import { db, type Conexion, type Transaccion } from "../cliente";
-import { cita, eventoCita, sede } from "../esquema";
+import { cita, configuracionNegocio, eventoCita, negocio, sede } from "../esquema";
 
 // Citas (RN-10, RN-12, RN-17; ARCH §11 y §18.2). Toda función recibe `negocioId` y lo
 // usa en el WHERE (ARCH §6, defensa 1). Las citas no se borran: cambian de estado.
@@ -405,4 +405,30 @@ export async function deGestion(negocioId: string, citaId: string, conexion: Con
     .innerJoin(sede, and(eq(sede.id, cita.sedeId), eq(sede.negocioId, cita.negocioId)))
     .where(and(eq(cita.negocioId, negocioId), eq(cita.id, citaId)));
   return fila ?? null;
+}
+
+/**
+ * La asistencia por defecto (D-21; F-08, paso 3; ARCH §14.4): en una sola sentencia, marca
+ * con el valor del negocio las citas `confirmada` cuyo `fin` ya pasó, salvo con `manual` o
+ * con el negocio suspendido (D-14), y deja su evento del sistema con `{ "automatica": true }`
+ * (Q-55 de TASKS-05). Con `ahora` en lugar de `now()` (Q-75). Devuelve cuántas marcó.
+ */
+export async function marcarAsistenciaPorDefecto(ahora: Date, tx: Transaccion): Promise<number> {
+  const instante = sql`${ahora.toISOString()}::timestamptz`;
+  const filas = await tx.execute(sql`
+    WITH marcadas AS (
+      UPDATE ${cita} c
+         SET estado = cfg.asistencia_por_defecto::estado_cita, actualizado_en = ${instante}
+        FROM ${configuracionNegocio} cfg
+        JOIN ${negocio} n ON n.id = cfg.negocio_id
+       WHERE cfg.negocio_id = c.negocio_id
+         AND c.estado = 'confirmada' AND c.fin <= ${instante}
+         AND cfg.asistencia_por_defecto <> 'manual'
+         AND n.estado_suscripcion <> 'suspendida'
+      RETURNING c.id, c.negocio_id, c.estado
+    )
+    INSERT INTO ${eventoCita} (negocio_id, cita_id, tipo, actor, datos, creado_en)
+    SELECT negocio_id, id, estado::text, 'sistema', '{"automatica": true}'::jsonb, ${instante} FROM marcadas
+    RETURNING id`);
+  return filas.rows.length;
 }

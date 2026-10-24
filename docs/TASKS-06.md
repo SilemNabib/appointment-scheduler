@@ -477,7 +477,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Una reprogramación y una cancelación se hacen solo con el teclado, con el foco visible en cada control. Lighthouse no informa errores de etiquetas, contraste ni nombres de botones en la página de gestión (RNF-03).
       * Cada correo, de C-01 a C-08, se lee bien en Gmail y en Outlook desde el celular, con las horas en formato de 12 horas (RNF-02), y su texto plano trae la misma información.
 
-* [ ] T6.42: [manual] Plan y secretos del Worker
+* [x] T6.42: [manual] Plan y secretos del Worker
    * Objetivo: Pasar la cuenta de Cloudflare a Workers Paid (Q-74) y cargar en el Worker los secretos de la fase: `RESEND_API_KEY`; `GESTION_CITA_SECRET` y `CALENDARIO_SECRET`, con 32 bytes al azar cada uno; y `CORREO_SOPORTE` (Q-77).
    * Archivos: —
    * Depende de: T6.06

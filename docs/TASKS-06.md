@@ -330,7 +330,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * De 24 horas a "ninguno" y de vuelta a 24, cada cita futura con correo tiene un solo recordatorio pendiente, con su clave de siempre (RN-20). Una cita sin correo no tiene ninguno (S-05).
       * Una cita que empieza en 5 horas no recibe recordatorio al pasar a 24 horas (S-12; Q-23, TASKS-02).
 
-* [ ] T6.28: Casos de uso del enlace de calendario
+* [x] T6.28: Casos de uso del enlace de calendario
    * Objetivo: Crear el repositorio de `enlace_calendario` e implementar `leerEnlaceCalendario(ctx)`, que devuelve las URL del enlace vigente del negocio (T6.02) o ninguna, y `generarEnlaceCalendario(ctx)` (ARCH §18.4), que empieza con `requireEscritura` y, en una transacción, revoca el vigente y crea otro con `creado_por` igual al `clerk_user_id` del dueño (ARCH §14.7). En el MVP hay un enlace por negocio, sin sede ni recurso.
    * Archivos: `src/servidor/casos-uso/enlace-calendario.ts`, `src/servidor/db/repositorios/enlaces-calendario.ts`, `tests/integracion/casos-uso/enlace-calendario.test.ts`
    * Depende de: T6.02

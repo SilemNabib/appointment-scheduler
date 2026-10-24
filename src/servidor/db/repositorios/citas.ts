@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import type { Intervalo } from "@/dominio/disponibilidad";
 import {
   ESTADOS_CITA,
@@ -431,4 +431,45 @@ export async function marcarAsistenciaPorDefecto(ahora: Date, tx: Transaccion): 
     SELECT negocio_id, id, estado::text, 'sistema', '{"automatica": true}'::jsonb, ${instante} FROM marcadas
     RETURNING id`);
   return filas.rows.length;
+}
+
+/** Una cita en el calendario del dueño (ARCH §14.7; Q-71): sin teléfonos ni correos (RN-24). */
+export type CitaDelCalendario = {
+  id: string;
+  version: number;
+  inicio: Date;
+  fin: Date;
+  codigo: string;
+  servicio: string;
+  clienteNombre: string;
+  clienteApellido: string;
+  /** La dirección de la sede de la cita. */
+  direccion: string | null;
+};
+
+/** Las citas no canceladas del negocio que se solapan con el periodo, en orden (ARCH §14.7). */
+export async function delCalendario(negocioId: string, periodo: Intervalo, conexion: Conexion = db()): Promise<CitaDelCalendario[]> {
+  return conexion
+    .select({
+      id: cita.id,
+      version: cita.version,
+      inicio: cita.inicio,
+      fin: cita.fin,
+      codigo: cita.codigo,
+      servicio: cita.servicioNombre,
+      clienteNombre: cita.clienteNombre,
+      clienteApellido: cita.clienteApellido,
+      direccion: sede.direccion,
+    })
+    .from(cita)
+    .innerJoin(sede, and(eq(sede.id, cita.sedeId), eq(sede.negocioId, cita.negocioId)))
+    .where(
+      and(
+        eq(cita.negocioId, negocioId),
+        ne(cita.estado, "cancelada"),
+        lt(cita.inicio, periodo.fin),
+        gt(cita.fin, periodo.inicio),
+      ),
+    )
+    .orderBy(asc(cita.inicio), asc(cita.id));
 }

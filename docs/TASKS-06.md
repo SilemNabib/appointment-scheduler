@@ -339,7 +339,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Generar dos veces deja un solo enlace vigente y el primero con `revocado_en`. El índice `enlace_calendario_vigente_uq` impide dos vigentes (ARCH §18.3).
       * Con el negocio suspendido, generar devuelve `NEGOCIO_SUSPENDIDO` y leer sigue funcionando (D-14).
 
-* [ ] T6.29: Caso de uso `servirCalendario` y su ruta
+* [x] T6.29: Caso de uso `servirCalendario` y su ruta
    * Objetivo: Implementar `servirCalendario(enlaceId, token, ahora)` y `GET /api/calendario/{enlaceId}/{token}` (ARCH §14.7). Con un enlace existente, no revocado y con firma válida, responde `text/calendar` sin `METHOD`, con un `VEVENT` por cita no cancelada del negocio desde hace 30 días hasta dentro de 365, con los `UID` y `SEQUENCE` de las invitaciones (T6.04) y el contenido de Q-71, sin teléfonos ni correos. Lleva `Cache-Control: private, max-age=300` y `X-Robots-Tag: noindex`, y actualiza `ultimo_acceso_en` como máximo una vez por hora. En otro caso, responde 404.
    * Archivos: `src/servidor/casos-uso/enlace-calendario.ts`, `src/app/api/calendario/[enlaceId]/[token]/route.ts`, `src/servidor/db/repositorios/citas.ts`, `tests/integracion/app/api/calendario.test.ts`
    * Depende de: T6.04, T6.28

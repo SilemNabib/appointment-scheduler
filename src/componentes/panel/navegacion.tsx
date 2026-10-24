@@ -9,8 +9,8 @@ import { ANILLO_FOCO } from "@/componentes/estilos";
 // el celular es una fila horizontal que se desplaza dentro de su propio contenedor, sin
 // desplazar la página (RNF-01), y la página actual se lleva a la vista. La página actual
 // se marca con `aria-current`, además del estilo (RNF-03). El panel no muestra el
-// concepto de sede (RN-32) ni "Profesionales" (D-24). Clientes llega en la Fase 7 y "Mi
-// calendario", en la Fase 6.
+// concepto de sede (RN-32) ni "Profesionales" (D-24). Clientes llega en la Fase 7; "Mi
+// calendario" va después de "Bloqueos" (Q-72).
 
 /** `tambien`: otras rutas que cuentan como esta página, como las citas para la agenda. */
 type Enlace = { href: string; texto: string; tambien?: string[] };
@@ -19,6 +19,7 @@ const PRINCIPALES: Enlace[] = [
   { href: "/panel", texto: "Inicio" },
   { href: "/panel/agenda", texto: "Agenda", tambien: ["/panel/citas"] },
   { href: "/panel/bloqueos", texto: "Bloqueos" },
+  { href: "/panel/calendario", texto: "Mi calendario" },
 ];
 
 const CONFIGURACION: Enlace[] = [

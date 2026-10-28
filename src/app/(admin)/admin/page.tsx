@@ -7,7 +7,8 @@ import { listarNegocios } from "@/servidor/casos-uso/listar-negocios";
 
 export const metadata: Metadata = { title: "Negocios · Admin" };
 
-// Lista de negocios (ADM-01). Cada nombre abre el detalle del negocio (ADM-03).
+// Lista de negocios (ADM-01). Cada nombre abre el detalle del negocio (ADM-03). Arriba,
+// el enlace a las notificaciones fallidas o atrasadas (ADM-05).
 export default async function NegociosAdmin() {
   await requireSuperadmin();
   const negocios = await listarNegocios();
@@ -16,12 +17,20 @@ export default async function NegociosAdmin() {
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-xl font-semibold">Negocios</h1>
-        <Link
-          href="/admin/negocios/nuevo"
-          className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
-        >
-          Nuevo negocio
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/admin/notificaciones"
+            className={`rounded-sm text-sm font-medium text-teal-700 underline dark:text-teal-400 ${ANILLO_FOCO}`}
+          >
+            Notificaciones
+          </Link>
+          <Link
+            href="/admin/negocios/nuevo"
+            className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
+          >
+            Nuevo negocio
+          </Link>
+        </div>
       </div>
 
       {negocios.length === 0 ? (

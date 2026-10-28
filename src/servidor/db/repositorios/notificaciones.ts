@@ -376,3 +376,56 @@ export async function recalcularRecordatorios(
            ultimo_error = CASE WHEN n.estado = 'cancelada' THEN NULL ELSE n.ultimo_error END
      WHERE n.estado IN ('pendiente', 'cancelada')`);
 }
+
+// ─── Admin (ADM-05; ARCH §21.4; Q-73) ─────────────────────────────────────────
+
+/** Cuánto atraso de una `pendiente` es señal de que el cron no está corriendo (ARCH §21.4). */
+export const ATRASO_MAXIMO_MS = 15 * 60 * 1000;
+/** Tope de filas por lista: el admin las revisa a mano. */
+const FILAS_ADMIN = 200;
+
+/** Una notificación en `/admin/notificaciones`, sin el destinatario (ARCH §19.2). */
+export type NotificacionConProblema = {
+  id: string;
+  slug: string;
+  zonaHoraria: string;
+  tipo: TipoNotificacion;
+  /** `null` en los correos de la cuenta (C-07 y C-08). */
+  codigo: string | null;
+  programadaPara: Date;
+  intentos: number;
+  ultimoError: string | null;
+  estado: "pendiente" | "fallida";
+};
+
+/**
+ * Las `fallida` y las `pendiente` con más de 15 minutos de atraso, de todos los negocios,
+ * de la más atrasada a la más reciente. Solo lo usa el admin.
+ */
+export async function conProblemas(ahora: Date, conexion: Conexion = db()): Promise<NotificacionConProblema[]> {
+  const limite = new Date(ahora.getTime() - ATRASO_MAXIMO_MS);
+  const filas = await conexion
+    .select({
+      id: notificacion.id,
+      slug: negocio.slug,
+      zonaHoraria: negocio.zonaHoraria,
+      tipo: notificacion.tipo,
+      codigo: cita.codigo,
+      programadaPara: notificacion.programadaPara,
+      intentos: notificacion.intentos,
+      ultimoError: notificacion.ultimoError,
+      estado: notificacion.estado,
+    })
+    .from(notificacion)
+    .innerJoin(negocio, eq(negocio.id, notificacion.negocioId))
+    .leftJoin(cita, and(eq(cita.id, notificacion.citaId), eq(cita.negocioId, notificacion.negocioId)))
+    .where(
+      or(
+        eq(notificacion.estado, "fallida"),
+        and(eq(notificacion.estado, "pendiente"), lt(notificacion.programadaPara, limite)),
+      ),
+    )
+    .orderBy(asc(notificacion.programadaPara))
+    .limit(FILAS_ADMIN * 2);
+  return filas as NotificacionConProblema[];
+}

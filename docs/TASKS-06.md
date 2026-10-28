@@ -361,7 +361,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
 
 ### 6.G Administración
 
-* [ ] T6.31: Notificaciones fallidas o atrasadas (ADM-05)
+* [x] T6.31: Notificaciones fallidas o atrasadas (ADM-05)
    * Objetivo: Implementar `listarNotificacionesConProblemas(ahora)` y la página `/admin/notificaciones`, detrás de `requireSuperadmin`, con las notificaciones `fallida` y las `pendiente` con más de 15 minutos de atraso (ARCH §21.4), con las columnas de Q-73 y un enlace desde `/admin`. Si la segunda lista está vacía, el cron está corriendo.
    * Archivos: `src/servidor/casos-uso/notificaciones-admin.ts`, `src/servidor/db/repositorios/notificaciones.ts`, `src/app/(admin)/admin/notificaciones/page.tsx`, `src/app/(admin)/admin/page.tsx`, `tests/integracion/casos-uso/notificaciones-admin.test.ts`
    * Depende de: T6.13

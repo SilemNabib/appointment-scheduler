@@ -105,21 +105,8 @@ export async function altaNegocio(
   }
 
   // Después del COMMIT: si la transacción falló, no se invita a nadie. Si falla la
-  // invitación, el negocio ya existe; el formulario lo avisa (Q-08). El registro no
-  // lleva el correo (ARCH §19.2).
-  const invitacionEnviada = await invitarDueno(datos.correoDueno).then(
-    () => true,
-    (error: unknown) => {
-      console.error(
-        JSON.stringify({
-          evento: "invitacion_fallida",
-          negocioId,
-          error: error instanceof Error ? error.message : String(error),
-        }),
-      );
-      return false;
-    },
-  );
+  // invitación, el negocio ya existe; el formulario lo avisa (Q-08).
+  const invitacionEnviada = await invitarDueno(negocioId, datos.correoDueno);
   return exito({ negocioId, invitacionEnviada });
 }
 

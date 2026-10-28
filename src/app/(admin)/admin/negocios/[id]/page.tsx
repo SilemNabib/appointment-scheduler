@@ -5,13 +5,14 @@ import { EstadoEfectivo, ESTADOS_SUSCRIPCION, Vencimiento } from "@/componentes/
 import { ANILLO_FOCO } from "@/componentes/estilos";
 import { requireSuperadmin } from "@/servidor/auth/sesion";
 import { detalleNegocioAdmin } from "@/servidor/casos-uso/detalle-negocio-admin";
-import { BotonSuspender, FormularioFinPrueba, FormularioPago } from "./formularios";
+import { BotonReenviarInvitacion, BotonSuspender, FormularioFinPrueba, FormularioPago } from "./formularios";
 
 export const metadata: Metadata = { title: "Negocio · Admin" };
 
 // Detalle de un negocio (ADM-01, ADM-03): los datos de la suscripción y sus acciones:
 // registrar un pago, cambiar el fin de la prueba (solo en prueba, Q-25) y suspender.
-// Un id que no existe responde 404.
+// Mientras el dueño no entre al panel, "Reenviar invitación" (T6.33; ARCH §7.4). Un id
+// que no existe responde 404.
 export default async function DetalleNegocio({ params }: { params: Promise<{ id: string }> }) {
   await requireSuperadmin();
   const { id } = await params;
@@ -48,6 +49,9 @@ export default async function DetalleNegocio({ params }: { params: Promise<{ id:
         ))}
       </dl>
 
+      {negocio.dueno && !negocio.dueno.vinculado && (
+        <BotonReenviarInvitacion negocioId={negocio.id} correo={negocio.dueno.correo} />
+      )}
       <FormularioPago negocioId={negocio.id} pagadoHasta={negocio.pagadoHasta} />
       {negocio.estadoSuscripcion === "prueba" && (
         <FormularioFinPrueba negocioId={negocio.id} finPrueba={negocio.finPrueba} />

@@ -6,11 +6,11 @@ import { BotonEnviar, Entrada, Seccion } from "@/componentes/formulario";
 import { claseBoton } from "@/componentes/estilos";
 import { mensajeDeError } from "@/componentes/mensajes";
 import { formatearFechaLocal } from "@/dominio/formato";
-import { cambiarFinPruebaAdmin, registrarPagoAdmin, suspenderNegocioAdmin } from "./acciones";
+import { cambiarFinPruebaAdmin, reenviarInvitacionAdmin, registrarPagoAdmin, suspenderNegocioAdmin } from "./acciones";
 
 // Acciones de suscripción del admin (ADM-03; RN-31, D-14, Q-25). Las fechas son locales
 // e inclusivas: "pagado hasta el 9" cubre todo el día 9 (ARCH §7.6). Validan en el
-// servidor (Q-02).
+// servidor (Q-02). Y "Reenviar invitación", mientras el dueño no entre (T6.33; Q-73).
 
 type Estado = { error?: string; exito?: string };
 
@@ -147,6 +147,48 @@ export function BotonSuspender({ negocioId, nombre }: { negocioId: string; nombr
           </button>
         </div>
       )}
+    </Seccion>
+  );
+}
+
+export function BotonReenviarInvitacion({ negocioId, correo }: { negocioId: string; correo: string }) {
+  const [mensaje, setMensaje] = useState<{ tipo: TipoAviso; texto: string } | null>(null);
+  const [enviando, iniciar] = useTransition();
+
+  const reenviar = () =>
+    iniciar(async () => {
+      const resultado = await reenviarInvitacionAdmin(negocioId);
+      setMensaje(
+        !resultado.ok
+          ? {
+              tipo: "error",
+              texto: mensajeDeError(resultado.error, {
+                ...MENSAJES,
+                ESTADO_INVALIDO: "El dueño ya entró al panel: no necesita otra invitación. Recarga la página.",
+              }),
+            }
+          : resultado.valor.invitacionEnviada
+            ? { tipo: "exito", texto: `Listo: le enviamos una invitación nueva a ${correo}.` }
+            : {
+                tipo: "error",
+                texto:
+                  "No se pudo enviar la invitación. Intenta de nuevo en unos minutos o envíala desde el " +
+                  "Dashboard de Clerk (Users → Invitations) con su correo.",
+              },
+      );
+    });
+
+  return (
+    <Seccion
+      titulo="Invitación del dueño"
+      descripcion={`El dueño (${correo}) todavía no entra al panel. Si no le llegó la invitación o ya venció, envíale una nueva. La anterior sigue sirviendo.`}
+    >
+      {mensaje && <Aviso tipo={mensaje.tipo}>{mensaje.texto}</Aviso>}
+      <div>
+        <button type="button" disabled={enviando} onClick={reenviar} className={claseBoton("secundario")}>
+          {enviando ? "Enviando…" : "Reenviar invitación"}
+        </button>
+      </div>
     </Seccion>
   );
 }

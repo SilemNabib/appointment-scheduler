@@ -28,6 +28,18 @@ export async function porClerkId(clerkUserId: string): Promise<Miembro | null> {
 }
 
 /**
+ * El correo del dueño del negocio y si ya se vinculó (ARCH §7.4), o `null` si no hay un
+ * negocio con ese id. Para el admin, que elige el negocio (ARCH §6).
+ */
+export async function duenoDelNegocio(negocioId: string): Promise<{ correo: string; vinculado: boolean } | null> {
+  const [fila] = await db()
+    .select({ correo: miembroNegocio.correo, vinculado: sql<boolean>`${miembroNegocio.clerkUserId} is not null` })
+    .from(miembroNegocio)
+    .where(and(eq(miembroNegocio.negocioId, negocioId), eq(miembroNegocio.rol, "dueno")));
+  return fila ?? null;
+}
+
+/**
  * Vincula al miembro pendiente con ese correo en el primer ingreso (ARCH §7.4): fija
  * `clerk_user_id` y `vinculado_en` en una sola sentencia, solo si todavía no tiene
  * usuario. Devuelve `null` si no hay un miembro pendiente con ese correo, así un

@@ -393,7 +393,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
 
 Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH §20 y los criterios de aceptación de las RN que esta fase hace posibles. Usan el proveedor simulado y el reloj inyectado, y cada caso cita su origen.
 
-* [ ] T6.34: Pruebas de la gestión por link
+* [x] T6.34: Pruebas de la gestión por link
    * Objetivo: Probar con las rutas HTTP de la gestión los criterios de RN-13, RN-14 y RN-34 y los flujos F-02 y F-03.
    * Archivos: `tests/integracion/app/api/publico/gestion-reglas.test.ts`
    * Depende de: T6.21

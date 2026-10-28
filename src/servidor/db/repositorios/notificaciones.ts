@@ -429,3 +429,23 @@ export async function conProblemas(ahora: Date, conexion: Conexion = db()): Prom
     .limit(FILAS_ADMIN * 2);
   return filas as NotificacionConProblema[];
 }
+
+/**
+ * Devuelve una `fallida` a `pendiente` para ahora, con 0 intentos y sin `ultimo_error`
+ * (ARCH §14.2; Q-73). Con `UPDATE … WHERE estado = 'fallida'`, así que una que no lo está
+ * no cambia. Devuelve si la reintentó.
+ */
+export async function reintentar(id: string, ahora: Date, conexion: Conexion = db()): Promise<boolean> {
+  const filas = await conexion
+    .update(notificacion)
+    .set({ estado: "pendiente", intentos: 0, programadaPara: ahora, ultimoError: null, bloqueadaHasta: null })
+    .where(and(eq(notificacion.id, id), eq(notificacion.estado, "fallida")))
+    .returning({ id: notificacion.id });
+  return filas.length > 0;
+}
+
+/** Si la notificación existe, en cualquier estado. */
+export async function existe(id: string, conexion: Conexion = db()): Promise<boolean> {
+  const filas = await conexion.select({ id: notificacion.id }).from(notificacion).where(eq(notificacion.id, id));
+  return filas.length > 0;
+}

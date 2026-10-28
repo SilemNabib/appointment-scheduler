@@ -1,9 +1,13 @@
 import { auth } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { reintentarNotificacionAdmin } from "@/app/(admin)/admin/notificaciones/acciones";
 import NotificacionesAdmin from "@/app/(admin)/admin/notificaciones/page";
-import { listarNotificacionesConProblemas } from "@/servidor/casos-uso/notificaciones-admin";
+import { listarNotificacionesConProblemas, reintentarNotificacion } from "@/servidor/casos-uso/notificaciones-admin";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
+import { procesarNotificaciones } from "@/servidor/notificaciones/procesar";
+import type { MensajeCorreo, ProveedorCorreo } from "@/servidor/notificaciones/proveedor";
 import { errorDe, esNoEncontrado } from "../../ayudantes-next";
 import { crearCliente, datosDeCita, negocioConAgenda } from "../fixtures";
 
@@ -19,6 +23,7 @@ const MINUTO = 60 * 1000;
 const DESTINATARIO = "destinatario.admin@mail.com";
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.mocked(auth).mockReset();
 });
@@ -99,5 +104,95 @@ describe("listarNotificacionesConProblemas (ADM-05)", () => {
       vi.mocked(auth).mockResolvedValue({ userId } as Awaited<ReturnType<typeof auth>>);
       expect(esNoEncontrado(await errorDe(NotificacionesAdmin()))).toBe(true);
     }
+  });
+});
+
+// ─── Reintentar una notificación fallida (ADM-05; RN-20, D-14; ARCH §14.2; Q-73) ───
+
+describe("reintentarNotificacion (Q-73)", () => {
+  const ADMIN = { clerkUserId: "user_admin" };
+
+  function conEntorno() {
+    vi.stubEnv("APP_URL", "https://agenda.example.com");
+    vi.stubEnv("GESTION_CITA_SECRET", "secreto-de-gestion-de-prueba");
+    vi.stubEnv("CORREO_REMITENTE", "citas@agenda.example.com");
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  }
+
+  function proveedorSimulado() {
+    const enviados: MensajeCorreo[] = [];
+    const proveedor: ProveedorCorreo = {
+      async enviar(m) {
+        enviados.push(m);
+        return { ok: true, mensajeId: `msg_${enviados.length}` };
+      },
+    };
+    return { proveedor, enviados };
+  }
+
+  const fila = async (id: string) => (await db().select().from(esquema.notificacion).where(eq(esquema.notificacion.id, id)))[0];
+
+  test("una fallida reintentada queda pendiente para ahora, con 0 intentos, y la corrida siguiente la envía con su clave de siempre (RN-20)", async () => {
+    conEntorno();
+    const { n, citaId } = await conCita();
+    const clave = `confirmacion:${citaId}`;
+    const id = await notificacion(n.negocioId, citaId, {
+      claveIdempotencia: clave,
+      estado: "fallida",
+      intentos: 5,
+      ultimoError: "RESEND_403:validation_error",
+      programadaPara: new Date(AHORA.getTime() - 60 * MINUTO),
+    });
+
+    expect(await reintentarNotificacion({ notificacionId: id }, ADMIN, AHORA)).toEqual({ ok: true, valor: undefined });
+
+    expect(await fila(id)).toMatchObject({ estado: "pendiente", intentos: 0, programadaPara: AHORA, ultimoError: null, bloqueadaHasta: null });
+    expect(vi.mocked(console.log).mock.calls.map(([l]) => JSON.parse(String(l)))).toContainEqual({
+      evento: "notificacion_reintentada",
+      notificacionId: id,
+      admin: "user_admin",
+    });
+    const { proveedor, enviados } = proveedorSimulado();
+    await procesarNotificaciones({ citaId }, AHORA, proveedor);
+    expect(enviados.map((m) => m.claveIdempotencia)).toEqual([clave]);
+    expect(await fila(id)).toMatchObject({ estado: "enviada", intentos: 1 });
+  });
+
+  test("una pendiente, enviada o cancelada devuelve ESTADO_INVALIDO sin cambiar; un id inexistente, NO_ENCONTRADO", async () => {
+    const { n, citaId } = await conCita();
+    for (const estado of ["pendiente", "enviada", "cancelada"] as const) {
+      const id = await notificacion(n.negocioId, citaId, { estado, enviadaEn: estado === "enviada" ? AHORA : null });
+      const antes = await fila(id);
+      expect(await reintentarNotificacion({ notificacionId: id }, ADMIN, AHORA)).toEqual({ ok: false, error: "ESTADO_INVALIDO" });
+      expect(await fila(id)).toEqual(antes);
+    }
+    for (const notificacionId of [crypto.randomUUID(), "no-es-un-uuid", 42]) {
+      expect(await reintentarNotificacion({ notificacionId }, ADMIN, AHORA)).toEqual({ ok: false, error: "NO_ENCONTRADO" });
+    }
+  });
+
+  test("un correo de citas reintentado con el negocio suspendido se anula al reclamarse (D-14; ARCH §14.3)", async () => {
+    conEntorno();
+    const { n, citaId } = await conCita();
+    const id = await notificacion(n.negocioId, citaId, { estado: "fallida", intentos: 5, programadaPara: AHORA });
+    await db().update(esquema.negocio).set({ estadoSuscripcion: "suspendida" }).where(eq(esquema.negocio.id, n.negocioId));
+
+    expect((await reintentarNotificacion({ notificacionId: id }, ADMIN, AHORA)).ok).toBe(true);
+    const { proveedor, enviados } = proveedorSimulado();
+    await procesarNotificaciones({ citaId }, AHORA, proveedor);
+
+    expect(await fila(id)).toMatchObject({ estado: "cancelada", ultimoError: "NEGOCIO_SUSPENDIDO" });
+    expect(enviados).toEqual([]);
+  });
+
+  test("sin la sesión del admin, la Server Action termina en 404 y no cambia nada (ADR-07)", async () => {
+    const { n, citaId } = await conCita();
+    const id = await notificacion(n.negocioId, citaId, { estado: "fallida", intentos: 5, programadaPara: AHORA });
+    const antes = await fila(id);
+    vi.stubEnv("SUPERADMIN_CLERK_USER_IDS", "user_admin");
+    vi.mocked(auth).mockResolvedValue({ userId: "user_dueno" } as Awaited<ReturnType<typeof auth>>);
+
+    expect(esNoEncontrado(await errorDe(reintentarNotificacionAdmin(id)))).toBe(true);
+    expect(await fila(id)).toEqual(antes);
   });
 });

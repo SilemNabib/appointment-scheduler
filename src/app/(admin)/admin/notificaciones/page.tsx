@@ -8,13 +8,14 @@ import {
   listarNotificacionesConProblemas,
   type NotificacionConProblema,
 } from "@/servidor/casos-uso/notificaciones-admin";
+import { BotonReintentar } from "./reintentar";
 
 export const metadata: Metadata = { title: "Notificaciones · Admin" };
 
 // Notificaciones fallidas o atrasadas (ADM-05; ADR-07; ARCH §19.2, §21.4 y §23; Q-73): el
 // negocio, el correo del PRD, el código de la cita, cuándo estaba programada (en la zona
 // del negocio), los intentos, el último error y el estado, sin el destinatario. Si la
-// lista de atrasadas está vacía, el cron está corriendo.
+// lista de atrasadas está vacía, el cron está corriendo. Cada fallida se puede reintentar.
 
 const ESTADO: Record<NotificacionConProblema["estado"], string> = { fallida: "Fallida", pendiente: "Pendiente" };
 
@@ -30,7 +31,10 @@ function Tabla({ filas }: { filas: NotificacionConProblema[] }) {
             <th className="py-2 pr-4 font-medium">Programada para</th>
             <th className="py-2 pr-4 font-medium">Intentos</th>
             <th className="py-2 pr-4 font-medium">Último error</th>
-            <th className="py-2 font-medium">Estado</th>
+            <th className="py-2 pr-4 font-medium">Estado</th>
+            <th className="py-2 font-medium">
+              <span className="sr-only">Acciones</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -42,7 +46,8 @@ function Tabla({ filas }: { filas: NotificacionConProblema[] }) {
               <td className="py-2 pr-4">{formatearFechaHora(n.programadaPara, n.zonaHoraria)}</td>
               <td className="py-2 pr-4">{n.intentos}</td>
               <td className="py-2 pr-4 font-mono text-xs">{n.ultimoError ?? "—"}</td>
-              <td className="py-2">{ESTADO[n.estado]}</td>
+              <td className="py-2 pr-4">{ESTADO[n.estado]}</td>
+              <td className="py-2">{n.estado === "fallida" && <BotonReintentar notificacionId={n.id} />}</td>
             </tr>
           ))}
         </tbody>

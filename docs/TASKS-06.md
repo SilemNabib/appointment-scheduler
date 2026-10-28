@@ -370,7 +370,7 @@ Las plantillas solo presentan: reciben los datos ya leídos y no consultan la ba
       * Una notificación `fallida` y una `pendiente` vencida hace 20 minutos aparecen; una vencida hace 10 minutos, una enviada y una anulada, no (ARCH §21.4).
       * La lista no muestra destinatarios (ARCH §19.2) y, sin la sesión del admin, `/admin/notificaciones` responde 404 (ADR-07).
 
-* [ ] T6.32: Reintentar una notificación fallida
+* [x] T6.32: Reintentar una notificación fallida
    * Objetivo: Implementar `reintentarNotificacion(entrada, admin)` y el botón "Reintentar" en cada notificación `fallida` de `/admin/notificaciones` (Q-73). Detrás de `requireSuperadmin`, con `UPDATE … WHERE estado = 'fallida'`, la devuelve a `pendiente` con `intentos = 0`, `programada_para = ahora` y sin `ultimo_error`, y registra `notificacion_reintentada` con su id y el del admin. Sale en la siguiente corrida del cron, revalidada como cualquier otra (T6.05) y con la misma clave de idempotencia. Al implementarla se verifica en la documentación de Resend que un envío que falló se puede repetir con la misma `Idempotency-Key`.
    * Archivos: `src/servidor/casos-uso/notificaciones-admin.ts`, `src/servidor/db/repositorios/notificaciones.ts`, `src/app/(admin)/admin/notificaciones/page.tsx`, `src/app/(admin)/admin/notificaciones/acciones.ts`, `tests/integracion/casos-uso/notificaciones-admin.test.ts`
    * Depende de: T6.31

@@ -405,7 +405,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Si el dueño mueve la cita, el cliente conserva los intentos que le quedan. Con el límite en 0, el link no ofrece "Reprogramar" (RN-34, D-20).
       * Cancelar desde el link libera el cupo, anula el recordatorio y encola C-03 y C-06 (F-02, paso 4).
 
-* [ ] T6.35: Pruebas de las notificaciones
+* [x] T6.35: Pruebas de las notificaciones
    * Objetivo: Probar con el procesador los criterios de RN-20, RN-21 y RN-22 y los casos de ARCH §20 (Notificaciones).
    * Archivos: `tests/integracion/notificaciones/notificaciones-reglas.test.ts`
    * Depende de: T6.26, T6.27, T6.32, T6.34

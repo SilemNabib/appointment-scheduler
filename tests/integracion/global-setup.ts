@@ -89,15 +89,6 @@ export default async function prepararRamaEfimera(project: TestProject) {
     throw new Error(`No existe la rama "${RAMA_PADRE}" en el proyecto de Neon.`);
   }
 
-  const huerfanas = branches.filter(
-    (rama) =>
-      rama.name.startsWith(PREFIJO_RAMA) &&
-      Date.now() - Date.parse(rama.created_at) > EDAD_RAMA_HUERFANA_MS,
-  );
-  for (const rama of huerfanas) {
-    await pedir("DELETE", `/branches/${rama.id}`);
-  }
-
   const nombre = `${PREFIJO_RAMA}${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   const creada = await pedir<{ branch: Rama; operations: Operacion[] }>("POST", "/branches", {
     branch: { name: nombre, parent_id: padre.id },
@@ -105,6 +96,19 @@ export default async function prepararRamaEfimera(project: TestProject) {
   });
   const ramaId = creada.branch.id;
   const eliminar = () => pedir("DELETE", `/branches/${ramaId}`);
+
+  // La edad se mide con la hora de Neon (la creación de esta rama), no con el reloj del
+  // equipo: con el reloj adelantado, la rama recién creada de otro proyecto de la misma
+  // corrida parecía vieja y se borraba (visto el 2026-10-28, con el reloj 5 horas adelantado).
+  const ahoraEnNeon = Date.parse(creada.branch.created_at);
+  const huerfanas = branches.filter(
+    (rama) =>
+      rama.name.startsWith(PREFIJO_RAMA) &&
+      ahoraEnNeon - Date.parse(rama.created_at) > EDAD_RAMA_HUERFANA_MS,
+  );
+  for (const rama of huerfanas) {
+    await pedir("DELETE", `/branches/${rama.id}`);
+  }
 
   try {
     for (const { id } of creada.operations) {

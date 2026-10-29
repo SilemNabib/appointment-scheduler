@@ -10,8 +10,9 @@ import { negocioConAgenda } from "../fixtures";
 // Las tareas del cron (RN-16, RN-21, RN-31; ARCH §14.4; Q-75). Corre en el proyecto
 // `integracion-global`, porque las tareas actúan sobre todos los negocios. "Ahora" es de
 // 2029, anterior a los datos que dejan los demás archivos de ese proyecto (2030 en
-// adelante), así una corrida solo ve lo de esta prueba. Los de suscripcion-cron.test.ts,
-// de 2028, no dejan nada pendiente ni por vencer.
+// adelante), así una corrida solo ve lo de esta prueba. Los de
+// asistencia-por-defecto-reglas.test.ts (2027) y suscripcion-cron.test.ts (2028) no dejan
+// nada pendiente ni por vencer.
 
 const BOGOTA = "America/Bogota";
 const VENCE = localAUtc("2029-04-10", "00:00", BOGOTA);

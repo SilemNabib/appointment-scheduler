@@ -19,8 +19,9 @@ import { ADMIN_PRUEBA, negocioConAgenda } from "../fixtures";
 // Suscripción; T6.36). Corre en el proyecto `integracion-global`, de a un archivo, porque el
 // cron actúa sobre todos los negocios. Vencimiento "pagado hasta el 9 de octubre de 2028":
 // las 00:00 de Bogotá del martes 10, y la gracia termina el viernes 13 a las 00:00. Es
-// anterior a los datos de los demás archivos del proyecto (2029 en adelante), así las
-// corridas de aquí solo ven lo de esta prueba. Cada prueba termina sin notificaciones
+// anterior a los datos de los demás archivos del proyecto (2029 en adelante), salvo los de
+// asistencia-por-defecto-reglas.test.ts (2027), que no deja nada pendiente ni por vencer:
+// las corridas de aquí solo ven lo de esta prueba. Cada prueba termina sin notificaciones
 // pendientes y con sus negocios suspendidos o pagados hasta 2099: las corridas de los demás
 // archivos no encuentran nada suyo que enviar ni que vencer.
 

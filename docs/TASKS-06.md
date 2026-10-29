@@ -428,7 +428,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Un C-07 pendiente se anula si el negocio paga antes de que salga, y `registrarPago` reactiva sin esperar al cron (ARCH §20).
       * Con el negocio suspendido, los recordatorios pendientes no salen y el servidor rechaza cancelar y reprogramar por link con `NEGOCIO_SUSPENDIDO` (RN-04). Al reactivarlo, los recordatorios cuya hora pasó durante la suspensión no se envían (F-12, paso 4).
 
-* [ ] T6.37: Pruebas de la asistencia por defecto
+* [x] T6.37: Pruebas de la asistencia por defecto
    * Objetivo: Probar con el cron los criterios de RN-16 (D-21) y los casos de ARCH §20 (Asistencia por defecto).
    * Archivos: `tests/integracion/casos-uso/asistencia-por-defecto-reglas.test.ts`
    * Depende de: T6.26

@@ -6,8 +6,8 @@ const ruta = (relativa: string) =>
 
 /**
  * Pruebas que procesan "todo lo vencido" de todos los negocios: el procesador de la
- * bandeja de salida sin `citaId`, el cron, los vencimientos y la asistencia por defecto
- * (ARCH §14.3, §14.4 y §7.6). En paralelo con las demás tomarían sus filas, así que corren
+ * bandeja de salida sin `citaId`, el cron, los vencimientos, la asistencia por defecto y
+ * la suscripción con el cron (ARCH §14.3, §14.4 y §7.6). En paralelo con las demás tomarían sus filas, así que corren
  * en su propio proyecto, con su propia rama efímera, después de las demás y de a un
  * archivo (T6.15).
  */
@@ -16,6 +16,7 @@ const PRUEBAS_GLOBALES = [
   "tests/integracion/casos-uso/vencimientos.test.ts",
   "tests/integracion/casos-uso/asistencia-por-defecto.test.ts",
   "tests/integracion/casos-uso/cron.test.ts",
+  "tests/integracion/casos-uso/suscripcion-cron.test.ts",
 ];
 
 const integracion = {

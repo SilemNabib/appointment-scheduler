@@ -417,7 +417,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Cada reserva, cancelación y reprogramación hecha por el cliente genera exactamente un correo al dueño, y las acciones del dueño, ninguno (RN-22, S-06).
       * Una cita sin correo no envía nada al cliente (S-05), y una creada después del momento de su recordatorio no lo recibe (S-12).
 
-* [ ] T6.36: Pruebas de la suscripción en el cron
+* [x] T6.36: Pruebas de la suscripción en el cron
    * Objetivo: Probar con el cron los criterios de RN-04 y RN-31 y los casos de ARCH §20 (Suscripción) que dependen del envío.
    * Archivos: `tests/integracion/casos-uso/suscripcion-cron.test.ts`
    * Depende de: T6.26

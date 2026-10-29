@@ -457,7 +457,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Una reprogramación y una reserva lanzadas a la vez por el último cupo de un recurso de capacidad 1: entra solo una (ARCH §20: "lo mismo al reprogramar contra una reserva").
       * Con el límite en 1, dos reprogramaciones simultáneas de la misma cita: entra una y la otra recibe `LIMITE_REPROGRAMACIONES` (ARCH §18.3: "compara con el límite y suma 1 dentro de la transacción").
 
-* [ ] T6.40: Pruebas multi-negocio y de solo lectura
+* [x] T6.40: Pruebas multi-negocio y de solo lectura
    * Objetivo: Probar las rutas y las Server Actions de esta fase con identificadores de otro negocio y con el negocio suspendido.
    * Archivos: `tests/integracion/app/api/publico/multi-negocio.test.ts`, `tests/integracion/app/panel/multi-negocio.test.ts`, `tests/integracion/app/panel/solo-lectura.test.ts`
    * Depende de: T6.30, T6.34

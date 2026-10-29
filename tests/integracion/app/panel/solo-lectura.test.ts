@@ -1,6 +1,9 @@
 import { asc, eq } from "drizzle-orm";
+import { renderToStaticMarkup } from "react-dom/server";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import { crearBloqueoPanel, eliminarBloqueoPanel } from "@/app/(panel)/panel/bloqueos/acciones";
+import { generarEnlaceCalendarioPanel } from "@/app/(panel)/panel/calendario/acciones";
+import PaginaCalendario from "@/app/(panel)/panel/calendario/page";
 import { cancelarCitaPanel, marcarAsistenciaPanel, moverCitaPanel } from "@/app/(panel)/panel/citas/[id]/acciones";
 import {
   buscarClientesPanel,
@@ -23,7 +26,9 @@ import {
   desactivarServicioPanel,
   guardarServicioPanel,
 } from "@/app/(panel)/panel/configuracion/servicios/acciones";
-import { localAUtc } from "@/dominio/tiempo";
+import PaginaGestion from "@/app/(publico)/[slug]/cita/[citaId]/[token]/page";
+import { GET as calendario } from "@/app/api/calendario/[enlaceId]/[token]/route";
+import { diaSemana, fechaLocal, localAUtc, sumarDias } from "@/dominio/tiempo";
 import { requireMiembro } from "@/servidor/auth/sesion";
 import { listarAgenda } from "@/servidor/casos-uso/agenda-panel";
 import { crearBloqueo, listarBloqueos } from "@/servidor/casos-uso/bloqueos";
@@ -32,6 +37,7 @@ import { buscarClientes } from "@/servidor/casos-uso/clientes";
 import { leerConfiguracion } from "@/servidor/casos-uso/configuracion";
 import { leerConsultorio } from "@/servidor/casos-uso/consultorio";
 import { buscarCitaPorCodigo, detalleCita } from "@/servidor/casos-uso/detalle-cita";
+import { generarEnlaceCalendario, leerEnlaceCalendario } from "@/servidor/casos-uso/enlace-calendario";
 import { estadoConfiguracion } from "@/servidor/casos-uso/estado-configuracion";
 import { leerNegocio } from "@/servidor/casos-uso/guardar-negocio";
 import { guardarHorarioSemanal, leerHorarioSemanal } from "@/servidor/casos-uso/horario";
@@ -40,15 +46,31 @@ import { listarPoliticas } from "@/servidor/casos-uso/politica-datos";
 import { desactivarServicio, guardarServicio, listarServicios } from "@/servidor/casos-uso/servicios";
 import { db } from "@/servidor/db/cliente";
 import * as esquema from "@/servidor/db/esquema";
+import { tokenDeGestion } from "@/servidor/gestion-cita/firma";
 import { sesionDeDueno } from "../../fixtures";
 
 // Con el negocio suspendido, el panel es de solo lectura (RN-04, D-14; ARCH §20,
 // Suscripción): cada Server Action de la fase que modifica datos devuelve
-// NEGOCIO_SUSPENDIDO y no cambia nada, y las lecturas siguen funcionando. Clerk se
-// simula; R2 no se debe tocar.
+// NEGOCIO_SUSPENDIDO y no cambia nada, y las lecturas siguen funcionando, también el
+// enlace de calendario y la página de gestión por link. Clerk se simula; R2 no se debe
+// tocar.
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: vi.fn(), currentUser: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+// La página de gestión se dibuja fuera de Next: sin el router de la app, `useRouter` lanza.
+vi.mock("next/navigation", async (original) => ({
+  ...(await original<typeof import("next/navigation")>()),
+  useRouter: () => ({ refresh: () => {}, push: () => {}, replace: () => {}, back: () => {}, forward: () => {}, prefetch: () => {} }),
+}));
+
+const SECRETOS = {
+  APP_URL: "https://agenda.example.com",
+  CALENDARIO_SECRET: "secreto-del-calendario-de-prueba",
+  GESTION_CITA_SECRET: "secreto-de-gestion-de-prueba",
+};
+const conSecretos = () => {
+  for (const [nombre, valor] of Object.entries(SECRETOS)) vi.stubEnv(nombre, valor);
+};
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: () => {
     throw new Error("Con el negocio suspendido no se debe tocar R2.");
@@ -73,7 +95,7 @@ const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0
 /** Todo lo que las acciones de la fase pueden cambiar, para comparar antes y después. */
 async function datosDelNegocio() {
   const { negocio, configuracionNegocio, sede, recurso, servicio, horarioSemanal, bloqueo, politicaDatos, contactoSede } = esquema;
-  const { cita, eventoCita, notificacion, cliente } = esquema;
+  const { cita, eventoCita, notificacion, cliente, enlaceCalendario } = esquema;
   return {
     negocio: await db().select().from(negocio).where(eq(negocio.id, negocioId)),
     configuracion: await db().select().from(configuracionNegocio).where(eq(configuracionNegocio.negocioId, negocioId)),
@@ -105,6 +127,12 @@ async function datosDelNegocio() {
       .where(eq(notificacion.negocioId, negocioId))
       .orderBy(asc(notificacion.id)),
     clientes: await db().select().from(cliente).where(eq(cliente.negocioId, negocioId)).orderBy(asc(cliente.id)),
+    // Fase 6: el enlace de calendario (PAN-20).
+    enlaces: await db()
+      .select()
+      .from(enlaceCalendario)
+      .where(eq(enlaceCalendario.negocioId, negocioId))
+      .orderBy(asc(enlaceCalendario.id)),
   };
 }
 
@@ -139,6 +167,11 @@ beforeAll(async () => {
   );
   if (!creada.ok) throw new Error(creada.error);
   ({ citaId, codigo } = creada.valor);
+  // El enlace de calendario que el dueño creó antes de la suspensión.
+  conSecretos();
+  const enlace = await generarEnlaceCalendario({ negocioId, clerkUserId: "user_dueno", suscripcion: { estado: "al_dia" } }, new Date());
+  if (!enlace.ok) throw new Error(enlace.error);
+  vi.unstubAllEnvs();
 });
 
 describe("solo lectura con el negocio suspendido", () => {
@@ -196,6 +229,8 @@ describe("solo lectura con el negocio suspendido", () => {
       moverCitaPanel({ citaId, inicio: localAUtc("2030-03-04", "10:00", "America/Bogota").toISOString(), version: 1 })],
     ["citas: cancelar", () => cancelarCitaPanel(citaId)],
     ["citas: marcar la asistencia", () => marcarAsistenciaPanel({ citaId, estado: "completada", estadoEsperado: "confirmada" })],
+    // Fase 6 (D-14): crear o regenerar el enlace de calendario.
+    ["calendario: crear o regenerar el enlace", () => generarEnlaceCalendarioPanel()],
   ])("%s devuelve NEGOCIO_SUSPENDIDO y no cambia nada (RN-04; ARCH §20)", async (_, accion) => {
     const antes = await datosDelNegocio();
 
@@ -237,5 +272,52 @@ describe("solo lectura con el negocio suspendido", () => {
     const horas = await consultarHorasDueno(ctx, { servicioId: servicioActivo, fecha: "2030-03-04" }, ahora);
     expect(horas.ok && horas.valor.inicios).not.toContain(localAUtc("2030-03-04", "09:00", "America/Bogota").toISOString());
     expect((await horasDuenoPanel({ servicioId: servicioActivo, fecha: "2030-03-04" })).ok).toBe(true);
+  });
+
+  test("el enlace de calendario, la página de gestión por link y «Mi calendario» se siguen leyendo (D-14; ARCH §20: \"se puede consultar\")", async () => {
+    conSecretos();
+    const ctx = await requireMiembro();
+    // Una cita del próximo lunes, el día con horario: el enlace sirve las de hace 30 días
+    // a dentro de 365 (ARCH §14.7). Se crea con el caso de uso, que no mira la suscripción.
+    let lunes = sumarDias(fechaLocal(new Date(), "America/Bogota"), 1);
+    while (diaSemana(lunes) !== 1) lunes = sumarDias(lunes, 1);
+    const cercana = await crearCitaManual(
+      { negocioId, clerkUserId: "user_dueno" },
+      {
+        nombre: "Luis",
+        apellido: "Gómez",
+        telefono: "311 555 0100",
+        correo: "",
+        servicioId: servicioActivo,
+        inicio: localAUtc(lunes, "09:00", "America/Bogota").toISOString(),
+      },
+      new Date(),
+    );
+    if (!cercana.ok) throw new Error(cercana.error);
+
+    // El enlace de calendario se sigue sirviendo, con las citas del negocio.
+    const urls = await leerEnlaceCalendario(ctx);
+    expect(urls).not.toBeNull();
+    const [, enlaceId, token] = /\/api\/calendario\/([^/]+)\/([^/]+)$/.exec(urls!.https)!;
+    const servido = await calendario(new Request(urls!.https), { params: Promise.resolve({ enlaceId, token }) });
+    expect(servido.status).toBe(200);
+    expect(await servido.text()).toContain(`UID:${cercana.valor.citaId}@agenda-citas`);
+
+    // La página de gestión muestra la cita y el aviso de Q-70, sin acciones (GES-05). Usa
+    // la hora real: por eso es la cita del próximo lunes.
+    const [{ slug }] = await db().select({ slug: esquema.negocio.slug }).from(esquema.negocio).where(eq(esquema.negocio.id, negocioId));
+    const { citaId: idCercana, codigo: codigoCercana } = cercana.valor;
+    const link = { slug, citaId: idCercana, token: await tokenDeGestion({ id: idCercana, tokenVersion: 1 }) };
+    const gestion = renderToStaticMarkup(await PaginaGestion({ params: Promise.resolve(link) }));
+    expect(gestion).toContain(codigoCercana);
+    expect(gestion).toContain("Por ahora no puedes hacer cambios por aquí. Para cambios, comunícate con el negocio.");
+    expect(gestion).not.toMatch(/>(Reprogramar|Cancelar cita)<\/button>/);
+
+    // "Mi calendario" muestra el enlace, con los botones deshabilitados (Q-72).
+    const pagina = renderToStaticMarkup(await PaginaCalendario());
+    expect(pagina).toContain(urls!.https);
+    expect(pagina).toContain("Tu suscripción está suspendida: tu enlace sigue funcionando, pero no puedes crear ni regenerar uno.");
+    expect(pagina).toMatch(/<button[^>]*disabled=""[^>]*>Regenerar enlace<\/button>/);
+    vi.unstubAllEnvs();
   });
 });

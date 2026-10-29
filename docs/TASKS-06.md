@@ -438,7 +438,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * Con "siempre decido yo", sigue `confirmada` hasta que el dueño la marque (RN-16).
       * Con el negocio suspendido no cambia; en la primera corrida después de reactivarlo, sí (D-21, D-14). Después, el dueño la corrige a `no_asistio` (S-09).
 
-* [ ] T6.38: Pruebas de los calendarios
+* [x] T6.38: Pruebas de los calendarios
    * Objetivo: Probar los criterios de RN-35 y los casos de ARCH §20 (Calendario) con los correos que recibe el proveedor simulado y con el enlace del dueño.
    * Archivos: `tests/integracion/notificaciones/calendario-reglas.test.ts`
    * Depende de: T6.29, T6.34

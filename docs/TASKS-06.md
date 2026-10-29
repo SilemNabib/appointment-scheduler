@@ -448,7 +448,7 @@ Pruebas de integración contra la rama efímera de Neon, con los casos de ARCH �
       * El enlace del dueño muestra las citas creadas por los clientes y por él, sin teléfonos ni correos, y una cita cancelada desaparece en la siguiente consulta (RN-35).
       * Al regenerar el enlace, el anterior responde "no encontrado" (RN-35).
 
-* [ ] T6.39: Pruebas de concurrencia de la reprogramación
+* [x] T6.39: Pruebas de concurrencia de la reprogramación
    * Objetivo: Probar RN-11 en la reprogramación por link: el caso de ARCH §20 que quedó pendiente en las Fases 3 y 5 (T3.22, T5.29).
    * Archivos: `tests/integracion/casos-uso/reprogramar-cita-concurrencia.test.ts`
    * Depende de: T6.19

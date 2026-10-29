@@ -38,7 +38,10 @@ export function Diseno({
 }) {
   return (
     <Html lang="es" dir="ltr">
-      <Head />
+      <Head>
+        {/* Los clientes de correo del celular que usan una vista web lo dibujan al ancho de la pantalla (RNF-02). */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
       <Preview>{vistaPrevia}</Preview>
       <Body style={{ backgroundColor: FONDO, color: TINTA, fontFamily: FUENTE, margin: 0, padding: "24px 12px" }}>
         <Container

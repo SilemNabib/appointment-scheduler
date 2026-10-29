@@ -40,7 +40,8 @@ export function DuenoCitaNueva({ negocio, zonaHoraria, cita, cliente, urlPanel }
   return (
     <Diseno
       marca={marca}
-      vistaPrevia={`${nombre} reservó ${cita.servicio} para el ${cuando(cita.inicio, zonaHoraria)}.`}
+      // Sin punto final: el de "a. m." o "p. m." cierra la oración.
+      vistaPrevia={`${nombre} reservó ${cita.servicio} para el ${cuando(cita.inicio, zonaHoraria)}`}
       pie={<Parrafo suave>Recibes este aviso porque eres el dueño de {negocio.nombre}.</Parrafo>}
     >
       <Titulo>Tienes una cita nueva</Titulo>

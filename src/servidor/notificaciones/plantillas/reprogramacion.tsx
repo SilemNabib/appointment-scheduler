@@ -35,7 +35,8 @@ export function Reprogramacion({ negocio, zonaHoraria, cita, inicioAnterior, url
   return (
     <Diseno
       marca={marca}
-      vistaPrevia={`Ahora es el ${fechaEnFrase(cita.inicio, zonaHoraria)} a las ${formatearHora(cita.inicio, zonaHoraria)}.`}
+      // Sin punto final: el de "a. m." o "p. m." cierra la oración.
+      vistaPrevia={`Ahora es el ${fechaEnFrase(cita.inicio, zonaHoraria)} a las ${formatearHora(cita.inicio, zonaHoraria)}`}
       pie={<PieNegocio nombre={negocio.nombre} contactos={negocio.contactos} />}
     >
       <Titulo>Tu cita cambió de hora</Titulo>

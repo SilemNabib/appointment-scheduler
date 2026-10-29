@@ -16,16 +16,17 @@ export function asuntoRecordatorio(negocio: string, inicio: Date, zona: string):
 
 export function Recordatorio({ negocio, zonaHoraria, cita, urlGestion, urlPolitica }: DatosRecordatorio) {
   const marca = marcaDe(negocio);
+  // Las oraciones que terminan en la hora no llevan punto: el de "a. m." o "p. m." las cierra.
   const hora = formatearHora(cita.inicio, zonaHoraria);
   return (
     <Diseno
       marca={marca}
-      vistaPrevia={`${cita.servicio} a las ${hora}.`}
+      vistaPrevia={`${cita.servicio} a las ${hora}`}
       pie={<PieNegocio nombre={negocio.nombre} contactos={negocio.contactos} />}
     >
       <Titulo>Te recordamos tu cita</Titulo>
       <Parrafo>
-        Tienes una cita en {negocio.nombre} el {formatearDiaLocal(fechaLocal(cita.inicio, zonaHoraria))} a las {hora}.
+        Tienes una cita en {negocio.nombre} el {formatearDiaLocal(fechaLocal(cita.inicio, zonaHoraria))} a las {hora}
       </Parrafo>
       <DatosDeLaCita cita={cita} zonaHoraria={zonaHoraria} />
       <GestionYPolitica marca={marca} negocio={negocio.nombre} urlGestion={urlGestion} urlPolitica={urlPolitica} />

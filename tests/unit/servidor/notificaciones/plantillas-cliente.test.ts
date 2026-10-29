@@ -84,6 +84,11 @@ describe.each([
     vi.stubEnv("TZ", BOGOTA);
     expect(await renderizar(plantilla())).toEqual(enTokio);
   });
+
+  test("una oración que termina en la hora no lleva otro punto: el de «p. m.» la cierra (T6.41)", async () => {
+    const { html, texto } = await renderizar(plantilla());
+    for (const salida of [plano(html), plano(texto)]) expect(salida).not.toMatch(/[ap]\. m\.\./);
+  });
 });
 
 describe("asuntos (Q-65)", () => {
@@ -144,6 +149,12 @@ describe("C-04 (reprogramación; Q-60 de TASKS-05)", () => {
     const enTokio = await renderizar(Reprogramacion(reprogramacion));
     vi.stubEnv("TZ", BOGOTA);
     expect(await renderizar(Reprogramacion(reprogramacion))).toEqual(enTokio);
+  });
+
+  test("la vista previa termina en la hora, sin otro punto después de «a. m.» (T6.41)", async () => {
+    const { html } = await renderizar(Reprogramacion(reprogramacion));
+    expect(plano(html)).toContain("a las 9:00 a. m.");
+    expect(plano(html)).not.toMatch(/[ap]\. m\.\./);
   });
 });
 

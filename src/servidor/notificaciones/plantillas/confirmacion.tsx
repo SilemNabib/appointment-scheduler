@@ -118,7 +118,8 @@ export function Confirmacion({ negocio, zonaHoraria, cita, urlGestion, urlPoliti
   return (
     <Diseno
       marca={marca}
-      vistaPrevia={`${cita.servicio}, el ${fechaEnFrase(cita.inicio, zonaHoraria)} a las ${formatearHora(cita.inicio, zonaHoraria)}.`}
+      // Sin punto final: el de "a. m." o "p. m." cierra la oración.
+      vistaPrevia={`${cita.servicio}, el ${fechaEnFrase(cita.inicio, zonaHoraria)} a las ${formatearHora(cita.inicio, zonaHoraria)}`}
       pie={<PieNegocio nombre={negocio.nombre} contactos={negocio.contactos} />}
     >
       <Titulo>Tu cita está confirmada</Titulo>

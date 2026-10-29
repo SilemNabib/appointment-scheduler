@@ -67,11 +67,33 @@ export function AccionesGestion({
   const consulta = useCallback<Consulta>((rango) => consultarDisponibilidadGestion(link, rango), [link]);
   const disponibilidad = useDisponibilidad({ slug: link.slug, sedeId, servicioId: link.citaId, hoy, ultimoDia, consulta });
 
+  // El foco sigue al paso, como en la reserva (RNF-03): al abrir "Reprogramar", al título;
+  // al abrir "Cancelar cita", a la pregunta (no al botón que confirma); y al volver, al
+  // botón que abrió el paso. No al cargar la página. Va antes que el efecto del resultado,
+  // para que después de actuar gane el aviso.
+  const refTituloReprogramar = useRef<HTMLHeadingElement>(null);
+  const refPreguntaCancelar = useRef<HTMLParagraphElement>(null);
+  const refBotonReprogramar = useRef<HTMLButtonElement>(null);
+  const refBotonCancelar = useRef<HTMLButtonElement>(null);
+  const modoAnterior = useRef(modo);
+  useEffect(() => {
+    const desde = modoAnterior.current;
+    modoAnterior.current = modo;
+    if (desde === modo) return;
+    if (modo === "reprogramar") refTituloReprogramar.current?.focus();
+    else if (modo === "confirmar_cancelacion") refPreguntaCancelar.current?.focus();
+    else (desde === "reprogramar" ? refBotonReprogramar : refBotonCancelar).current?.focus();
+  }, [modo]);
+
   // El foco va al aviso del resultado (RNF-03).
   const refResultado = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (resultado) refResultado.current?.focus();
   }, [resultado]);
+  const refCancelada = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (recienCancelada) refCancelada.current?.focus();
+  }, [recienCancelada]);
 
   /** Un error de la API: recarga lo que haga falta y dice qué pasó. */
   function alFallar(codigo: CodigoApi) {
@@ -126,7 +148,11 @@ export function AccionesGestion({
   }
 
   if (recienCancelada) {
-    return <AvisoConContactos mensaje="Esta cita fue cancelada y su cupo quedó libre." contactos={contactos} />;
+    return (
+      <div ref={refCancelada} tabIndex={-1} className="outline-none">
+        <AvisoConContactos mensaje="Esta cita fue cancelada y su cupo quedó libre." contactos={contactos} />
+      </div>
+    );
   }
 
   const motivo = motivoVisible(acciones);
@@ -152,6 +178,7 @@ export function AccionesGestion({
           <div className="flex flex-wrap gap-3">
             {acciones.reprogramar.permitida && (
               <button
+                ref={refBotonReprogramar}
                 type="button"
                 className={claseBoton("primario")}
                 onClick={() => {
@@ -164,6 +191,7 @@ export function AccionesGestion({
             )}
             {acciones.cancelar.permitida && (
               <button
+                ref={refBotonCancelar}
                 type="button"
                 className={claseBoton("peligro")}
                 onClick={() => {
@@ -180,7 +208,7 @@ export function AccionesGestion({
 
       {modo === "confirmar_cancelacion" && (
         <div role="group" aria-labelledby="confirmar-cancelacion" className="flex flex-col gap-3 border-t border-borde pt-4">
-          <p id="confirmar-cancelacion" className="m-0 font-bold">
+          <p id="confirmar-cancelacion" ref={refPreguntaCancelar} tabIndex={-1} className="m-0 font-bold outline-none">
             ¿Cancelar la cita?
           </p>
           <p className="m-0 text-sm text-texto-muted">Su cupo quedará libre para otra persona.</p>
@@ -197,7 +225,7 @@ export function AccionesGestion({
 
       {modo === "reprogramar" && (
         <section aria-labelledby="titulo-reprogramar" className="flex flex-col gap-3 border-t border-borde pt-4">
-          <h3 id="titulo-reprogramar" className="m-0 text-lg font-bold">
+          <h3 id="titulo-reprogramar" ref={refTituloReprogramar} tabIndex={-1} className="m-0 text-lg font-bold outline-none">
             Elige el nuevo día y la nueva hora
           </h3>
           {limite !== null && quedan !== null && (

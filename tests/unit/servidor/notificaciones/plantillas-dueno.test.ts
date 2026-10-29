@@ -62,6 +62,12 @@ describe("C-05 (cita nueva)", () => {
     expect(html).toContain('href="mailto:ana.perez@mail.com"');
   });
 
+  test("la vista previa termina en la hora, sin otro punto después de «p. m.» (T6.41)", async () => {
+    const { html } = await renderizar(DuenoCitaNueva(nueva));
+    expect(plano(html)).toContain("a las 7:00 p. m.");
+    expect(plano(html)).not.toMatch(/[ap]\. m\.\./);
+  });
+
   test("sin correo del cliente, no muestra la fila del correo", async () => {
     const { texto } = await renderizar(DuenoCitaNueva({ ...nueva, cliente: { ...nueva.cliente, correo: null } }));
     expect(texto).not.toContain("Correo");
